@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Meu Site</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="css/Pagina_Principal.css">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <a class="logo" href="#">SITE/BASE</a>
+    <ul class="nav-links">
+      <li><a href="#features">Features</a></li>
+      <li><a href="#contato">Contato</a></li>
+    </ul>
+     <div class="ms-lg-3">
+                        <a class="btn custom-btn custom-border-btn" href="ficiencia/cadastro.html">
+                            Cadastro
+                            <i class="bi-arrow-up-right ms-2"></i>
+                        </a>
+       </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-glow"></div>
+    <div class="hero-glow2"></div>
+    <p class="eyebrow">Bem-vindo ao seu projeto</p>
+    <h1>Construa algo <em>incrível</em></h1>
+    <p class="hero-sub">
+      Esta é a base do seu site. HTML, CSS e Python prontos para você expandir, testar e personalizar como quiser.
+    </p>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="#features">Explorar ↓</a>
+      <a class="btn btn-ghost" href="#contato">Falar conosco</a>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- FEATURES -->
+  <section class="section" id="features">
+    <p class="section-label">O que vem incluído</p>
+    <h2 class="section-title">Tudo que você precisa</h2>
+    <div class="grid-3">
+      <div class="card">
+        <div class="card-icon y">🎨</div>
+        <h3>HTML & CSS</h3>
+        <p>Estrutura semântica limpa e estilos com variáveis CSS para personalizar cores, tipografia e espaçamentos rapidamente.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon b">🐍</div>
+        <h3>Backend Python</h3>
+        <p>Servidor Flask já configurado com rotas prontas. Conecte formulários, APIs e banco de dados com facilidade.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon y">⚡</div>
+        <h3>Pronto para expandir</h3>
+        <p>Código organizado e comentado. Adicione novas páginas, componentes ou integrações sem refazer do zero.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- CONTACT -->
+  <section class="section" id="contato">
+    <p class="section-label">Formulário de exemplo</p>
+    <h2 class="section-title">Entre em contato</h2>
+    <div class="form-wrap">
+      <div class="form-group">
+        <label>Nome</label>
+        <input type="text" id="nome" placeholder="Seu nome" />
+      </div>
+      <div class="form-group">
+        <label>E-mail</label>
+        <input type="email" id="email" placeholder="seu@email.com" />
+      </div>
+      <div class="form-group">
+        <label>Mensagem</label>
+        <textarea id="mensagem" rows="5" placeholder="Escreva aqui..."></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="enviarForm()">Enviar mensagem →</button>
+      <p id="form-msg">✅ Mensagem enviada com sucesso!</p>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <span>© 2026 Meu Site</span>
+    <span>Feito com HTML · CSS · Python</span>
+  </footer>
+
+  <script src="js/java_Principal.js"></script>
+</body>
+</html>
