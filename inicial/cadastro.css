@@ -1,0 +1,129 @@
+/* Reset básico */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+}
+
+/* Fundo estilo institucional */
+.container-login100 {
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(135deg, #003366, #0056b3);
+}
+
+/* Card central */
+.wrap-login100 {
+    width: 400px;
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 40px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+/* Título */
+.login100-form-title {
+    font-size: 26px;
+    font-weight: bold;
+    color: #003366;
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+/* Inputs */
+.wrap-input100 {
+    margin-bottom: 18px;
+}
+
+.label-input100 {
+    font-size: 14px;
+    color: #333;
+}
+
+.input100 {
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    transition: 0.3s;
+}
+
+.input100:focus {
+    border-color: #0056b3;
+    outline: none;
+    box-shadow: 0 0 5px rgba(0, 86, 179, 0.3);
+}
+
+/* Radios */
+.radio-group {
+    display: flex;
+    justify-content: space-between;
+    margin: 15px 0;
+}
+
+.radio-option {
+    font-size: 14px;
+    color: #333;
+}
+
+.radio-option input {
+    margin-left: 5px;
+}
+
+/* Botão */
+button {
+    width: 100%;
+    padding: 12px;
+    background: #003366;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    transition: 0.3s;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #0056b3;
+    transform: translateY(-2px);
+}
+
+/* Redes sociais */
+.flex-c-m {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.login100-social-item {
+    width: 40px;
+    height: 40px;
+    margin: 5px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-size: 18px;
+}
+
+.bg1 { background: #3b5998; }
+.bg2 { background: #1da1f2; }
+.bg3 { background: #db4437; }
+
+/* Texto inferior */
+.flex-col-c {
+    text-align: center;
+    margin-top: 15px;
+}
+
+.txt2 {
+    color: #0056b3;
+    text-decoration: none;
+    font-weight: bold;
+}
