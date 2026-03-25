@@ -1,2 +1,0 @@
-# VazaPuc
-vazadinhos
