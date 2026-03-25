@@ -1,129 +1,179 @@
-/* Reset básico */
+/* Definição das variáveis de cor (suas definições originais) */
+:root {
+  --bg: #1a0008;        /* quase preto vinho — fundo profundo */
+  --surface: #2d0016;   /* vinho escuro — cards e superfícies */
+  --border: #5c0028;    /* vinho médio — bordas sutis */
+  --accent: #e8325a;    /* vermelho rosado vibrante — botões e destaques */
+  --accent2: #ff8fa3;   /* rosa clarinho — labels e secundário */
+  --text: #f5e6ea;      /* creme rosado — texto principal, fácil leitura */
+  --muted: #b87a8a;     /* rosê apagado — textos secundários */
+  --radius: 12px;
+}
+
+/* Reset básico (mantendo o que você já tinha, mas usando a fonte da Puc) */
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: 'Segoe UI', Tahoma, sans-serif;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Syne', sans-serif; /* Usando a fonte principal da Puc */
 }
 
-/* Fundo estilo institucional */
+/* Fundo da Página (Deep Wine) */
 .container-login100 {
-    width: 100%;
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: linear-gradient(135deg, #003366, #0056b3);
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: var(--bg); /* Aplica o fundo profundo */
+  background-image: none; /* Remove o gradiente anterior */
 }
 
-/* Card central */
+/* O Card Central (Dark Wine Surface) */
 .wrap-login100 {
-    width: 400px;
-    background: #ffffff;
-    border-radius: 12px;
-    padding: 40px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  width: 400px;
+  background-color: var(--surface); /* Aplica a cor da superfície */
+  border-radius: var(--radius); /* Aplica o raio de 12px */
+  padding: 40px;
+  box-shadow: 0 10px 30px rgba(92, 0, 40, 0.4); /* Sombra suave no tom de vinho */
+  border: 1px solid var(--border); /* Borda sutil no tom médio */
 }
 
-/* Título */
+/* Título (Creme Rosado) */
 .login100-form-title {
-    font-size: 26px;
-    font-weight: bold;
-    color: #003366;
-    text-align: center;
-    margin-bottom: 25px;
+  font-size: 28px;
+  font-weight: 800; /* Extra bold para a Syne */
+  color: var(--text); /* Aplica a cor do texto principal */
+  text-align: center;
+  margin-bottom: 25px;
+  letter-spacing: -0.5px;
 }
 
-/* Inputs */
+/* Inputs e Labels */
 .wrap-input100 {
-    margin-bottom: 18px;
+  margin-bottom: 18px;
 }
 
 .label-input100 {
-    font-size: 14px;
-    color: #333;
+  font-size: 14px;
+  color: var(--accent2); /* Aplica o rosa clarinho nas labels */
+  font-family: 'DM Sans', sans-serif; /* DM Sans para labels */
 }
 
 .input100 {
-    width: 100%;
-    padding: 10px;
-    margin-top: 5px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-    transition: 0.3s;
+  width: 100%;
+  padding: 12px 15px;
+  margin-top: 5px;
+  border-radius: 8px;
+  background-color: rgba(92, 0, 40, 0.2); /* Fundo sutil para o input */
+  border: 1px solid var(--border); /* Borda vinho médio */
+  color: var(--text); /* Texto digitado em creme */
+  font-family: 'DM Sans', sans-serif;
+  transition: 0.3s;
+}
+
+.input100::placeholder {
+  color: var(--muted); /* Placeholder em rosê apagado */
 }
 
 .input100:focus {
-    border-color: #0056b3;
-    outline: none;
-    box-shadow: 0 0 5px rgba(0, 86, 179, 0.3);
+  border-color: var(--accent); /* Borda vibrante no foco */
+  outline: none;
+  box-shadow: 0 0 8px rgba(232, 50, 90, 0.4); /* Glow rosa no foco */
 }
 
-/* Radios */
+/* Grupo de Radios (Se você adicionou, como sugerido) */
 .radio-group {
-    display: flex;
-    justify-content: space-between;
-    margin: 15px 0;
+  display: flex;
+  gap: 20px;
+  margin: 15px 0 20px;
 }
 
 .radio-option {
-    font-size: 14px;
-    color: #333;
+  font-size: 14px;
+  color: var(--muted); /* Perfil não selecionado em rosê apagado */
+  display: flex;
+  align-items: center;
+  cursor: pointer;
 }
 
 .radio-option input {
-    margin-left: 5px;
+  margin-right: 8px;
+  accent-color: var(--accent); /* Cor do check vibrante */
 }
 
-/* Botão */
+/* Botão Principal (Vibrant Accent) */
 button {
-    width: 100%;
-    padding: 12px;
-    background: #003366;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-weight: bold;
-    transition: 0.3s;
-    cursor: pointer;
+  width: 100%;
+  padding: 14px;
+  background-color: var(--accent); /* Aplica o vermelho rosado vibrante */
+  color: #fff; /* Texto branco puro para alto contraste */
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  transition: 0.3s;
+  cursor: pointer;
+  letter-spacing: 0.5px;
 }
 
 button:hover {
-    background: #0056b3;
-    transform: translateY(-2px);
+  background-color: #ff4d75; /* Um rosa um pouco mais claro no hover */
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(232, 50, 90, 0.4); /* Sombra no hover */
 }
 
-/* Redes sociais */
+/* Redes Sociais */
 .flex-c-m {
-    display: flex;
-    justify-content: center;
-    margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  margin-top: 25px;
+  gap: 15px;
 }
 
 .login100-social-item {
-    width: 40px;
-    height: 40px;
-    margin: 5px;
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: white;
-    font-size: 18px;
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #fff;
+  font-size: 20px;
+  transition: 0.3s;
+  border: 1px solid var(--border); /* Borda sutil */
 }
 
-.bg1 { background: #3b5998; }
-.bg2 { background: #1da1f2; }
-.bg3 { background: #db4437; }
+/* Cores das redes sociais (usando as oficiais, mas com uma borda no nosso tom) */
+.bg1 { background-color: #3b5998; } /* Facebook */
+.bg1:hover { background-color: #2d4373; }
 
-/* Texto inferior */
+.bg2 { background-color: #1da1f2; } /* Twitter */
+.bg2:hover { background-color: #0c85d0; }
+
+.bg3 { background-color: #db4437; } /* Google */
+.bg3:hover { background-color: #c23321; }
+
+/* Texto Inferior (Muted e Accent2) */
 .flex-col-c {
-    text-align: center;
-    margin-top: 15px;
+  text-align: center;
+  margin-top: 20px;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.txt1 {
+  color: var(--muted); /* "Você já tem conta?" em rosê apagado */
+  font-size: 14px;
 }
 
 .txt2 {
-    color: #0056b3;
-    text-decoration: none;
-    font-weight: bold;
+  color: var(--accent2); /* "Login" em rosa clarinho */
+  text-decoration: none;
+  font-weight: 700;
+  margin-left: 5px;
+  transition: 0.3s;
+}
+
+.txt2:hover {
+  color: var(--accent); /* Hover do "Login" fica vibrante */
 }

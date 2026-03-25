@@ -1,16 +1,15 @@
- :root {
-      --bg: #6d012b;
-      --surface: #44ff00;
-      --border: #2a2a32;
-      --accent: #e8ff47;
-      --accent2: #47b8ff;
-      --text: #f0f0f0;
-      --muted: #7a7a8a;
-      --radius: 12px;
-    }
-    
+:root {
+  --bg: #1a0008;        /* quase preto vinho — fundo profundo */
+  --surface: #2d0016;   /* vinho escuro — cards e superfícies */
+  --border: #5c0028;    /* vinho médio — bordas sutis */
+  --accent: #e8325a;    /* vermelho rosado vibrante — botões e destaques */
+  --accent2: #ff8fa3;   /* rosa clarinho — labels e secundário */
+  --text: #f5e6ea;      /* creme rosado — texto principal, fácil leitura */
+  --muted: #b87a8a;     /* rosê apagado — textos secundários */
+  --radius: 12px;
+}
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     html { scroll-behavior: smooth; }
 
@@ -68,15 +67,20 @@
     .nav-links a:hover { color: var(--text); }
 
     /* ── HERO ── */
-    .hero {
-      position: relative;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      padding: 8rem 2.5rem 4rem;
-      overflow: hidden;
-    }
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center; 
+  text-align: center; 
+  justify-content: center;
+  padding: 4rem 1rem; 
+}
+.cta-row {
+  display: flex;
+  gap: 1rem; 
+  justify-content: center;
+  margin-top: 1.5rem;
+}
 
     .hero-glow {
       position: absolute;
@@ -338,4 +342,88 @@
 /* Animação do ícone no hover */
 .custom-btn:hover i {
     transform: translate(3px, -3px);
+}
+
+/* --- NOVA SEÇÃO: CASCATA --- */
+
+.section-cascade {
+  background-color: var(--bg); /* Vinho Quase Preto */
+  overflow: hidden; /* Garante que as imagens não 'vazem' antes da animação */
+  padding-bottom: 60px;
+}
+
+.cascade-container {
+  display: flex;
+  justify-content: center; /* Centraliza a cascata */
+  gap: 15px; /* Espaço entre as colunas de imagens */
+  flex-wrap: nowrap; /* Garante que fiquem lado a lado */
+  margin-top: 40px;
+  position: relative; /* Para a animação funcionar */
+  min-height: 400px; /* Garante um espaço para as imagens caírem */
+}
+
+.cascade-item {
+  width: calc(100% / 6 - 15px); /* Divide em 6 colunas, subtraindo o gap */
+  border-radius: var(--radius); /* 12px */
+  border: 1px solid var(--border); /* Borda vinho médio */
+  background-color: var(--surface); /* Fundo vinho escuro */
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 5px 15px rgba(92, 0, 40, 0.2); /* Sombra suave */
+  transition: transform 0.3s ease; /* Efeito suave no hover */
+  
+  /* --- A ANIMAÇÃO DE QUEDA (CASCADE) --- */
+  transform: translateY(-100vh); /* Começa completamente fora da tela (em cima) */
+  animation: fallCascade 1.5s ease-out forwards; /* Duração e suavidade da queda */
+}
+
+.cascade-item img {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover; /* Faz a imagem preencher o espaço */
+  filter: sepia(50%) hue-rotate(320deg) brightness(90%); /* Sutil filtro rosa/vinho nas imagens */
+}
+
+/* Efeito no Hover: a imagem se destaca sutilmente */
+.cascade-item:hover {
+  transform: scale(1.05) translateY(0) !important; /* Força o hover e anula o translateY da animação */
+  border-color: var(--accent); /* Borda vibrante no hover */
+  box-shadow: 0 10px 25px rgba(232, 50, 90, 0.4); /* Glow rosa no hover */
+}
+
+/* --- KEYFRAMES DA ANIMAÇÃO FALL --- */
+@keyframes fallCascade {
+  0% {
+    transform: translateY(-100vh); /* Topo absoluto */
+    opacity: 0; /* Invisível */
+  }
+  20% {
+    opacity: 1; /* Aparece rapidamente */
+  }
+  100% {
+    transform: translateY(0); /* Posição final (no contêiner) */
+    opacity: 1;
+  }
+}
+
+/* --- O EFEITO CASCATA (DELAY STAGGERING) --- */
+/* Cada item tem um atraso sutil para cair um após o outro */
+.cascade-item:nth-child(1) { animation-delay: 0.1s; }
+.cascade-item:nth-child(2) { animation-delay: 0.3s; }
+.cascade-item:nth-child(3) { animation-delay: 0.2s; } /* Meio cai um pouco antes */
+.cascade-item:nth-child(4) { animation-delay: 0.5s; }
+.cascade-item:nth-child(5) { animation-delay: 0.4s; }
+.cascade-item:nth-child(6) { animation-delay: 0.6s; }
+
+/* Responsividade: para celulares */
+@media (max-width: 768px) {
+  .cascade-container {
+    flex-wrap: wrap; /* Permite que as imagens dobrem a linha */
+    justify-content: flex-start;
+  }
+  .cascade-item {
+    width: calc(50% - 10px); /* 2 imagens por linha */
+    min-height: 150px;
+  }
 }
