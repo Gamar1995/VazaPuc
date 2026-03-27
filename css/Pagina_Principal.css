@@ -41,8 +41,8 @@ nav {
   align-items: center;
   justify-content: space-between;
   padding: 1.2rem 2.5rem;
-  backdrop-filter: blur(14px);
-  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+  border-bottom: 2px wheat var(--border);
   background: rgba(26, 0, 8, 0.75); /* Ajustado para o fundo vinho */
 }
 
@@ -274,89 +274,22 @@ h1 em {
 }
 .card p { font-size: 0.9rem; color: var(--muted); line-height: 1.65; font-weight: 300; }
 
-/* ── CASCATA ── */
-.section-cascade {
-  background-color: var(--bg);
-  overflow: hidden;
-  padding-bottom: 60px;
-}
-
-.cascade-container {
-  display: flex;
-  justify-content: center;
-  gap: 15px;
-  flex-wrap: nowrap;
-  margin-top: 40px;
-  position: relative;
-  min-height: 400px;
-}
-
-.cascade-item {
-  width: calc(100% / 6 - 15px);
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  background-color: var(--surface);
-  overflow: hidden;
-  position: relative;
-  box-shadow: 0 5px 15px rgba(92, 0, 40, 0.2);
-  transition: transform 0.3s ease;
-  transform: translateY(-100vh);
-  animation: fallCascade 1.5s ease-out forwards;
-}
-
-.cascade-item img {
-  width: 100%;
-  height: 100%; /* Ajuste para evitar bugs visuais */
-  display: block;
-  object-fit: cover;
-  filter: sepia(30%) hue-rotate(320deg) brightness(90%);
-}
-
-.cascade-item:hover {
-  transform: scale(1.05) translateY(0) !important;
-  border-color: var(--accent);
-  box-shadow: 0 10px 25px rgba(232, 50, 90, 0.4);
-}
-
-@keyframes fallCascade {
-  0% { transform: translateY(-100vh); opacity: 0; }
-  20% { opacity: 1; }
-  100% { transform: translateY(0); opacity: 1; }
-}
-
-.cascade-item:nth-child(1) { animation-delay: 0.1s; }
-.cascade-item:nth-child(2) { animation-delay: 0.3s; }
-.cascade-item:nth-child(3) { animation-delay: 0.2s; }
-.cascade-item:nth-child(4) { animation-delay: 0.5s; }
-.cascade-item:nth-child(5) { animation-delay: 0.4s; }
-.cascade-item:nth-child(6) { animation-delay: 0.6s; }
-
-@media (max-width: 768px) {
-  .cascade-container {
-    flex-wrap: wrap;
-    justify-content: flex-start;
-  }
-  .cascade-item {
-    width: calc(50% - 10px);
-    min-height: 150px;
-  }
-}
-
 /* ── SOBRE NÓS ── */
 .sobre-nos {
     background-color: var(--bg);
-    padding: 100px 10%;
+    padding: 100px 10%; /* Aumentei um pouco o espaçamento lateral para a leitura ficar mais elegante */
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 60px;
+    justify-content: flex-start; /* Joga o bloco todo para a esquerda */
     color: var(--text);
-    overflow: hidden;
+    position: relative;
+    z-index: 1;
 }
 
 .sobre-conteudo {
-    flex: 1;
-    max-width: 600px;
+    max-width: 800px; 
+    text-align: left; /* Alinha os textos à esquerda */
+    margin: 0; /* Remove a margem automática que estava centralizando a caixa */
 }
 
 .titulo-destaque {
@@ -402,6 +335,8 @@ h1 em {
     letter-spacing: 1px;
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     box-shadow: 0 8px 25px rgba(232, 50, 90, 0.25);
+    border: none;
+    cursor: pointer;
 }
 
 .btn-cta:hover {
@@ -410,58 +345,132 @@ h1 em {
     background: linear-gradient(45deg, var(--accent), var(--border));
 }
 
-.sobre-imagem-wrapper {
-    flex: 1;
-    position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+/* ── CASCATA ── */
+.section-cascade {
+  background-color: var(--bg);
+  overflow: hidden;
+  padding-bottom: 60px;
 }
 
-.imagem-sobre {
-    width: 100%;
-    max-width: 550px;
-    border-radius: 20px;
-    position: relative;
-    z-index: 2;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-    transition: transform 0.5s ease;
+.cascade-container {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  flex-wrap: nowrap;
+  margin-top: 40px;
+  position: relative;
+  min-height: 400px;
 }
 
-.imagem-sobre:hover {
-    transform: scale(1.03);
+.cascade-item {
+  width: calc(100% / 6 - 15px); /* Isso é o que deixa eles estreitos! */
+  border-radius: var(--radius);
+  background-color: var(--surface);
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 5px 15px rgba(92, 0, 40, 0.2);
+  transition: transform 0.3s ease;
+  transform: translateY(-100vh);
+  animation: fallCascade 1.5s ease-out forwards;
 }
 
-.efeito-vidro {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    max-width: 550px;
-    background: linear-gradient(135deg, rgba(92, 0, 40, 0.6), rgba(232, 50, 90, 0.6));
-    border-radius: 25px;
-    top: 20px;
-    right: -20px;
-    z-index: 1;
-    filter: blur(2px);
+.cascade-item:hover {
+  transform: scale(1.05) translateY(0) !important;
+  box-shadow: 0 10px 25px rgba(232, 50, 90, 0.4);
 }
 
-@media (max-width: 992px) {
-    .sobre-nos {
-        flex-direction: column;
-        text-align: center;
-        padding: 80px 5%;
-    }
-    
-    .sobre-conteudo p {
-        text-align: justify;
-        text-align-last: center;
-    }
+@keyframes fallCascade {
+  0% { transform: translateY(-100vh); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translateY(0); opacity: 1; }
+}
 
-    .efeito-vidro {
-        top: 15px;
-        right: 0;
-        transform: translateX(15px);
-    }
+/* Atrasos na animação para o efeito dominó */
+.cascade-item:nth-child(1) { animation-delay: 0.1s; }
+.cascade-item:nth-child(2) { animation-delay: 0.3s; }
+.cascade-item:nth-child(3) { animation-delay: 0.2s; }
+.cascade-item:nth-child(4) { animation-delay: 0.5s; }
+.cascade-item:nth-child(5) { animation-delay: 0.4s; }
+.cascade-item:nth-child(6) { animation-delay: 0.6s; }
+
+@media (max-width: 768px) {
+  .cascade-container {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+  .cascade-item {
+    width: calc(50% - 10px);
+    min-height: 150px;
+  }
+}
+
+/* ── FORMATO DE POST VERTICAL INTERNO ── */
+
+.cascade-item.post-vertical {
+  display: flex;
+  flex-direction: column;
+  padding: 0; 
+}
+
+.post-internal-border {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem 1rem; /* Padding interno adaptado para o formato estreito */
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  transition: border-color 0.3s ease;
+}
+
+.cascade-item.post-vertical:hover .post-internal-border {
+  border-color: var(--accent);
+}
+
+.post-header-vertical {
+  display: flex;
+  flex-direction: column; 
+  align-items: center; 
+  gap: 0.5rem;
+  text-align: center;
+}
+
+.post-avatar-vertical {
+  width: 50px; 
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--border); 
+}
+
+.post-user-info-vertical {
+  display: flex;
+  flex-direction: column;
+  width: 100%; 
+}
+
+.post-name-vertical {
+  font-family: OCR A Std, monospace;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis; 
+  white-space: nowrap;
+}
+
+.post-handle-vertical {
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-weight: 300;
+}
+
+.post-content-vertical p {
+  font-size: 0.85rem;
+  color: var(--text);
+  line-height: 1.5;
+  font-weight: 300;
+  text-align: left; /* Centralizado fica melhor em colunas muito estreitas */
 }
 
 /* ── CONTACT FORM ── */
