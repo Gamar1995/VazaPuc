@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SocialHub - Conecte-se em Tempo Real</title>
+    <link rel="stylesheet" href="css_PaginaInicial/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="logo-icon">◆</span>
+                    <h1>SocialHub</h1>
+                </div>
+            </div>
+
+            <nav class="nav-menu">
+                <a href="#home" class="nav-item active" data-page="home">
+                    <span class="nav-icon">⌂</span>
+                    <span class="nav-label">Início</span>
+                </a>
+                <a href="#explore" class="nav-item" data-page="explore">
+                    <span class="nav-icon">◉</span>
+                    <span class="nav-label">Explorar</span>
+                </a>
+                <a href="#messages" class="nav-item" data-page="messages">
+                    <span class="nav-icon">✉</span>
+                    <span class="nav-label">Mensagens</span>
+                </a>
+                <a href="#profile" class="nav-item" data-page="profile">
+                    <span class="nav-icon">◎</span>
+                    <span class="nav-label">Perfil</span>
+                </a>
+            </nav>
+
+            <button class="post-btn" id="postBtnSidebar">
+                <span>Novo Post</span>
+            </button>
+
+            <div class="sidebar-footer">
+                <div class="user-mini">
+                    <div class="user-avatar">
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=currentuser" alt="Você">
+                    </div>
+                    <div class="user-info">
+                        <p class="user-name">Seu Usuário</p>
+                        <p class="user-handle">@seu_handle</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="main-content">
+            <!-- HOME PAGE -->
+            <div class="page-container active" id="home-page">
+                <!-- Header com abas -->
+                <header class="feed-header">
+                    <h2>Seu Feed</h2>
+                    <div class="tabs">
+                        <button class="tab-btn active" data-tab="para-voce">Para você</button>
+                        <button class="tab-btn" data-tab="seguindo">Seguindo</button>
+                    </div>
+                </header>
+
+                <!-- Composer de Post -->
+                <div class="post-composer">
+                    <div class="composer-header">
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=currentuser" alt="Avatar" class="composer-avatar">
+                        <div class="composer-input-wrapper">
+                            <textarea class="composer-input" id="postInput" placeholder="O que está em sua mente?" rows="3"></textarea>
+                            <div class="composer-toolbar">
+                                <div class="toolbar-icons">
+                                    <button class="toolbar-btn" title="Imagem">🖼</button>
+                                    <button class="toolbar-btn" title="GIF">🎬</button>
+                                    <button class="toolbar-btn" title="Emoji">😊</button>
+                                </div>
+                                <button class="post-submit-btn" id="postSubmitBtn">Postar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Feed de Posts -->
+                <div class="feed">
+                    <div class="posts-container" id="postsContainer">
+                        <!-- Posts serão adicionados aqui dinamicamente -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- EXPLORE PAGE -->
+            <div class="page-container" id="explore-page">
+                <header class="feed-header">
+                    <div class="search-box">
+                        <input type="text" placeholder="Procurar usuários, posts, hashtags..." class="search-input" id="searchInput">
+                        <span class="search-icon">🔍</span>
+                    </div>
+                </header>
+                <div class="explore-content" id="exploreContent">
+                    <!-- Conteúdo explorado será adicionado aqui -->
+                </div>
+            </div>
+
+            <!-- MESSAGES PAGE -->
+            <div class="page-container" id="messages-page">
+                <header class="feed-header">
+                    <h2>Mensagens</h2>
+                </header>
+                <div class="messages-wrapper">
+                    <div class="conversations-list" id="conversationsList">
+                        <!-- Conversas serão adicionadas aqui -->
+                    </div>
+                    <div class="chat-area" id="chatArea">
+                        <div class="empty-chat">
+                            <p>Selecione uma conversa para começar</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PROFILE PAGE -->
+            <div class="page-container" id="profile-page">
+                <div class="profile-container">
+                    <!-- Header do Perfil -->
+                    <div class="profile-header">
+                        <div class="profile-cover"></div>
+                        <div class="profile-info">
+                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=currentuser" alt="Avatar" class="profile-avatar">
+                            <div class="profile-details">
+                                <h2 id="profileName">Seu Nome</h2>
+                                <p id="profileHandle">@seu_handle</p>
+                                <p id="profileBio">Bio do seu perfil aqui...</p>
+                                <div class="profile-stats">
+                                    <div class="stat">
+                                        <span class="stat-value">0</span>
+                                        <span class="stat-label">Seguindo</span>
+                                    </div>
+                                    <div class="stat">
+                                        <span class="stat-value">0</span>
+                                        <span class="stat-label">Seguidores</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="edit-profile-btn" id="editProfileBtn">Editar Perfil</button>
+                        </div>
+                    </div>
+
+                    <!-- Abas do Perfil -->
+                    <div class="profile-tabs">
+                        <button class="profile-tab-btn active" data-tab="posts">Posts</button>
+                        <button class="profile-tab-btn" data-tab="curtidos">Curtidos</button>
+                        <button class="profile-tab-btn" data-tab="midia">Mídia</button>
+                    </div>
+
+                    <!-- Conteúdo das Abas -->
+                    <div class="profile-content" id="profileContent">
+                        <!-- Posts do perfil serão adicionados aqui -->
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- RIGHT SIDEBAR (Trending / Recomendações) -->
+        <aside class="right-sidebar" id="rightSidebar">
+            <div class="trending-widget">
+                <h3>Tendências para você</h3>
+                <div class="trends-list">
+                    <div class="trend-item">
+                        <div class="trend-label">Tendência Global</div>
+                        <div class="trend-title">#ReactJS</div>
+                        <div class="trend-count">1.2M posts</div>
+                    </div>
+                    <div class="trend-item">
+                        <div class="trend-label">Tecnologia</div>
+                        <div class="trend-title">#WebDevelopment</div>
+                        <div class="trend-count">856K posts</div>
+                    </div>
+                    <div class="trend-item">
+                        <div class="trend-label">Tendência Global</div>
+                        <div class="trend-title">#JavaScript</div>
+                        <div class="trend-count">2.1M posts</div>
+                    </div>
+                    <div class="trend-item">
+                        <div class="trend-label">Você Segue</div>
+                        <div class="trend-title">#Design</div>
+                        <div class="trend-count">542K posts</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="suggestions-widget">
+                <h3>Quem Seguir</h3>
+                <div class="suggestions-list" id="suggestionsList">
+                    <!-- Sugestões serão adicionadas aqui -->
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- MODAIS -->
+    <!-- Modal de Novo Post -->
+    <div class="modal" id="postModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Compor Post</h3>
+                <button class="modal-close" id="closePostModal">✕</button>
+            </div>
+            <div class="modal-body">
+                <textarea id="modalPostInput" placeholder="O que está em sua mente?" rows="8"></textarea>
+                <div class="modal-toolbar">
+                    <div class="toolbar-icons">
+                        <button class="toolbar-btn">🖼</button>
+                        <button class="toolbar-btn">🎬</button>
+                        <button class="toolbar-btn">😊</button>
+                        <button class="toolbar-btn">📌</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="cancelPostBtn">Cancelar</button>
+                <button class="btn-primary" id="submitPostBtn">Postar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Editar Perfil -->
+    <div class="modal" id="editProfileModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Editar Perfil</h3>
+                <button class="modal-close" id="closeEditModal">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Nome</label>
+                    <input type="text" id="editName" placeholder="Seu nome completo">
+                </div>
+                <div class="form-group">
+                    <label>Handle (@)</label>
+                    <input type="text" id="editHandle" placeholder="seu_handle">
+                </div>
+                <div class="form-group">
+                    <label>Bio</label>
+                    <textarea id="editBio" placeholder="Conte sobre você" rows="4"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="cancelEditBtn">Cancelar</button>
+                <button class="btn-primary" id="saveEditBtn">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+  <script src="Js_PaginaInial/java.js"></script>
+</body>
+</html>
