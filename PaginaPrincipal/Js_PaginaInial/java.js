@@ -391,19 +391,21 @@ function renderConversations() {
 function openConversation(convId) {
     const conversation = appState.conversations.find(c => c.id === convId);
     
+    // Desenhando a interface do chat com efeito de Vidro Translúcido (Glassmorphism)
     chatArea.innerHTML = `
-        <div style="flex: 1; overflow-y: auto; padding: 16px;">
-            <div style="text-align: center; margin-bottom: 20px;">
-                <img src="${conversation.avatar}" alt="${conversation.user}" style="width: 60px; height: 60px; border-radius: 50%; margin-bottom: 8px;">
-                <h3 style="margin: 0 0 4px 0;">${conversation.user}</h3>
-                <p style="margin: 0; color: var(--text-secondary); font-size: 12px;">${conversation.handle}</p>
+        <div style="flex: 1; overflow-y: auto; padding: 24px;">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <img src="${conversation.avatar}" alt="${conversation.user}" style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 12px; border: 2px solid var(--primary); box-shadow: 0 4px 15px rgba(163, 31, 75, 0.3);">
+                <h3 style="margin: 0 0 4px 0; color: var(--text-primary); font-size: 1.3rem;">${conversation.user}</h3>
+                <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">${conversation.handle}</p>
             </div>
             <div id="messagesDisplay" style="display: flex; flex-direction: column; gap: 8px;"></div>
         </div>
-        <div style="padding: 16px; border-top: 1px solid var(--border); display: flex; gap: 8px;">
+        
+        <div style="padding: 20px; border-top: 1px solid rgba(163, 31, 75, 0.2); background-color: rgba(38, 14, 23, 0.4); backdrop-filter: blur(10px); display: flex; gap: 12px;">
             <input type="text" id="messageInput" placeholder="Escreva uma mensagem..." 
-                   style="flex: 1; padding: 10px 12px; background: var(--dark-bg); border: 1px solid var(--border); border-radius: 20px; color: var(--text-primary);">
-            <button id="sendMessageBtn" style="padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 20px; cursor: pointer; font-weight: 600;">
+                   style="flex: 1; padding: 14px 20px; background: rgba(56, 21, 34, 0.5); border: 1px solid rgba(163, 31, 75, 0.2); border-radius: 25px; color: var(--text-primary); outline: none; transition: all 0.3s ease;">
+            <button id="sendMessageBtn" style="padding: 12px 25px; background: rgba(163, 31, 75, 0.3); color: white; border: 1px solid rgba(163, 31, 75, 0.6); border-radius: 25px; cursor: pointer; font-weight: bold; backdrop-filter: blur(5px); transition: all 0.3s ease;">
                 Enviar
             </button>
         </div>
@@ -411,6 +413,16 @@ function openConversation(convId) {
 
     const messageInput = document.getElementById('messageInput');
     const sendBtn = document.getElementById('sendMessageBtn');
+
+    // não sei se vai funcionar mas tentei um efeito dhr q eu vi no tiktok 
+    messageInput.addEventListener('focus', () => {
+        messageInput.style.borderColor = 'rgba(163, 31, 75, 0.7)';
+        messageInput.style.backgroundColor = 'rgba(56, 21, 34, 0.8)';
+    });
+    messageInput.addEventListener('blur', () => {
+        messageInput.style.borderColor = 'rgba(163, 31, 75, 0.2)';
+        messageInput.style.backgroundColor = 'rgba(56, 21, 34, 0.5)';
+    });
 
     sendBtn.addEventListener('click', () => {
         if (messageInput.value.trim()) {
@@ -426,7 +438,6 @@ function openConversation(convId) {
         }
     });
 }
-
 // ===== SUGESTÕES =====
 function initSuggestions() {
     renderSuggestions();

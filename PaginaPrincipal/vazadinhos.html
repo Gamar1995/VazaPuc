@@ -123,46 +123,58 @@
             </div>
 
             <!-- PROFILE PAGE -->
+           <div class="page-container" id="messages-page">
+                ... (código das mensagens que já estava aí) ...
+            </div>
+
             <div class="page-container" id="profile-page">
-                <div class="profile-container">
-                    <!-- Header do Perfil -->
-                    <div class="profile-header">
-                        <div class="profile-cover"></div>
-                        <div class="profile-info">
-                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=currentuser" alt="Avatar" class="profile-avatar">
-                            <div class="profile-details">
-                                <h2 id="profileName">Seu Nome</h2>
-                                <p id="profileHandle">@seu_handle</p>
-                                <p id="profileBio">Bio do seu perfil aqui...</p>
-                                <div class="profile-stats">
-                                    <div class="stat">
-                                        <span class="stat-value">0</span>
-                                        <span class="stat-label">Seguindo</span>
-                                    </div>
-                                    <div class="stat">
-                                        <span class="stat-value">0</span>
-                                        <span class="stat-label">Seguidores</span>
-                                    </div>
+                <div class="public-profile-container">
+                    
+                    <div class="public-header">
+                        <div class="public-cover">
+                        </div>
+                        
+                        <div class="public-avatar-container">
+                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=currentuser" alt="Avatar" class="public-avatar" id="publicProfileAvatar">
+                        </div>
+                    </div>
+
+                    <div class="public-info">
+                        <div class="public-details">
+                            <h2 id="profileName">Seu Nome</h2>
+                            <p id="profileHandle">@seu_handle</p>
+                            <p id="profileBio">Bio do seu perfil aqui...</p>
+                            
+                            <div class="profile-stats">
+                                <div class="stat">
+                                    <span class="stat-value">0</span>
+                                    <span class="stat-label">Seguindo</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-value">0</span>
+                                    <span class="stat-label">Seguidores</span>
                                 </div>
                             </div>
+                        </div>
+                        
+                        <div class="public-actions">
                             <button class="edit-profile-btn" id="editProfileBtn">Editar Perfil</button>
                         </div>
                     </div>
 
-                    <!-- Abas do Perfil -->
-                    <div class="profile-tabs">
+                    <div class="profile-tabs-twitter">
                         <button class="profile-tab-btn active" data-tab="posts">Posts</button>
                         <button class="profile-tab-btn" data-tab="curtidos">Curtidos</button>
                         <button class="profile-tab-btn" data-tab="midia">Mídia</button>
                     </div>
 
-                    <!-- Conteúdo das Abas -->
                     <div class="profile-content" id="profileContent">
-                        <!-- Posts do perfil serão adicionados aqui -->
-                    </div>
+                        </div>
                 </div>
             </div>
         </main>
+
+        <aside class="right-sidebar" id="rightSidebar">
 
         <!-- RIGHT SIDEBAR (Trending / Recomendações) -->
        <aside class="right-sidebar" id="rightSidebar">
@@ -232,6 +244,7 @@
     </div>
 
     <!-- MODAIS -->
+
     <!-- Modal de Novo Post -->
     <div class="modal" id="postModal">
         <div class="modal-content">
@@ -258,32 +271,64 @@
     </div>
 
     <!-- Modal de Editar Perfil -->
-    <div class="modal" id="editProfileModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Editar Perfil</h3>
-                <button class="modal-close" id="closeEditModal">✕</button>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label>Nome</label>
-                    <input type="text" id="editName" placeholder="Seu nome completo">
+<div class="modal glass-modal" id="editProfileModal">
+    <div class="modal-content glass-content">
+        <div class="modal-header">
+            <h3>Personalizar Perfil</h3>
+            <button class="modal-close" id="closeEditModal">✕</button>
+        </div>
+        <div class="modal-body scrollable-body">
+            
+            <div class="edit-section visual-section">
+                <h4>Identidade Visual</h4>
+                <p class="section-desc">Gerencie a aparência do seu perfil no Vaza Puc.</p>
+                
+                <div class="edit-cover-wrapper">
+                    <div class="profile-cover preview-cover"></div> <button class="btn-glass-secondary edit-action-btn">Alterar Capa</button>
                 </div>
-                <div class="form-group">
-                    <label>Handle (@)</label>
-                    <input type="text" id="editHandle" placeholder="seu_handle">
-                </div>
-                <div class="form-group">
-                    <label>Bio</label>
-                    <textarea id="editBio" placeholder="Conte sobre você" rows="4"></textarea>
+                
+                <div class="edit-avatar-wrapper">
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=currentuser" alt="Avatar" class="profile-avatar preview-avatar">
+                    <div class="avatar-actions">
+                        <button class="btn-glass-secondary edit-action-btn">Alterar Foto</button>
+                        <button class="btn-text danger-btn">Remover</button>
+                    </div>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button class="btn-secondary" id="cancelEditBtn">Cancelar</button>
-                <button class="btn-primary" id="saveEditBtn">Salvar</button>
+
+            <div class="separator-line"></div>
+
+            <div class="edit-section basic-info-section">
+                <h4>Informações Básicas</h4>
+                <p class="section-desc">Ajuste seu nome de exibição, handle e biografia.</p>
+                
+                <div class="form-row">
+                    <div class="form-group glass-input-group">
+                        <label>Nome Completo</label>
+                        <input type="text" id="editName" placeholder="Seu nome" class="glass-input">
+                    </div>
+                    <div class="form-group glass-input-group">
+                        <label>Handle (@usuario)</label>
+                        <input type="text" id="editHandle" placeholder="seu_handle" class="glass-input">
+                    </div>
+                </div>
+                
+                <div class="form-group glass-input-group full-width">
+                    <div class="label-with-count">
+                        <label>Biografia</label>
+                        <span class="char-count">0/150</span>
+                    </div>
+                    <textarea id="editBio" placeholder="Conte sobre você..." rows="4" class="glass-input glass-textarea"></textarea>
+                </div>
             </div>
+
+        </div>
+        <div class="modal-footer">
+            <button class="btn-glass-secondary" id="cancelEditBtn">Cancelar</button>
+            <button class="btn-glass-primary" id="saveEditBtn">Salvar Alterações</button>
         </div>
     </div>
+</div>
 
   <script src="Js_PaginaInial/java.js"></script>
 </body>
