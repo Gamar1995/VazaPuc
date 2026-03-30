@@ -1,250 +1,236 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SocialHub - Conecte-se em Tempo Real</title>
-    <link rel="stylesheet" href="css_PaginaInicial/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vaza PUC</title>
+  <link rel="stylesheet" href="css_PaginaInicial/style.css">
 </head>
 <body>
-    <div class="app-container">
-        <!-- SIDEBAR -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <div class="logo">
-                    <span class="logo-icon">◆</span>
-                    <h1>Vaza Puc</h1>
+  <div class="app-container">
+
+    <!-- ===== SIDEBAR ESQUERDA ===== -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <span class="logo-icon">◆</span>
+          <h1>Vaza Puc</h1>
+        </div>
+      </div>
+
+      <nav class="nav-menu">
+        <a href="#home" class="nav-item active" data-page="home">
+          <span class="nav-icon">⌂</span>
+          <span class="nav-label">Início</span>
+        </a>
+        <a href="#explore" class="nav-item" data-page="explore">
+          <span class="nav-icon">◉</span>
+          <span class="nav-label">Explorar</span>
+        </a>
+        <a href="#messages" class="nav-item" data-page="messages">
+          <span class="nav-icon">✉</span>
+          <span class="nav-label">Mensagens</span>
+        </a>
+        <a href="#profile" class="nav-item" data-page="profile">
+          <span class="nav-icon">◎</span>
+          <span class="nav-label">Perfil</span>
+        </a>
+      </nav>
+
+      <button class="post-btn" id="postBtnSidebar">
+        <span>Novo Post</span>
+      </button>
+
+      <div class="sidebar-footer">
+        <div class="user-mini">
+          <div class="user-avatar">
+            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=currentuser" alt="Você">
+          </div>
+          <div class="user-info">
+            <p class="user-name">Seu Usuário</p>
+            <p class="user-handle">@seu_handle</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+    <!-- fim .sidebar -->
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <main class="main-content">
+
+      <!-- HOME PAGE -->
+      <div class="page-container active" id="home-page">
+        <header class="feed-header">
+          <h2>Seu Feed</h2>
+          <div class="tabs">
+            <button class="tab-btn active" data-tab="para-voce">Para você</button>
+            <button class="tab-btn" data-tab="seguindo">Seguindo</button>
+          </div>
+        </header>
+
+        <div class="post-composer">
+          <div class="composer-header">
+            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=currentuser" alt="Avatar" class="composer-avatar">
+            <div class="composer-input-wrapper">
+              <textarea class="composer-input" id="postInput" placeholder="O que está em sua mente?" rows="3"></textarea>
+              <div class="composer-toolbar">
+                <div class="toolbar-icons">
+                  <button class="toolbar-btn" title="Imagem">🖼</button>
+                  <button class="toolbar-btn" title="GIF">🎬</button>
+                  <button class="toolbar-btn" title="Emoji">😊</button>
                 </div>
+                <button class="post-submit-btn" id="postSubmitBtn">Postar</button>
+              </div>
             </div>
+          </div>
+        </div>
 
-            <nav class="nav-menu">
-                <a href="#home" class="nav-item active" data-page="home">
-                    <span class="nav-icon">⌂</span>
-                    <span class="nav-label">Início</span>
-                </a>
-                <a href="#explore" class="nav-item" data-page="explore">
-                    <span class="nav-icon">◉</span>
-                    <span class="nav-label">Explorar</span>
-                </a>
-                <a href="#messages" class="nav-item" data-page="messages">
-                    <span class="nav-icon">✉</span>
-                    <span class="nav-label">Mensagens</span>
-                </a>
-                <a href="#profile" class="nav-item" data-page="profile">
-                    <span class="nav-icon">◎</span>
-                    <span class="nav-label">Perfil</span>
-                </a>
-            </nav>
+        <div class="feed">
+          <div class="posts-container" id="postsContainer"></div>
+        </div>
+      </div>
+      <!-- fim #home-page -->
 
-            <button class="post-btn" id="postBtnSidebar">
-                <span>Novo Post</span>
-            </button>
+      <!-- EXPLORE PAGE -->
+      <div class="page-container" id="explore-page">
+        <header class="feed-header">
+          <div class="search-box">
+            <input type="text" placeholder="Procurar usuários, posts, hashtags..." class="search-input" id="searchInput">
+            <span class="search-icon">🔍</span>
+          </div>
+        </header>
+        <div class="explore-content" id="exploreContent"></div>
+      </div>
+      <!-- fim #explore-page -->
 
-            <div class="sidebar-footer">
-                <div class="user-mini">
-                    <div class="user-avatar">
-                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=currentuser" alt="Você">
-                    </div>
-                    <div class="user-info">
-                        <p class="user-name">Seu Usuário</p>
-                        <p class="user-handle">@seu_handle</p>
-                    </div>
-                </div>
+      <!-- MESSAGES PAGE -->
+      <div class="page-container" id="messages-page">
+        <header class="feed-header">
+          <h2>Mensagens</h2>
+        </header>
+        <div class="messages-wrapper">
+          <div class="conversations-list" id="conversationsList"></div>
+          <div class="chat-area" id="chatArea">
+            <div class="empty-chat">
+              <p>Selecione uma conversa para começar</p>
             </div>
-        </aside>
-
-        <!-- MAIN CONTENT -->
-        <main class="main-content">
-            <!-- HOME PAGE -->
-            <div class="page-container active" id="home-page">
-                <!-- Header com abas -->
-                <header class="feed-header">
-                    <h2>Seu Feed</h2>
-                    <div class="tabs">
-                        <button class="tab-btn active" data-tab="para-voce">Para você</button>
-                        <button class="tab-btn" data-tab="seguindo">Seguindo</button>
-                    </div>
-                </header>
-
-                <!-- Composer de Post -->
-                <div class="post-composer">
-                    <div class="composer-header">
-                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=currentuser" alt="Avatar" class="composer-avatar">
-                        <div class="composer-input-wrapper">
-                            <textarea class="composer-input" id="postInput" placeholder="O que está em sua mente?" rows="3"></textarea>
-                            <div class="composer-toolbar">
-                                <div class="toolbar-icons">
-                                    <button class="toolbar-btn" title="Imagem">🖼</button>
-                                    <button class="toolbar-btn" title="GIF">🎬</button>
-                                    <button class="toolbar-btn" title="Emoji">😊</button>
-                                </div>
-                                <button class="post-submit-btn" id="postSubmitBtn">Postar</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Feed de Posts -->
-                <div class="feed">
-                    <div class="posts-container" id="postsContainer">
-                        <!-- Posts serão adicionados aqui dinamicamente -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- EXPLORE PAGE -->
-            <div class="page-container" id="explore-page">
-                <header class="feed-header">
-                    <div class="search-box">
-                        <input type="text" placeholder="Procurar usuários, posts, hashtags..." class="search-input" id="searchInput">
-                        <span class="search-icon">🔍</span>
-                    </div>
-                </header>
-                <div class="explore-content" id="exploreContent">
-                    <!-- Conteúdo explorado será adicionado aqui -->
-                </div>
-            </div>
-
-            <!-- MESSAGES PAGE -->
-            <div class="page-container" id="messages-page">
-                <header class="feed-header">
-                    <h2>Mensagens</h2>
-                </header>
-                <div class="messages-wrapper">
-                    <div class="conversations-list" id="conversationsList">
-                        <!-- Conversas serão adicionadas aqui -->
-                    </div>
-                    <div class="chat-area" id="chatArea">
-                        <div class="empty-chat">
-                            <p>Selecione uma conversa para começar</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+          </div>
+        </div>
+      </div>
+      <!-- fim #messages-page -->
 
             <!-- PROFILE PAGE -->
-           <div class="page-container" id="messages-page">
-                ... (código das mensagens que já estava aí) ...
-            </div>
-
             <div class="page-container" id="profile-page">
-                <div class="public-profile-container">
-                    
-                    <div class="public-header">
-                        <div class="public-cover">
-                        </div>
-                        
-                        <div class="public-avatar-container">
-                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=currentuser" alt="Avatar" class="public-avatar" id="publicProfileAvatar">
-                        </div>
-                    </div>
-
-                    <div class="public-info">
-                        <div class="public-details">
-                            <h2 id="profileName">Seu Nome</h2>
-                            <p id="profileHandle">@seu_handle</p>
-                            <p id="profileBio">Bio do seu perfil aqui...</p>
-                            
-                            <div class="profile-stats">
-                                <div class="stat">
-                                    <span class="stat-value">0</span>
-                                    <span class="stat-label">Seguindo</span>
-                                </div>
-                                <div class="stat">
-                                    <span class="stat-value">0</span>
-                                    <span class="stat-label">Seguidores</span>
+                <div class="profile-container">
+                    <!-- Header do Perfil -->
+                    <div class="profile-header">
+                        <div class="profile-cover"></div>
+                        <div class="profile-info">
+                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=currentuser" alt="Avatar" class="profile-avatar">
+                            <div class="profile-details">
+                                <h2 id="profileName">Seu Nome</h2>
+                                <p id="profileHandle">@seu_handle</p>
+                                <p id="profileBio">Bio do seu perfil aqui...</p>
+                                <div class="profile-stats">
+                                    <div class="stat">
+                                        <span class="stat-value">0</span>
+                                        <span class="stat-label">Seguindo</span>
+                                    </div>
+                                    <div class="stat">
+                                        <span class="stat-value">0</span>
+                                        <span class="stat-label">Seguidores</span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        
-                        <div class="public-actions">
                             <button class="edit-profile-btn" id="editProfileBtn">Editar Perfil</button>
                         </div>
                     </div>
 
-                    <div class="profile-tabs-twitter">
+                    <!-- Abas do Perfil -->
+                    <div class="profile-tabs">
                         <button class="profile-tab-btn active" data-tab="posts">Posts</button>
                         <button class="profile-tab-btn" data-tab="curtidos">Curtidos</button>
                         <button class="profile-tab-btn" data-tab="midia">Mídia</button>
                     </div>
 
+                    <!-- Conteúdo das Abas -->
                     <div class="profile-content" id="profileContent">
-                        </div>
+                        <!-- Posts do perfil serão adicionados aqui -->
+                    </div>
                 </div>
             </div>
         </main>
 
-        <aside class="right-sidebar" id="rightSidebar">
+    <!-- ===== RIGHT SIDEBAR ===== -->
+    <aside class="right-sidebar" id="rightSidebar">
+      <div class="trending-widget">
+        <h3>Explore por blocos:</h3>
+        <div class="trends-list">
+          <div class="trend-item">
+            <div class="trend-label">Amarelo</div>
+            <div class="trend-title">#Bloco 01</div>
+            <div class="trend-count">500 posts recentes</div>
+          </div>
+          <div class="trend-item">
+            <div class="trend-label">Azul</div>
+            <div class="trend-title">#Bloco 02</div>
+            <div class="trend-count">85 posts recentes</div>
+          </div>
+          <div class="trend-item">
+            <div class="trend-label">Verde</div>
+            <div class="trend-title">#Bloco 03</div>
+            <div class="trend-count">278 posts recentes</div>
+          </div>
+          <div class="trend-item">
+            <div class="trend-label">Laranja</div>
+            <div class="trend-title">#Bloco 04</div>
+            <div class="trend-count">394 posts recentes</div>
+          </div>
+          <div class="trend-item">
+            <div class="trend-label">Vermelho</div>
+            <div class="trend-title">#Bloco 05</div>
+            <div class="trend-count">97 posts recentes</div>
+          </div>
+          <div class="trend-item">
+            <div class="trend-label">Politécnica</div>
+            <div class="trend-title">#Bloco 06</div>
+            <div class="trend-count">67 posts recentes</div>
+          </div>
+          <div class="trend-item">
+            <div class="trend-label">Politécnica</div>
+            <div class="trend-title">#Bloco 07</div>
+            <div class="trend-count">328 posts recentes</div>
+          </div>
+          <div class="trend-item">
+            <div class="trend-label">Politécnica</div>
+            <div class="trend-title">#Bloco 08</div>
+            <div class="trend-count">124 posts recentes</div>
+          </div>
+          <div class="trend-item">
+            <div class="trend-label">Politécnica</div>
+            <div class="trend-title">#Bloco 09</div>
+            <div class="trend-count">273 posts recentes</div>
+          </div>
+          <div class="trend-item">
+            <div class="trend-label">Politécnica</div>
+            <div class="trend-title">#Bloco 10</div>
+            <div class="trend-count">211 posts recentes</div>
+          </div>
+        </div>
+      </div>
 
-        <!-- RIGHT SIDEBAR (Trending / Recomendações) -->
-       <aside class="right-sidebar" id="rightSidebar">
-            <div class="trending-widget">
-                <h3>Explore por blocos:</h3>
-                <div class="trends-list">
-                    <div class="trend-item">
-                        <div class="trend-label">Amarelo</div>
-                        <div class="trend-title">#Bloco 01</div>
-                        <div class="trend-count">500 posts recentes</div>
-                    </div>
-                    <div class="trend-item">
-                        <div class="trend-label">Azul</div>
-                        <div class="trend-title">#Bloco 02</div>
-                        <div class="trend-count">85 posts recentes</div>
-                    </div>
-                    <div class="trend-item">
-                        <div class="trend-label">Verde</div>
-                        <div class="trend-title">#Bloco 03</div>
-                        <div class="trend-count">278 posts recentes</div>
-                    </div>
-                    <div class="trend-item">
-                        <div class="trend-label">Laranja</div>
-                        <div class="trend-title">#Bloco 04</div>
-                        <div class="trend-count">394 posts recentes</div>
-                    </div>
-                    <div class="trend-item">
-                        <div class="trend-label">Vermelho</div>
-                        <div class="trend-title">#Bloco 05</div>
-                        <div class="trend-count">97 posts recentes</div>
-                    </div>
-                    <div class="trend-item">
-                        <div class="trend-label">Politécnica</div>
-                        <div class="trend-title">#Bloco 06</div>
-                        <div class="trend-count">67 posts recentes</div>
-                    </div>
-                    <div class="trend-item">
-                        <div class="trend-label">Politécnica</div>
-                        <div class="trend-title">#Bloco 07</div>
-                        <div class="trend-count">328 posts recentes</div>
-                    </div>
-                    <div class="trend-item">
-                        <div class="trend-label">Politécnica</div>
-                        <div class="trend-title">#Bloco 08</div>
-                        <div class="trend-count">124 posts recentes</div>
-                    </div>
-                    <div class="trend-item">
-                        <div class="trend-label">Politécnica</div>
-                        <div class="trend-title">#Bloco 09</div>
-                        <div class="trend-count">273 posts recentes</div>
-                    </div>
-                    <div class="trend-item">
-                        <div class="trend-label">Politécnica</div>
-                        <div class="trend-title">#Bloco 10</div>
-                        <div class="trend-count">211 posts recentes</div>
-                    </div>
-                </div> </div> <div class="suggestions-widget">
-                <h3>Quem Seguir</h3>
-                <div class="suggestions-list" id="suggestionsList">
-                    </div>
-            </div>
-        </aside>
-                    <!-- Sugestões serão adicionadas aqui -->
-                </div>
-            </div>
-        </aside>
-    </div>
+      <!-- Oculto por padrão via CSS, mas o HTML está correto -->
+      <div class="suggestions-widget">
+        <h3>Quem Seguir</h3>
+        <div class="suggestions-list" id="suggestionsList"></div>
+      </div>
+    </aside>
+    <!-- fim .right-sidebar -->
+
+  </div>
+  <!-- fim .app-container -->
 
     <!-- MODAIS -->
-
     <!-- Modal de Novo Post -->
     <div class="modal" id="postModal">
         <div class="modal-content">
@@ -271,65 +257,32 @@
     </div>
 
     <!-- Modal de Editar Perfil -->
-<div class="modal glass-modal" id="editProfileModal">
-    <div class="modal-content glass-content">
-        <div class="modal-header">
-            <h3>Personalizar Perfil</h3>
-            <button class="modal-close" id="closeEditModal">✕</button>
-        </div>
-        <div class="modal-body scrollable-body">
-            
-            <div class="edit-section visual-section">
-                <h4>Identidade Visual</h4>
-                <p class="section-desc">Gerencie a aparência do seu perfil no Vaza Puc.</p>
-                
-                <div class="edit-cover-wrapper">
-                    <div class="profile-cover preview-cover"></div> <button class="btn-glass-secondary edit-action-btn">Alterar Capa</button>
+    <div class="modal" id="editProfileModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Editar Perfil</h3>
+                <button class="modal-close" id="closeEditModal">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Nome</label>
+                    <input type="text" id="editName" placeholder="Seu nome completo">
                 </div>
-                
-                <div class="edit-avatar-wrapper">
-                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=currentuser" alt="Avatar" class="profile-avatar preview-avatar">
-                    <div class="avatar-actions">
-                        <button class="btn-glass-secondary edit-action-btn">Alterar Foto</button>
-                        <button class="btn-text danger-btn">Remover</button>
-                    </div>
+                <div class="form-group">
+                    <label>Handle (@)</label>
+                    <input type="text" id="editHandle" placeholder="seu_handle">
+                </div>
+                <div class="form-group">
+                    <label>Bio</label>
+                    <textarea id="editBio" placeholder="Conte sobre você" rows="4"></textarea>
                 </div>
             </div>
-
-            <div class="separator-line"></div>
-
-            <div class="edit-section basic-info-section">
-                <h4>Informações Básicas</h4>
-                <p class="section-desc">Ajuste seu nome de exibição, handle e biografia.</p>
-                
-                <div class="form-row">
-                    <div class="form-group glass-input-group">
-                        <label>Nome Completo</label>
-                        <input type="text" id="editName" placeholder="Seu nome" class="glass-input">
-                    </div>
-                    <div class="form-group glass-input-group">
-                        <label>Handle (@usuario)</label>
-                        <input type="text" id="editHandle" placeholder="seu_handle" class="glass-input">
-                    </div>
-                </div>
-                
-                <div class="form-group glass-input-group full-width">
-                    <div class="label-with-count">
-                        <label>Biografia</label>
-                        <span class="char-count">0/150</span>
-                    </div>
-                    <textarea id="editBio" placeholder="Conte sobre você..." rows="4" class="glass-input glass-textarea"></textarea>
-                </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="cancelEditBtn">Cancelar</button>
+                <button class="btn-primary" id="saveEditBtn">Salvar</button>
             </div>
-
-        </div>
-        <div class="modal-footer">
-            <button class="btn-glass-secondary" id="cancelEditBtn">Cancelar</button>
-            <button class="btn-glass-primary" id="saveEditBtn">Salvar Alterações</button>
         </div>
     </div>
-</div>
-
-  <script src="Js_PaginaInial/java.js"></script>
+   <script type="module" src="../js/home.js"></script>
 </body>
 </html>

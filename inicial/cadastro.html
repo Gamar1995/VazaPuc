@@ -1,110 +1,759 @@
 <!DOCTYPE html>
-<html lang="pt-br">
-
+<html lang="pt-BR">
 <head>
-    <title>Registrar</title>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vaza PUC — Criar Conta</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary:       #a31f4b;
+      --primary-dark:  #7a1738;
+      --primary-glow:  rgba(163, 31, 75, 0.35);
+      --accent:        #e8547a;
+      --bg:            #0f0509;
+      --bg-input:      #261018;
+      --bg-input-focus:#301420;
+      --text:          #fceef2;
+      --text-muted:    #9e7885;
+      --text-label:    #c9a0b0;
+      --border:        #3d1426;
+      --success:       #2ecc71;
+      --error:         #e74c3c;
+    }
 
-    <!-- Ícones e fontes -->
-    <link rel="stylesheet" href="fonts/font-awesome-4.7.0/css/font-awesome.min.css" />
-    <link rel="stylesheet" href="fonts/iconic/css/material-design-iconic-font.min.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
-    <link rel="icon" type="image/png" sizes="32x32" href="../images/favicon_io/favicon-32x32.png">
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
 
-    <!-- CSS Principal -->
-    <link rel="stylesheet" href="cadastro.css" />
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      overflow-x: hidden;
+    }
+
+    /* ===== PAINEL VISUAL ===== */
+    .visual-panel {
+      width: 45%;
+      position: fixed;
+      top: 0; left: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 48px;
+      overflow: hidden;
+    }
+    .visual-panel::before {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 30% 20%, rgba(163,31,75,0.45) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 80% at 80% 80%, rgba(100,10,40,0.6) 0%, transparent 55%),
+        linear-gradient(160deg, #1a0810 0%, #0a0308 100%);
+      z-index: 0;
+    }
+    .visual-panel::after {
+      content: '';
+      position: absolute; inset: 0;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px);
+      background-size: 36px 36px;
+      z-index: 0;
+    }
+    .visual-content { position: relative; z-index: 1; }
+
+    .logo { display: flex; align-items: center; gap: 14px; }
+    .logo-diamond {
+      width: 46px; height: 46px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+      box-shadow: 0 0 30px var(--primary-glow);
+      animation: pulse 3s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%,100% { box-shadow: 0 0 20px var(--primary-glow); }
+      50%      { box-shadow: 0 0 50px var(--primary-glow); }
+    }
+    .logo-text { font-family: 'DM Serif Display', serif; font-size: 26px; }
+
+    .visual-hero { padding: 60px 0 40px; }
+    .visual-hero h2 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(36px,4vw,54px);
+      line-height: 1.1; margin-bottom: 20px;
+    }
+    .visual-hero h2 em { font-style: italic; color: var(--accent); }
+    .visual-hero p { font-size: 16px; color: var(--text-muted); line-height: 1.7; max-width: 340px; }
+
+    .feature-list { display: flex; flex-direction: column; gap: 14px; margin-top: 40px; }
+    .feature-item { display: flex; align-items: center; gap: 14px; font-size: 14px; color: var(--text-label); animation: fadeInLeft 0.6s ease both; }
+    .feature-item:nth-child(1) { animation-delay:.1s; }
+    .feature-item:nth-child(2) { animation-delay:.2s; }
+    .feature-item:nth-child(3) { animation-delay:.3s; }
+    .feature-item:nth-child(4) { animation-delay:.4s; }
+    @keyframes fadeInLeft { from { opacity:0; transform:translateX(-16px); } to { opacity:1; transform:translateX(0); } }
+    .feature-dot { width:8px; height:8px; border-radius:50%; background:var(--primary); flex-shrink:0; box-shadow:0 0 8px var(--primary-glow); }
+
+    .floating-cards { position: absolute; bottom: 60px; right: -20px; z-index: 1; }
+    .mini-card {
+      background: rgba(28,11,18,0.85); border: 1px solid var(--border);
+      border-radius: 16px; padding: 14px 18px;
+      display: flex; align-items: center; gap: 10px;
+      backdrop-filter: blur(12px); width: 220px;
+      animation: floatCard 4s ease-in-out infinite;
+    }
+    .mini-card:nth-child(2) { margin-top:-8px; margin-left:24px; animation-delay:.8s; animation-direction:reverse; }
+    @keyframes floatCard { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-8px); } }
+    .mini-card-avatar { width:32px; height:32px; border-radius:50%; overflow:hidden; flex-shrink:0; }
+    .mini-card-avatar img { width:100%; height:100%; object-fit:cover; }
+    .mini-card-info { flex:1; min-width:0; }
+    .mini-card-name { font-weight:600; font-size:12px; }
+    .mini-card-text { color:var(--text-muted); font-size:11px; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .mini-card-heart { font-size:14px; animation:heartbeat 1.4s ease-in-out infinite; }
+    @keyframes heartbeat { 0%,100% { transform:scale(1); } 14% { transform:scale(1.3); } 28% { transform:scale(1); } }
+
+    /* ===== PAINEL FORMULÁRIO ===== */
+    .form-panel {
+      margin-left: 45%; width: 55%;
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 48px 60px;
+    }
+    .form-wrapper {
+      width: 100%; max-width: 480px;
+      animation: fadeInUp 0.5s ease both;
+    }
+    @keyframes fadeInUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+
+    .form-title { font-family: 'DM Serif Display', serif; font-size: 32px; margin-bottom: 6px; }
+    .form-subtitle { color: var(--text-muted); font-size: 15px; margin-bottom: 36px; }
+    .form-subtitle a { color: var(--accent); text-decoration: none; font-weight: 600; }
+    .form-subtitle a:hover { text-decoration: underline; }
+
+    /* Progress */
+    .progress-bar { display: flex; align-items: center; margin-bottom: 36px; }
+    .step-indicator { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: var(--text-muted); transition: color .3s; white-space: nowrap; }
+    .step-indicator.active { color: var(--text); }
+    .step-indicator.done   { color: var(--success); }
+    .step-circle {
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700;
+      transition: all .3s ease; flex-shrink: 0;
+    }
+    .step-indicator.active .step-circle { border-color:var(--primary); background:var(--primary); color:white; box-shadow:0 0 16px var(--primary-glow); }
+    .step-indicator.done   .step-circle { border-color:var(--success); background:var(--success); color:white; }
+    .step-line { flex:1; height:2px; background:var(--border); margin:0 10px; transition:background .4s ease; }
+    .step-line.done { background: var(--success); }
+
+    /* Steps */
+    .form-step { display: none; }
+    .form-step.active { display: flex; flex-direction: column; gap: 20px; animation: fadeInUp .35s ease both; }
+
+    /* Campos */
+    .field-group { display: flex; flex-direction: column; gap: 6px; }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+    label { font-size:12px; font-weight:600; color:var(--text-label); text-transform:uppercase; letter-spacing:.8px; }
+
+    .input-wrapper { position: relative; }
+    .input-icon { position:absolute; left:14px; top:50%; transform:translateY(-50%); font-size:16px; pointer-events:none; opacity:.5; }
+
+    input, textarea, select {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 16px 14px 44px;
+      color: var(--text);
+      font-size: 15px;
+      font-family: 'DM Sans', sans-serif;
+      transition: all .25s ease;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    .no-icon { padding-left: 16px !important; }
+
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: var(--bg-input-focus);
+      box-shadow: 0 0 0 3px var(--primary-glow);
+    }
+    input::placeholder, textarea::placeholder { color: var(--text-muted); }
+    input[data-state="valid"]   { border-color: var(--success); }
+    input[data-state="invalid"] { border-color: var(--error); }
+
+    .field-hint { font-size:12px; color:var(--text-muted); margin-top:4px; min-height:16px; transition:color .2s; }
+    .field-hint.ok  { color: var(--success); }
+    .field-hint.err { color: var(--error); }
+
+    .handle-preview { font-size:13px; color:var(--accent); font-weight:600; margin-top:4px; min-height:18px; }
+
+    /* Blocos */
+    .block-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+    .block-option {
+      padding: 10px 8px; background: var(--bg-input);
+      border: 1.5px solid var(--border); border-radius: 12px;
+      text-align: center; cursor: pointer; font-size: 12px; font-weight: 600;
+      transition: all .2s ease; user-select: none;
+    }
+    .block-option .block-emoji { font-size:18px; display:block; margin-bottom:4px; }
+    .block-option .block-name  { color: var(--text-muted); }
+    .block-option:hover { border-color:var(--primary); background:var(--bg-input-focus); }
+    .block-option.selected { border-color:var(--primary); background:rgba(163,31,75,.2); box-shadow:0 0 12px var(--primary-glow); }
+    .block-option.selected .block-name { color: var(--accent); }
+
+    /* Termos */
+    .terms-check { display:flex; align-items:flex-start; gap:12px; cursor:pointer; }
+    .terms-check input[type="checkbox"] { width:20px; height:20px; padding:0; flex-shrink:0; cursor:pointer; accent-color:var(--primary); }
+    .terms-check span { font-size:13px; color:var(--text-muted); line-height:1.5; }
+    .terms-check a { color:var(--accent); text-decoration:none; }
+
+    /* Botões */
+    .btn-row { display:flex; gap:12px; margin-top:8px; }
+    .btn {
+      flex:1; padding:16px; border-radius:16px;
+      font-size:15px; font-weight:700;
+      font-family:'DM Sans',sans-serif;
+      cursor:pointer; transition:all .3s ease; border:none;
+    }
+    .btn-ghost { background:transparent; border:1.5px solid var(--border); color:var(--text-muted); }
+    .btn-ghost:hover { border-color:var(--text-muted); color:var(--text); }
+    .btn-primary { background:linear-gradient(135deg,var(--primary),var(--primary-dark)); color:white; box-shadow:0 4px 20px var(--primary-glow); }
+    .btn-primary:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 8px 28px var(--primary-glow); }
+    .btn-primary:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+    .btn-full { width:100%; flex:none; }
+
+    .btn-spinner {
+      display:inline-block; width:16px; height:16px;
+      border:2px solid rgba(255,255,255,.3); border-top-color:white;
+      border-radius:50%; animation:spin .6s linear infinite;
+      vertical-align:middle; margin-right:8px;
+    }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    /* Alerta */
+    .alert {
+      padding:14px 16px; border-radius:14px;
+      font-size:14px; font-weight:500;
+      display:none; align-items:center; gap:10px;
+      margin-bottom:16px;
+    }
+    .alert.show { display:flex; }
+    .alert-error { background:rgba(231,76,60,.12); border:1px solid rgba(231,76,60,.3); color:#e74c3c; }
+
+    /* Sucesso */
+    .success-screen { display:none; flex-direction:column; align-items:center; text-align:center; gap:16px; }
+    .success-screen.show { display:flex; animation:fadeInUp .5s ease; }
+    .success-icon { width:80px; height:80px; background:rgba(46,204,113,.15); border:2px solid rgba(46,204,113,.4); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:36px; margin-bottom:8px; }
+    .success-screen h3 { font-family:'DM Serif Display',serif; font-size:26px; }
+    .success-screen p { color:var(--text-muted); font-size:15px; line-height:1.6; max-width:320px; }
+
+    @media (max-width:900px) {
+      .visual-panel { display:none; }
+      .form-panel { margin-left:0; width:100%; padding:32px 24px; }
+    }
+    @media (max-width:480px) {
+      .field-row { grid-template-columns:1fr; }
+      .block-grid { grid-template-columns:repeat(2,1fr); }
+    }
+  </style>
 </head>
-
 <body>
 
-    <div class="limiter">
-        <div class="container-login100" style="background-image: url('images/bg-01.jpg');">
-            <div class="wrap-login100">
-                <form class="login100-form" id="registroForm">
-                    <span class="login100-form-title">
-                        Criar conta
-                    </span>
+<!-- PAINEL VISUAL -->
+<div class="visual-panel">
+  <div class="visual-content">
+    <div class="logo">
+      <div class="logo-diamond"></div>
+      <span class="logo-text">Vaza PUC</span>
+    </div>
+  </div>
+  <div class="visual-content visual-hero">
+    <h2>A voz da<br><em>PUC</em><br>está aqui.</h2>
+    <p>Poste, comente, conecte. A rede onde o campus inteiro acontece — em tempo real.</p>
+    <div class="feature-list">
+      <div class="feature-item"><div class="feature-dot"></div><span>Feed ao vivo com posts do seu bloco</span></div>
+      <div class="feature-item"><div class="feature-dot"></div><span>Mensagens diretas com colegas</span></div>
+      <div class="feature-item"><div class="feature-dot"></div><span>Explore o que está rolando no campus</span></div>
+      <div class="feature-item"><div class="feature-dot"></div><span>Perfil personalizado com seu handle</span></div>
+    </div>
+  </div>
+  <div class="floating-cards visual-content">
+    <div class="mini-card">
+      <div class="mini-card-avatar"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=ana123" alt="Ana"></div>
+      <div class="mini-card-info"><div class="mini-card-name">Ana Costa</div><div class="mini-card-text">Prova de cálculo amanhã 😭</div></div>
+      <span class="mini-card-heart">❤️</span>
+    </div>
+    <div class="mini-card">
+      <div class="mini-card-avatar"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=pedro99" alt="Pedro"></div>
+      <div class="mini-card-info"><div class="mini-card-name">Pedro Oliveira</div><div class="mini-card-text">RU tá bom hoje 🍽️</div></div>
+      <span class="mini-card-heart">❤️</span>
+    </div>
+  </div>
+</div>
 
-                    <!-- Nome completo -->
-                    <div class="wrap-input100">
-                        <span class="label-input100"><strong>Nome</strong></span>
-                        <input class="input100" type="text" name="fullname" placeholder="Digite seu nome completo"
-                            required />
-                        <span class="focus-input100" data-symbol="&#xf206;"></span>
-                    </div>
+<!-- PAINEL FORMULÁRIO -->
+<div class="form-panel">
+  <div class="form-wrapper">
 
-                    <!-- Email -->
-                    <div class="wrap-input100">
-                        <span class="label-input100"><strong>E-mail</strong></span>
-                        <input class="input100" type="email" name="email" placeholder="Digite seu email" required />
-                        <span class="focus-input100" data-symbol="&#xf15a;"></span>
-                    </div>
+    <h1 class="form-title">Criar conta</h1>
+    <p class="form-subtitle">Já tem conta? <a href="login.html">Entrar →</a></p>
 
-                    <!-- Senha -->
-                    <div class="wrap-input100">
-                        <span class="label-input100"><strong>Senha</strong></span>
-                        <input class="input100" type="password" name="password" placeholder="Digite a senha" required />
-                        <span class="focus-input100" data-symbol="&#xf190;"></span>
-                    </div>
-
-                    <!-- Confirmar senha -->
-                    <div class="wrap-input100">
-                        <span class="label-input100"><strong>Confirme a senha</strong></span>
-                        <input class="input100" type="password" name="confirm_password" placeholder="Confirmar a senha"
-                            required />
-                        <span class="focus-input100" data-symbol="&#xf190;"></span>
-                    </div>
-
-                
-
-                    <!-- Botão -->
-                    <div class="container-login100-form-btn">
-                        <div class="wrap-login100-form-btn">
-                            <div class="login100-form-bgbtn"></div>
-                            <button type="button" id="btnRegistrar">Registrar</button>
-                        </div>
-                    </div>
-
-                    <!-- Redes sociais -->
-                    <div class="flex-c-m">
-                        <a href="#" class="login100-social-item bg1">
-                            <i class="bi bi-facebook"></i>
-                        </a>
-                        <a href="#" class="login100-social-item bg2">
-                            <i class="bi bi-twitter"></i>
-                        </a>
-                        <a href="#" class="login100-social-item bg3">
-                            <i class="bi bi-google"></i>
-                        </a>
-                    </div>
-
-                    <!-- Voltar ao login -->
-                    <div class="flex-col-c">
-                        <span class="txt1">Você já tem conta?</span>
-                        <a href="inicial.html" class="txt2">Login</a>
-                    </div>
-                </form>
-            </div>
-        </div>
+    <div class="progress-bar" id="progressBar">
+      <div class="step-indicator active" id="step-ind-1"><div class="step-circle" id="sc-1">1</div><span>Você</span></div>
+      <div class="step-line" id="line-1"></div>
+      <div class="step-indicator" id="step-ind-2"><div class="step-circle" id="sc-2">2</div><span>Curso</span></div>
+      <div class="step-line" id="line-2"></div>
+      <div class="step-indicator" id="step-ind-3"><div class="step-circle" id="sc-3">3</div><span>Acesso</span></div>
     </div>
 
-    <!-- Script para redirecionar -->
-    <script>
-        document.getElementById("btnRegistrar").addEventListener("click", function () {
-            const form = document.getElementById("registroForm");
+    <div class="alert alert-error" id="alertBox"><span>⚠️</span><span id="alertMsg"></span></div>
 
-            // Verifica se os campos estão válidos
-            if (!form.checkValidity()) {
-                form.reportValidity();
-                return;
-            }
+    <!-- STEP 1 -->
+    <div class="form-step active" id="step1">
+      <div class="field-row">
+        <div class="field-group">
+          <label>Nome</label>
+          <div class="input-wrapper">
+            <span class="input-icon">👤</span>
+            <input type="text" id="firstName" placeholder="João">
+          </div>
+        </div>
+        <div class="field-group">
+          <label>Sobrenome</label>
+          <div class="input-wrapper">
+            <span class="input-icon">👤</span>
+            <input type="text" id="lastName" placeholder="Silva">
+          </div>
+        </div>
+      </div>
+      <div class="field-group">
+        <label>Seu @ (handle)</label>
+        <div class="input-wrapper">
+          <span class="input-icon">@</span>
+          <input type="text" id="handle" placeholder="joaosilva" maxlength="30">
+        </div>
+        <div class="handle-preview" id="handlePreview"></div>
+        <div class="field-hint" id="handleHint"></div>
+      </div>
+      <div class="field-group">
+        <label>Bio (opcional)</label>
+        <textarea class="no-icon" id="bio" placeholder="Conta um pouco sobre você..." rows="3" maxlength="160" style="resize:none;"></textarea>
+        <div class="field-hint" id="bioCount">0 / 160</div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" type="button" id="btnStep1">Continuar →</button>
+      </div>
+    </div>
 
-            // Verifica o valor do radio selecionado
-            const perfilSelecionado = document.querySelector('input[name="perfil"]:checked');
-        });
-    </script>
+    <!-- STEP 2 -->
+    <div class="form-step" id="step2">
+      <div class="field-group">
+        <label>Curso</label>
+        <div class="input-wrapper">
+          <span class="input-icon">📚</span>
+          <select id="curso">
+            <option value="">Selecione seu curso...</option>
+            <option value="cc">Ciência da Computação</option>
+            <option value="si">Sistemas de Informação</option>
+            <option value="eng">Engenharia de Software</option>
+            <option value="ads">Análise e Desenv. de Sistemas</option>
+            <option value="mat">Matemática</option>
+            <option value="fis">Física</option>
+            <option value="adm">Administração</option>
+            <option value="dir">Direito</option>
+            <option value="med">Medicina</option>
+            <option value="outro">Outro</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-group">
+        <label>Período</label>
+        <div class="input-wrapper">
+          <span class="input-icon">📅</span>
+          <select id="periodo">
+            <option value="">Qual período você está?</option>
+            <option value="1">1º período</option>
+            <option value="2">2º período</option>
+            <option value="3">3º período</option>
+            <option value="4">4º período</option>
+            <option value="5">5º período</option>
+            <option value="6">6º período</option>
+            <option value="7">7º período</option>
+            <option value="8">8º período</option>
+            <option value="9+">9º período ou mais</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-group">
+        <label>Bloco / Turno</label>
+        <div class="block-grid" id="blockGrid">
+          <div class="block-option" data-block="01"><span class="block-emoji">🟡</span><span class="block-name">Bloco 01</span></div>
+          <div class="block-option" data-block="02"><span class="block-emoji">🔵</span><span class="block-name">Bloco 02</span></div>
+          <div class="block-option" data-block="03"><span class="block-emoji">🟢</span><span class="block-name">Bloco 03</span></div>
+          <div class="block-option" data-block="04"><span class="block-emoji">🟠</span><span class="block-name">Bloco 04</span></div>
+          <div class="block-option" data-block="05"><span class="block-emoji">🔴</span><span class="block-name">Bloco 05</span></div>
+          <div class="block-option" data-block="politecnica"><span class="block-emoji">⚙️</span><span class="block-name">Politécnica</span></div>
+        </div>
+        <div class="field-hint" id="blockHint"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" type="button" id="btnBack1">← Voltar</button>
+        <button class="btn btn-primary" type="button" id="btnStep2">Continuar →</button>
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="form-step" id="step3">
+      <div class="field-group">
+        <label>E-mail</label>
+        <div class="input-wrapper">
+          <span class="input-icon">✉️</span>
+          <input type="email" id="email" placeholder="joao@email.com">
+        </div>
+      </div>
+      <div class="field-group">
+        <label>Senha</label>
+        <div class="input-wrapper">
+          <span class="input-icon">🔒</span>
+          <input type="password" id="password" placeholder="Mínimo 6 caracteres">
+        </div>
+        <div style="display:flex;gap:4px;margin-top:8px;">
+          <div style="flex:1;height:3px;border-radius:4px;background:var(--border);transition:background .3s" id="sb1"></div>
+          <div style="flex:1;height:3px;border-radius:4px;background:var(--border);transition:background .3s" id="sb2"></div>
+          <div style="flex:1;height:3px;border-radius:4px;background:var(--border);transition:background .3s" id="sb3"></div>
+          <div style="flex:1;height:3px;border-radius:4px;background:var(--border);transition:background .3s" id="sb4"></div>
+        </div>
+        <div class="field-hint" id="passwordHint"></div>
+      </div>
+      <div class="field-group">
+        <label>Confirmar senha</label>
+        <div class="input-wrapper">
+          <span class="input-icon">🔒</span>
+          <input type="password" id="confirmPassword" placeholder="Repita a senha">
+        </div>
+        <div class="field-hint" id="confirmHint"></div>
+      </div>
+      <label class="terms-check">
+        <input type="checkbox" id="termsCheck">
+        <span>Li e aceito os <a href="#">Termos de Uso</a> e a <a href="#">Política de Privacidade</a> do Vaza PUC.</span>
+      </label>
+      <div class="btn-row">
+        <button class="btn btn-ghost" type="button" id="btnBack2">← Voltar</button>
+        <button class="btn btn-primary" type="button" id="btnSubmit" disabled>Criar conta</button>
+      </div>
+    </div>
+
+    <!-- SUCESSO -->
+    <div class="success-screen" id="successScreen">
+      <div class="success-icon">✅</div>
+      <h3>Conta criada!</h3>
+      <p>Bem-vindo ao Vaza PUC! Verifique seu e-mail para confirmar a conta antes de entrar.</p>
+      <a href="login.html" class="btn btn-primary btn-full" style="text-decoration:none;text-align:center;margin-top:8px;">Ir para o login →</a>
+    </div>
+
+  </div>
+</div>
+
+<!-- Supabase via CDN — não precisa de servidor local -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+  // =============================================================
+  // ⚠️ SUBSTITUA OS VALORES ABAIXO PELOS DO SEU SUPABASE DASHBOARD
+  // Project Settings > API > Project URL e anon public key
+  // =============================================================
+ var SUPABASE_URL = 'https://ocaizkdbdpmijljgxorh.supabase.co';
+  var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jYWl6a2RiZHBtaWpsamd4b3JoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MjM0NTIsImV4cCI6MjA5MDM5OTQ1Mn0.TD7qI0xoLfUrnFvBvmJByJbE3TNJ4W6JHlC1tSRymvU';
+
+  var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // Se já estiver logado, vai direto pro site
+  const isCadastro = window.location.pathname.includes('cadastro');
+
+sb.auth.getUser().then(res => {
+  if (res.data.user && !isCadastro) {
+    window.location.href = 'index.html';
+  }
+});
+  // ---- Estado ----
+  var selectedBlock = '';
+
+  // ============================================================
+  // FUNÇÃO CENTRAL: NAVEGAR ENTRE STEPS
+  // ============================================================
+  async function checkHandleExists(handle) {
+  const { data, error } = await sb
+    .from('profiles')
+    .select('id')
+    .eq('handle', handle)
+    .maybeSingle();
+
+  if (error && error.code !== 'PGRST116') {
+    console.error(error);
+    return false;
+  }
+
+  return !!data;
+}
+  function goToStep(n) {
+    // 1. Esconde todos os steps
+    document.querySelectorAll('.form-step').forEach(function(s) {
+      s.classList.remove('active');
+    });
+
+    // 2. Mostra o step alvo
+    var targetStep = document.getElementById('step' + n);
+    if (targetStep) targetStep.classList.add('active');
+
+    // 3. Atualiza os círculos de progresso
+    for (var i = 1; i <= 3; i++) {
+      var ind    = document.getElementById('step-ind-' + i);
+      var circle = document.getElementById('sc-' + i);
+
+      ind.classList.remove('active', 'done');
+
+      if (i < n) {
+        ind.classList.add('done');
+        circle.textContent = '✓';
+      } else if (i === n) {
+        ind.classList.add('active');
+        circle.textContent = String(i);
+      } else {
+        circle.textContent = String(i);
+      }
+    }
+
+    // 4. Atualiza as linhas de conexão
+    document.getElementById('line-1').classList.toggle('done', n > 1);
+    document.getElementById('line-2').classList.toggle('done', n > 2);
+
+    // 5. Esconde alertas e rola pra cima no mobile
+    hideAlert();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ============================================================
+  // HANDLE — validação em tempo real
+  // ============================================================
+  document.getElementById('handle').addEventListener('input', function() {
+    var clean = this.value.replace(/[^a-zA-Z0-9_]/g, '');
+    this.value = clean;
+
+    var preview = document.getElementById('handlePreview');
+    var hint    = document.getElementById('handleHint');
+
+    preview.textContent = clean.length > 0 ? '@' + clean : '';
+
+    if (clean.length === 0) {
+      hint.textContent = '';
+      hint.className = 'field-hint';
+      this.removeAttribute('data-state');
+    } else if (clean.length < 3) {
+      hint.textContent = 'Mínimo 3 caracteres';
+      hint.className = 'field-hint err';
+      this.setAttribute('data-state', 'invalid');
+    } else {
+      hint.textContent = '✓ Disponível para uso';
+      hint.className = 'field-hint ok';
+      this.setAttribute('data-state', 'valid');
+    }
+  });
+
+  // ============================================================
+  // BIO — contador
+  // ============================================================
+  document.getElementById('bio').addEventListener('input', function() {
+    var len = this.value.length;
+    var el  = document.getElementById('bioCount');
+    el.textContent = len + ' / 160';
+    el.className = len > 140 ? 'field-hint err' : 'field-hint';
+  });
+
+  // ============================================================
+  // BLOCO — seleção
+  // ============================================================
+  document.getElementById('blockGrid').addEventListener('click', function(e) {
+    var opt = e.target.closest('.block-option');
+    if (!opt) return;
+    document.querySelectorAll('.block-option').forEach(function(o) { o.classList.remove('selected'); });
+    opt.classList.add('selected');
+    selectedBlock = opt.dataset.block;
+    var bh = document.getElementById('blockHint');
+    bh.textContent = '';
+    bh.className = 'field-hint';
+  });
+
+  // ============================================================
+  // SENHA — força e confirmação
+  // ============================================================
+document.getElementById('password').addEventListener('input', function() {
+  var pw = this.value;
+  var hint = document.getElementById('passwordHint');
+
+  if (!pw) {
+    hint.textContent = '';
+    hint.className = 'field-hint';
+  } else if (pw.length < 4) {
+    hint.textContent = 'Mínimo 4 caracteres';
+    hint.className = 'field-hint err';
+  } else {
+    hint.textContent = '✓ Senha válida';
+    hint.className = 'field-hint ok';
+  }
+
+  updateSubmit();
+});
+
+document.getElementById('confirmPassword').addEventListener('input', function() {
+  var pw = document.getElementById('password').value;
+  var hint = document.getElementById('confirmHint');
+
+  if (!this.value) {
+    hint.textContent = '';
+    hint.className = 'field-hint';
+  } else if (this.value === pw) {
+    hint.textContent = '✓ Senhas iguais';
+    hint.className = 'field-hint ok';
+  } else {
+    hint.textContent = 'Senhas diferentes';
+    hint.className = 'field-hint err';
+  }
+
+  updateSubmit();
+});
+
+document.getElementById('termsCheck').addEventListener('change', updateSubmit);
+
+function updateSubmit() {
+  var pw  = document.getElementById('password').value;
+  var cpw = document.getElementById('confirmPassword').value;
+
+  var ok = pw.length >= 4 && pw === cpw && document.getElementById('termsCheck').checked;
+
+  document.getElementById('btnSubmit').disabled = !ok;
+}
+
+  // ============================================================
+  // NAVEGAÇÃO
+  // ============================================================
+  document.getElementById('btnStep1').addEventListener('click', async function() {
+  var fn = document.getElementById('firstName').value.trim();
+  var ln = document.getElementById('lastName').value.trim();
+  var h  = document.getElementById('handle').value.trim();
+
+  if (!fn || !ln) {
+    showAlert('Preencha seu nome e sobrenome.');
+    return;
+  }
+
+  if (h.length < 3) {
+    showAlert('Handle precisa ter pelo menos 3 caracteres.');
+    return;
+  }
+
+  // 🔥 VERIFICA SE JÁ EXISTE
+  var exists = await checkHandleExists(h);
+
+  if (exists) {
+    showAlert('Esse @ já está em uso. Escolha outro.');
+    return;
+  }
+
+  goToStep(2);
+});
+
+  document.getElementById('btnStep2').addEventListener('click', function() {
+    if (!document.getElementById('curso').value)   { showAlert('Selecione seu curso.'); return; }
+    if (!document.getElementById('periodo').value) { showAlert('Selecione seu período.'); return; }
+    if (!selectedBlock) {
+      var bh = document.getElementById('blockHint');
+      bh.textContent = 'Selecione um bloco para continuar';
+      bh.className = 'field-hint err';
+      return;
+    }
+    goToStep(3);
+  });
+
+  document.getElementById('btnBack1').addEventListener('click', function() { goToStep(1); });
+  document.getElementById('btnBack2').addEventListener('click', function() { goToStep(2); });
+
+  // ============================================================
+  // SUBMIT — envia para o Supabase
+  // ============================================================
+  document.getElementById('btnSubmit').addEventListener('click', async function() {
+    var fn       = document.getElementById('firstName').value.trim();
+    var ln       = document.getElementById('lastName').value.trim();
+    var handle   = document.getElementById('handle').value.trim();
+    var bio      = document.getElementById('bio').value.trim();
+    var curso    = document.getElementById('curso').value;
+    var periodo  = document.getElementById('periodo').value;
+    var email    = document.getElementById('email').value.trim();
+    var password = document.getElementById('password').value;
+
+    this.disabled = true;
+    this.innerHTML = '<span class="btn-spinner"></span> Criando conta...';
+
+    try {
+      var res = await sb.auth.signUp({
+        email: email,
+        password: password,
+        options: {
+          data: {
+            name: fn + ' ' + ln,
+           handle: handle,
+            bio: bio,
+            curso: curso,
+            periodo: periodo,
+            bloco: selectedBlock
+          }
+        }
+      });
+
+      if (res.error) throw res.error;
+
+      // Mostra tela de sucesso
+      document.querySelectorAll('.form-step').forEach(function(s) { s.classList.remove('active'); });
+      document.getElementById('progressBar').style.display = 'none';
+      document.querySelector('.form-title').style.display = 'none';
+      document.querySelector('.form-subtitle').style.display = 'none';
+      document.getElementById('alertBox').style.display = 'none';
+      document.getElementById('successScreen').classList.add('show');
+
+    } catch(err) {
+      console.error(err);
+      showAlert(translateError(err.message || String(err)));
+      this.disabled = false;
+      this.textContent = 'Criar conta';
+    }
+  });
+
+  // ============================================================
+  // UTILITÁRIOS
+  // ============================================================
+  function showAlert(msg) {
+    var box = document.getElementById('alertBox');
+    document.getElementById('alertMsg').textContent = msg;
+    box.className = 'alert alert-error show';
+  }
+
+  function hideAlert() {
+    document.getElementById('alertBox').className = 'alert alert-error';
+  }
+
+  function translateError(msg) {
+    if (msg.includes('already registered') || msg.includes('already been registered')) return 'Esse e-mail já está cadastrado.';
+    if (msg.includes('Password') || msg.includes('password')) return 'Senha precisa ter ao menos 6 caracteres.';
+    if (msg.includes('duplicate') && msg.includes('handle')) return 'Esse handle já está em uso. Escolha outro.';
+    if (msg.includes('Invalid email') || msg.includes('invalid')) return 'E-mail inválido.';
+    if (msg.includes('Network') || msg.includes('fetch')) return 'Erro de conexão. Verifique sua internet e as credenciais do Supabase.';
+    return 'Erro: ' + msg;
+  }
+</script>
 
 </body>
-
 </html>

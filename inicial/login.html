@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vaza PUC — Entrar</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --primary:#a31f4b;
+  --primary-dark:#7a1738;
+  --bg:#0f0509;
+  --bg-input:#261018;
+  --border:#3d1426;
+  --text:#fceef2;
+  --text-muted:#9e7885;
+}
+
+body {
+  margin:0;
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  display:flex;
+}
+
+/* ===== ESQUERDA (IGUAL CADASTRO) ===== */
+.visual {
+  width:45%;
+  height:100vh;
+  position:fixed;
+  background: radial-gradient(circle at top, #a31f4b33, transparent),
+              linear-gradient(160deg,#1a0810,#0a0308);
+  padding:48px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+
+.visual h1 {
+  font-family:'DM Serif Display';
+  font-size:48px;
+}
+
+.visual p {
+  color:var(--text-muted);
+  max-width:300px;
+  margin-top:10px;
+}
+
+/* ===== DIREITA ===== */
+.form-side {
+  margin-left:45%;
+  width:55%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.card {
+  width:100%;
+  max-width:420px;
+}
+
+h2 {
+  font-family:'DM Serif Display';
+  font-size:32px;
+}
+
+.subtitle {
+  color:var(--text-muted);
+  margin-bottom:30px;
+}
+
+.subtitle a {
+  color:#e8547a;
+  text-decoration:none;
+}
+
+/* INPUT */
+.input-group {
+  margin-bottom:16px;
+}
+
+input {
+  width:100%;
+  padding:14px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  background:var(--bg-input);
+  color:var(--text);
+}
+
+input:focus {
+  outline:none;
+  border-color:var(--primary);
+}
+
+/* BOTÃO */
+button {
+  width:100%;
+  padding:14px;
+  border:none;
+  border-radius:14px;
+  background:linear-gradient(135deg,var(--primary),var(--primary-dark));
+  color:white;
+  font-weight:700;
+  cursor:pointer;
+  margin-top:10px;
+}
+
+button:hover {
+  transform:translateY(-2px);
+}
+
+/* MSG */
+.msg {
+  margin-bottom:15px;
+  font-size:14px;
+}
+
+.error { color:#e74c3c; }
+.success { color:#2ecc71; }
+
+@media(max-width:900px){
+  .visual{display:none;}
+  .form-side{margin:0;width:100%;}
+}
+</style>
+</head>
+<body>
+
+<div class="visual">
+  <h1>Vaza PUC</h1>
+  <p>A rede social da sua faculdade. Veja o que tá rolando no campus em tempo real.</p>
+</div>
+
+<div class="form-side">
+  <div class="card">
+    <h2>Entrar</h2>
+    <p class="subtitle">Não tem conta? <a href="cadastro.html">Criar conta →</a></p>
+
+    <div id="msg" class="msg"></div>
+
+    <form id="loginForm">
+      <div class="input-group">
+        <input type="email" id="email" placeholder="E-mail" required>
+      </div>
+
+      <div class="input-group">
+        <input type="password" id="password" placeholder="Senha" required>
+      </div>
+
+      <button id="btnLogin">Entrar</button>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+const SUPABASE_URL = 'https://ocaizkdbdpmijljgxorh.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jYWl6a2RiZHBtaWpsamd4b3JoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MjM0NTIsImV4cCI6MjA5MDM5OTQ1Mn0.TD7qI0xoLfUrnFvBvmJByJbE3TNJ4W6JHlC1tSRymvU';
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Se já estiver logado → entra direto
+sb.auth.getUser().then(res => {
+  if (res.data.user) {
+    window.location.href = '../PaginaPrincipal/vazadinhos.html';
+  }
+});
+
+// ======================================================
+// ABAS
+// ======================================================
+const tabLogin = document.getElementById('tabLogin');
+const tabSignup = document.getElementById('tabSignup');
+const loginForm = document.getElementById('loginForm');
+const signupForm = document.getElementById('signupForm');
+
+tabLogin.onclick = () => {
+  tabLogin.classList.add('active');
+  tabSignup.classList.remove('active');
+  loginForm.classList.add('active');
+  signupForm.classList.remove('active');
+};
+
+tabSignup.onclick = () => {
+  tabSignup.classList.add('active');
+  tabLogin.classList.remove('active');
+  signupForm.classList.add('active');
+  loginForm.classList.remove('active');
+};
+
+// ======================================================
+// LOGIN (🔥 AGORA FUNCIONA COM O CADASTRO)
+// ======================================================
+loginForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const email = loginEmail.value;
+  const password = loginPassword.value;
+  const btn = loginBtn;
+
+  btn.disabled = true;
+  btn.textContent = 'Entrando...';
+
+  const { error } = await sb.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (error) {
+    showMessage(translateError(error.message), 'error');
+    btn.disabled = false;
+    btn.textContent = 'Entrar';
+    return;
+  }
+
+  showMessage('Login realizado!', 'success');
+  setTimeout(() => window.location.href = '../PaginaPrincipal/vazadinhos.html', 800);
+});
+
+// ======================================================
+// CADASTRO SIMPLES (caso use essa aba)
+// ======================================================
+signupForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const name = signupName.value.trim();
+  const handle = signupHandle.value.trim();
+  const email = signupEmail.value;
+  const password = signupPassword.value;
+
+  const btn = signupBtn;
+
+  btn.disabled = true;
+  btn.textContent = 'Criando...';
+
+  const { error } = await sb.auth.signUp({
+    email,
+    password,
+    options: {
+      data: { name, handle }
+    }
+  });
+
+  if (error) {
+    showMessage(translateError(error.message), 'error');
+    btn.disabled = false;
+    btn.textContent = 'Criar conta';
+    return;
+  }
+
+  showMessage('Conta criada! Verifique seu e-mail.', 'success');
+});
+
+// ======================================================
+// UTIL
+// ======================================================
+function showMessage(msg, type) {
+  const el = document.getElementById('authMessage');
+  el.textContent = msg;
+  el.className = `auth-message ${type}`;
+}
+
+function translateError(msg) {
+  if (msg.includes('Invalid login credentials')) return 'E-mail ou senha incorretos.';
+  if (msg.includes('Email already registered')) return 'E-mail já cadastrado.';
+  if (msg.includes('Password')) return 'Senha inválida.';
+  return msg;
+}
+</script>
+
+</body>
+</html>
