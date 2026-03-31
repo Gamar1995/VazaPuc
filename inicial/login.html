@@ -165,7 +165,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Se já estiver logado → entra direto
+// Se já estiver logado → redireciona
 sb.auth.getUser().then(res => {
   if (res.data.user) {
     window.location.href = '../PaginaPrincipal/vazadinhos.html';
@@ -173,101 +173,53 @@ sb.auth.getUser().then(res => {
 });
 
 // ======================================================
-// ABAS
-// ======================================================
-const tabLogin = document.getElementById('tabLogin');
-const tabSignup = document.getElementById('tabSignup');
-const loginForm = document.getElementById('loginForm');
-const signupForm = document.getElementById('signupForm');
-
-tabLogin.onclick = () => {
-  tabLogin.classList.add('active');
-  tabSignup.classList.remove('active');
-  loginForm.classList.add('active');
-  signupForm.classList.remove('active');
-};
-
-tabSignup.onclick = () => {
-  tabSignup.classList.add('active');
-  tabLogin.classList.remove('active');
-  signupForm.classList.add('active');
-  loginForm.classList.remove('active');
-};
-
-// ======================================================
-// LOGIN (🔥 AGORA FUNCIONA COM O CADASTRO)
+// LOGIN
 // ======================================================
 loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
 
-  const email = loginEmail.value;
-  const password = loginPassword.value;
-  const btn = loginBtn;
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  const btn = document.getElementById('btnLogin');
 
   btn.disabled = true;
   btn.textContent = 'Entrando...';
 
-  const { error } = await sb.auth.signInWithPassword({
-    email,
-    password
-  });
+  try {
+    const { error } = await sb.auth.signInWithPassword({
+      email,
+      password
+    });
 
-  if (error) {
+    if (error) throw error;
+
+    showMessage('Login realizado!', 'success');
+    
+    // Aguarda um pouco para garantir que o session está salvo
+    setTimeout(() => {
+      window.location.href = '../PaginaPrincipal/vazadinhos.html';
+    }, 500);
+
+  } catch(error) {
+    console.error('Erro no login:', error);
     showMessage(translateError(error.message), 'error');
     btn.disabled = false;
     btn.textContent = 'Entrar';
-    return;
   }
-
-  showMessage('Login realizado!', 'success');
-  setTimeout(() => window.location.href = '../PaginaPrincipal/vazadinhos.html', 800);
-});
-
-// ======================================================
-// CADASTRO SIMPLES (caso use essa aba)
-// ======================================================
-signupForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-
-  const name = signupName.value.trim();
-  const handle = signupHandle.value.trim();
-  const email = signupEmail.value;
-  const password = signupPassword.value;
-
-  const btn = signupBtn;
-
-  btn.disabled = true;
-  btn.textContent = 'Criando...';
-
-  const { error } = await sb.auth.signUp({
-    email,
-    password,
-    options: {
-      data: { name, handle }
-    }
-  });
-
-  if (error) {
-    showMessage(translateError(error.message), 'error');
-    btn.disabled = false;
-    btn.textContent = 'Criar conta';
-    return;
-  }
-
-  showMessage('Conta criada! Verifique seu e-mail.', 'success');
 });
 
 // ======================================================
 // UTIL
 // ======================================================
 function showMessage(msg, type) {
-  const el = document.getElementById('authMessage');
+  const el = document.getElementById('msg');
   el.textContent = msg;
-  el.className = `auth-message ${type}`;
+  el.className = `msg ${type}`;
 }
 
 function translateError(msg) {
   if (msg.includes('Invalid login credentials')) return 'E-mail ou senha incorretos.';
+  if (msg.includes('Email not confirmed')) return 'Confirme seu e-mail antes de fazer login.';
   if (msg.includes('Email already registered')) return 'E-mail já cadastrado.';
   if (msg.includes('Password')) return 'Senha inválida.';
   return msg;

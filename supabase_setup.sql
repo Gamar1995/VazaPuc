@@ -96,7 +96,7 @@ CREATE TABLE public.messages (
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, name, handle, avatar_url)
+  INSERT INTO public.profiles (id, name, handle, avatar_url, bio, curso, periodo, bloco)
   VALUES (
     NEW.id,
     COALESCE(NEW.raw_user_meta_data->>'name', 'Usuário'),
@@ -104,7 +104,14 @@ BEGIN
       NEW.raw_user_meta_data->>'handle',
       'user_' || substr(NEW.id::text, 1, 8)
     ),
-    COALESCE(NEW.raw_user_meta_data->>'avatar_url', '')
+    COALESCE(
+      NEW.raw_user_meta_data->>'avatar_url', 
+      'https://api.dicebear.com/7.x/avataaars/svg?seed=' || COALESCE(NEW.raw_user_meta_data->>'handle', NEW.id::text)
+    ),
+    COALESCE(NEW.raw_user_meta_data->>'bio', ''),
+    NEW.raw_user_meta_data->>'curso',
+    NEW.raw_user_meta_data->>'periodo',
+    NEW.raw_user_meta_data->>'bloco'
   );
   RETURN NEW;
 END;
@@ -118,6 +125,17 @@ CREATE TRIGGER on_auth_user_created
 AFTER INSERT ON auth.users
 FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
+-- Atualiza perfis existentes com dados do user_metadata
+UPDATE public.profiles p
+SET 
+  curso = (SELECT raw_user_meta_data->>'curso' FROM auth.users WHERE id = p.id),
+  periodo = (SELECT raw_user_meta_data->>'periodo' FROM auth.users WHERE id = p.id),
+  bloco = (SELECT raw_user_meta_data->>'bloco' FROM auth.users WHERE id = p.id),
+  bio = COALESCE(
+    (SELECT raw_user_meta_data->>'bio' FROM auth.users WHERE id = p.id),
+    p.bio
+  )
+WHERE curso IS NULL OR periodo IS NULL OR bloco IS NULL;
 -- ============================================================
 -- AGORA ATIVA RLS CORRETAMENTE
 -- ============================================================

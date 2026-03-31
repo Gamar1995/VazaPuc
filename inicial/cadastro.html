@@ -682,55 +682,58 @@ function updateSubmit() {
   document.getElementById('btnBack1').addEventListener('click', function() { goToStep(1); });
   document.getElementById('btnBack2').addEventListener('click', function() { goToStep(2); });
 
-  // ============================================================
-  // SUBMIT — envia para o Supabase
-  // ============================================================
-  document.getElementById('btnSubmit').addEventListener('click', async function() {
-    var fn       = document.getElementById('firstName').value.trim();
-    var ln       = document.getElementById('lastName').value.trim();
-    var handle   = document.getElementById('handle').value.trim();
-    var bio      = document.getElementById('bio').value.trim();
-    var curso    = document.getElementById('curso').value;
-    var periodo  = document.getElementById('periodo').value;
-    var email    = document.getElementById('email').value.trim();
-    var password = document.getElementById('password').value;
+ // ============================================================
+// SUBMIT — envia para o Supabase
+// ============================================================
+document.getElementById('btnSubmit').addEventListener('click', async function() {
+  var fn       = document.getElementById('firstName').value.trim();
+  var ln       = document.getElementById('lastName').value.trim();
+  var handle   = document.getElementById('handle').value.trim();
+  var bio      = document.getElementById('bio').value.trim();
+  var curso    = document.getElementById('curso').value;
+  var periodo  = document.getElementById('periodo').value;
+  var email    = document.getElementById('email').value.trim();
+  var password = document.getElementById('password').value;
 
-    this.disabled = true;
-    this.innerHTML = '<span class="btn-spinner"></span> Criando conta...';
+  this.disabled = true;
+  this.innerHTML = '<span class="btn-spinner"></span> Criando conta...';
 
-    try {
-      var res = await sb.auth.signUp({
-        email: email,
-        password: password,
-        options: {
-          data: {
-            name: fn + ' ' + ln,
-           handle: handle,
-            bio: bio,
-            curso: curso,
-            periodo: periodo,
-            bloco: selectedBlock
-          }
+  try {
+    // Cria o usuário e já salva os dados no user_metadata
+    // O trigger handle_new_user vai criar o perfil automaticamente
+    var res = await sb.auth.signUp({
+      email: email,
+      password: password,
+      options: {
+        data: {
+          name: fn + ' ' + ln,
+          handle: handle,
+          bio: bio,
+          curso: curso,
+          periodo: periodo,
+          bloco: selectedBlock,
+          avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + handle
         }
-      });
+      }
+    });
 
-      if (res.error) throw res.error;
+    if (res.error) throw res.error;
 
-      // Mostra tela de sucesso
-      document.querySelectorAll('.form-step').forEach(function(s) { s.classList.remove('active'); });
-      document.getElementById('progressBar').style.display = 'none';
-      document.querySelector('.form-title').style.display = 'none';
-      document.querySelector('.form-subtitle').style.display = 'none';
-      document.getElementById('alertBox').style.display = 'none';
-      document.getElementById('successScreen').classList.add('show');
+    // ✅ Sucesso - mostra tela de confirmação
+    document.querySelectorAll('.form-step').forEach(function(s) { s.classList.remove('active'); });
+    document.getElementById('progressBar').style.display = 'none';
+    document.querySelector('.form-title').style.display = 'none';
+    document.querySelector('.form-subtitle').style.display = 'none';
+    document.getElementById('alertBox').style.display = 'none';
+    document.getElementById('successScreen').classList.add('show');
 
-    } catch(err) {
-      console.error(err);
-      showAlert(translateError(err.message || String(err)));
-      this.disabled = false;
-      this.textContent = 'Criar conta';
-    }
-  });
+  } catch(err) {
+    console.error(err);
+    showAlert(translateError(err.message || String(err)));
+    this.disabled = false;
+    this.textContent = 'Criar conta';
+  }
+});
 
   // ============================================================
   // UTILITÁRIOS
