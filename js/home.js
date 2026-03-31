@@ -34,9 +34,9 @@ try {
   setupNavigation();
   setupPostComposer();
   setupPostModal();
-  setupProfileModal();
+  setupProfileModal(); // <--- Controla o botão do Perfil
   setupEmojis(); 
-  setupUserMini(); // <--- CHAMA A FUNÇÃO DE LOGIN/LOGOUT AQUI
+  setupUserMini();     // <--- Controla a caixa "Seu Usuário"
   console.log("✅ Botões conectados e prontos!");
 } catch (erroInterface) {
   console.error("❌ Erro grave ao carregar a interface:", erroInterface);
@@ -54,7 +54,7 @@ try {
     } else {
       console.log("Usuário anônimo. Carregando feed geral...");
       currentProfile = null;
-      updateUserUI(); // Atualiza a caixa "Seu Usuário" para estado deslogado
+      updateUserUI();
       await loadFeed();
     }
   });
@@ -63,22 +63,31 @@ try {
 }
 
 // ============================================================
-// LOGIN / LOGOUT (CAIXA "SEU USUÁRIO")
+// LOGIN / LOGOUT (CAIXA "SEU USUÁRIO" NO MENU LATERAL)
+// ============================================================
+// ============================================================
+// LOGIN / LOGOUT (CAIXA "SEU USUÁRIO" NO MENU LATERAL)
 // ============================================================
 function setupUserMini() {
   const userMini = document.querySelector('.user-mini');
+  const loginPopup = document.getElementById('userLoginPopup');
+  const btnPopupLogin = document.getElementById('btnPopupLogin');
+
   if (userMini) {
-    userMini.addEventListener('click', async () => {
+    userMini.addEventListener('click', async (e) => {
+      e.preventDefault();
+      e.stopPropagation(); // Evita que o clique feche a janelinha imediatamente
+      
       if (!currentProfile) {
-        // Se NÃO estiver logado -> Vai para a página de Login
-        window.location.href = '../inicial/login.html';
+        // Se NÃO estiver logado -> Mostra ou esconde a janelinha suavemente
+        if(loginPopup) loginPopup.classList.toggle('active');
       } else {
-        // Se ESTIVER logado -> Pergunta se quer sair da conta (Logout)
+        // Se ESTIVER logado -> Pergunta se quer sair normalmente
         const querSair = confirm('Deseja sair da sua conta no VazaPUC?');
         if (querSair) {
           try {
             await signOut();
-            window.location.href = '../index.html'; // Volta para a tela inicial
+            window.location.assign('../index.html');
           } catch (err) {
             console.error("Erro ao fazer logout:", err);
             showNotification('Erro ao tentar sair da conta.');
@@ -86,6 +95,26 @@ function setupUserMini() {
         }
       }
     });
+  }
+
+  // Quando clicar no botão vermelho DENTRO da janelinha, aí sim leva pro login!
+  if (btnPopupLogin) {
+    btnPopupLogin.addEventListener('click', (e) => {
+      e.stopPropagation();
+      window.location.assign('../inicial/login.html');
+    });
+  }
+
+  // Mágica: Fecha a janelinha se o usuário clicar em qualquer outro lugar da tela
+  document.addEventListener('click', () => {
+    if (loginPopup && loginPopup.classList.contains('active')) {
+      loginPopup.classList.remove('active');
+    }
+  });
+
+  // Impedir que clicar dentro da própria janelinha a faça fechar sem querer
+  if (loginPopup) {
+    loginPopup.addEventListener('click', (e) => e.stopPropagation());
   }
 }
 
@@ -98,18 +127,15 @@ function updateUserUI() {
   const composerAvatar = document.querySelector('.composer-avatar');
   const miniAvatar = document.querySelector('.user-mini .user-avatar img');
 
-  // Se o usuário não está logado
   if (!currentProfile) {
     if(nameEl) nameEl.textContent = "Fazer Login";
     if(handleEl) handleEl.textContent = "Clique para entrar 🚀";
     return;
   }
 
-  // Se o usuário está logado
   if(nameEl) nameEl.textContent = currentProfile.name;
   if(handleEl) handleEl.textContent = `@${currentProfile.handle}`;
 
-  // Se o usuário não subiu foto, usa o Dicebear com base no @ dele
   const avatarSrc = currentProfile.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentProfile.handle}`;
   
   if (composerAvatar) composerAvatar.src = avatarSrc;
@@ -341,9 +367,40 @@ function startRealtimeFeed() {
   });
 }
 
+// ============================================================
+// PERFIL (PÁGINA)
+// ============================================================
 async function loadProfilePage() {
-  if (!currentProfile) return;
+  const editBtn = document.getElementById('editProfileBtn');
 
+  // 1. SE O USUÁRIO NÃO ESTIVER LOGADO (Visitante)
+  if (!currentProfile) {
+    document.getElementById('profileName').textContent = "Visitante";
+    document.getElementById('profileHandle').textContent = "@anonimo";
+    document.getElementById('profileBio').textContent = "Faça login para ter seu próprio perfil, fazer posts e interagir com a galera da PUC!";
+    
+    const profileAvatar = document.querySelector('.profile-avatar');
+    if (profileAvatar) profileAvatar.src = "https://api.dicebear.com/7.x/avataaars/svg?seed=visitante";
+
+    const statValues = document.querySelectorAll('.stat-value');
+    if(statValues.length >= 2) {
+      statValues[0].textContent = "0";
+      statValues[1].textContent = "0";
+    }
+
+    if (editBtn) {
+      editBtn.textContent = "Fazer Login";
+      editBtn.style.borderColor = "";
+      editBtn.style.color = "";
+      editBtn.classList.add('btn-login-animado');
+    }
+
+    const contentEl = document.getElementById('profileContent');
+    contentEl.innerHTML = '<p style="padding:40px 20px; text-align:center; color:var(--text-secondary);">Faça login para visualizar e gerenciar seus posts. 🚀</p>';
+    return; 
+  }
+
+  // 2. SE O USUÁRIO ESTIVER LOGADO
   document.getElementById('profileName').textContent = currentProfile.name;
   document.getElementById('profileHandle').textContent = `@${currentProfile.handle}`;
   document.getElementById('profileBio').textContent = currentProfile.bio || 'Sem bio.';
@@ -357,6 +414,11 @@ async function loadProfilePage() {
     statValues[1].textContent = currentProfile.followers_count || 0;
   }
 
+  if (editBtn) {
+    editBtn.textContent = "Editar Perfil";
+    editBtn.classList.remove('btn-login-animado');
+  }
+
   const contentEl = document.getElementById('profileContent');
   contentEl.innerHTML = '<p style="padding:20px;text-align:center;">Carregando posts...</p>';
   try {
@@ -367,6 +429,9 @@ async function loadProfilePage() {
   }
 }
 
+// ============================================================
+// MODAL DE PERFIL E BOTÃO "FAZER LOGIN" DA ABA PERFIL
+// ============================================================
 function setupProfileModal() {
   const editModal = document.getElementById('editProfileModal');
   const openBtn = document.getElementById('editProfileBtn');
@@ -374,8 +439,17 @@ function setupProfileModal() {
   const cancelBtn = document.getElementById('cancelEditBtn');
   const saveBtn = document.getElementById('saveEditBtn');
 
-  openBtn?.addEventListener('click', () => {
-    if (!currentProfile) return;
+  openBtn?.addEventListener('click', (e) => {
+    e.preventDefault();
+
+    // Se NÃO tiver perfil logado, leva pra tela de Login
+    if (!currentProfile) {
+      console.log("Redirecionando para Login pela aba de Perfil...");
+      window.location.assign('../inicial/login.html');
+      return;
+    }
+    
+    // Se TEM perfil logado, abre a edição
     document.getElementById('editName').value = currentProfile.name || '';
     document.getElementById('editHandle').value = currentProfile.handle || '';
     document.getElementById('editBio').value = currentProfile.bio || '';

@@ -871,3 +871,78 @@ mas herdando as bordas e cores suaves da nova base */
     background: var(--dark-bg-tertiary);
     transform: scale(1.15);
 }
+
+/* ===== ANIMAÇÃO DO BOTÃO DE LOGIN NO PERFIL ===== */
+.edit-profile-btn {
+    transition: all 0.3s ease; /* Garante que a animação seja bem suave */
+}
+
+.edit-profile-btn.btn-login-animado {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: rgba(163, 31, 75, 0.1); /* Fundo vinho bem transparente */
+    animation: pulseLoginBtn 2s infinite;
+}
+
+.edit-profile-btn.btn-login-animado:hover {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white !important;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(163, 31, 75, 0.5);
+    animation: none; /* Para de pulsar quando o mouse está em cima */
+    border-color: transparent;
+}
+
+@keyframes pulseLoginBtn {
+    0% { box-shadow: 0 0 0 0 rgba(163, 31, 75, 0.5); }
+    70% { box-shadow: 0 0 0 12px rgba(163, 31, 75, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(163, 31, 75, 0); }
+}
+/* ===== POPUP DE LOGIN NO BOTÃO DE USUÁRIO ===== */
+.user-login-popup {
+    position: absolute;
+    bottom: calc(100% + 15px); /* Sobe logo acima da caixinha user-mini */
+    left: 0;
+    width: 100%;
+    background: var(--dark-bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    
+    /* Estado inicial invisível e um pouco mais para baixo */
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    z-index: 100;
+}
+
+/* Quando o JS colocar a classe 'active', ele aparece flutuando */
+.user-login-popup.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.user-login-popup p {
+    font-size: 14px;
+    color: var(--text-primary);
+    text-align: center;
+    margin-bottom: 12px;
+    line-height: 1.4;
+}
+
+/* Setinha do balão apontando para o botão do usuário */
+.user-login-popup::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: 30px;
+    width: 12px;
+    height: 12px;
+    background: var(--dark-bg-secondary);
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    transform: rotate(45deg);
+}
