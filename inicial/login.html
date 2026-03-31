@@ -153,6 +153,7 @@ button:hover {
       </div>
 
       <button id="btnLogin">Entrar</button>
+      <a href="#" id="forgotPassword">Esqueci minha senha</a>
     </form>
   </div>
 </div>
@@ -166,12 +167,43 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Se já estiver logado → redireciona
+
 sb.auth.getUser().then(res => {
   if (res.data.user) {
     window.location.href = '../PaginaPrincipal/vazadinhos.html';
   }
 });
+document.getElementById('forgotPassword').addEventListener('click', async () => {
+  const email = document.getElementById('email').value;
+  const btn = document.getElementById('forgotPassword'); // usamos o link como botão
 
+  if (!email) {
+    alert('Digite seu e-mail primeiro.');
+    return;
+  }
+
+  // Desativa e muda o texto
+  btn.style.pointerEvents = 'none';
+  const originalText = btn.textContent;
+  btn.textContent = 'Enviando...';
+
+  try {
+    const { error } = await sb.auth.resetPasswordForEmail(email, {
+      redirectTo: 'http://localhost:5500/reset.html'
+    });
+
+    if (error) throw error;
+
+    alert('Email de redefinição enviado!');
+  } catch (error) {
+    console.error(error);
+    alert('Erro ao enviar email: ' + error.message);
+  } finally {
+    // Reativa o link
+    btn.style.pointerEvents = 'auto';
+    btn.textContent = originalText;
+  }
+});
 // ======================================================
 // LOGIN
 // ======================================================
