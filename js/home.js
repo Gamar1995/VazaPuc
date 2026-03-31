@@ -1,112 +1,183 @@
 // ============================================================
-// js/home.js — Controla a página principal (feed de posts)
-//
-// Este arquivo é o "maestro" da home: ele usa as funções dos
-// outros módulos (posts.js, supabase.js) e atualiza o HTML.
+// js/home.js — Código completo da Home (Feed, Perfil, Chat)
 // ============================================================
 
-import { getCurrentProfile, onAuthChange } from './supabase.js';
+import { getCurrentProfile, onAuthChange, signOut } from './supabase.js';
 import {
   getPosts,
   createPost,
   likePost,
   unlikePost,
   getLikedPostIds,
-  subscribeToNewPosts
+  subscribeToNewPosts,
+  getPostsByUser
 } from './posts.js';
+
+import { updateProfile } from './profile.js';
+import { getConversations, getMessages, sendMessage, subscribeToMessages } from './messages.js';
+
+console.log("🚀 VazaPUC: Arquivo home.js foi acionado com sucesso!");
 
 // ============================================================
 // ESTADO LOCAL
-// Guarda os dados em memória enquanto a página está aberta
 // ============================================================
-let currentProfile = null;     // perfil do usuário logado
-let likedPostIds = new Set();  // IDs dos posts que o usuário curtiu
-let unsubscribePosts = null;   // função para cancelar o realtime
+let currentProfile = null;
+let likedPostIds = new Set();
+let unsubscribePosts = null;
+let unsubscribeCurrentChat = null;
 
 // ============================================================
-// INICIALIZAÇÃO
-// Roda quando a página carrega
+// INICIALIZAÇÃO IMEDIATA
 // ============================================================
-document.addEventListener('DOMContentLoaded', async () => {
-  // Observa mudanças de autenticação (login/logout)
+try {
+  console.log("⚙️ Conectando os botões da interface...");
+  setupNavigation();
+  setupPostComposer();
+  setupPostModal();
+  setupProfileModal();
+  setupEmojis(); 
+  setupUserMini(); // <--- CHAMA A FUNÇÃO DE LOGIN/LOGOUT AQUI
+  console.log("✅ Botões conectados e prontos!");
+} catch (erroInterface) {
+  console.error("❌ Erro grave ao carregar a interface:", erroInterface);
+}
+
+// Inicializa a conexão com o banco logo em seguida
+try {
   onAuthChange(async (session) => {
     if (session) {
-      // Usuário logado: carrega perfil e posts
+      console.log("Usuário logado! Carregando dados do perfil...");
       currentProfile = await getCurrentProfile();
       updateUserUI();
       await loadFeed();
       startRealtimeFeed();
     } else {
-      // Não logado: redireciona para login
-      // window.location.href = 'login.html';
-      // Por ora, carrega posts mesmo sem login (modo leitura)
+      console.log("Usuário anônimo. Carregando feed geral...");
+      currentProfile = null;
+      updateUserUI(); // Atualiza a caixa "Seu Usuário" para estado deslogado
       await loadFeed();
     }
   });
+} catch (erroBanco) {
+  console.error("Aviso: Erro ao carregar o banco de dados.", erroBanco);
+}
 
-  // Configura o composer de post
-  setupPostComposer();
-  setupPostModal();
-});
+// ============================================================
+// LOGIN / LOGOUT (CAIXA "SEU USUÁRIO")
+// ============================================================
+function setupUserMini() {
+  const userMini = document.querySelector('.user-mini');
+  if (userMini) {
+    userMini.addEventListener('click', async () => {
+      if (!currentProfile) {
+        // Se NÃO estiver logado -> Vai para a página de Login
+        window.location.href = '../inicial/login.html';
+      } else {
+        // Se ESTIVER logado -> Pergunta se quer sair da conta (Logout)
+        const querSair = confirm('Deseja sair da sua conta no VazaPUC?');
+        if (querSair) {
+          try {
+            await signOut();
+            window.location.href = '../index.html'; // Volta para a tela inicial
+          } catch (err) {
+            console.error("Erro ao fazer logout:", err);
+            showNotification('Erro ao tentar sair da conta.');
+          }
+        }
+      }
+    });
+  }
+}
 
 // ============================================================
 // ATUALIZA A UI COM OS DADOS DO USUÁRIO
 // ============================================================
 function updateUserUI() {
-  if (!currentProfile) return;
-
-  // Atualiza o mini-card da sidebar
-  document.querySelector('.user-name').textContent = currentProfile.name;
-  document.querySelector('.user-handle').textContent = `@${currentProfile.handle}`;
-
-  // Atualiza o avatar do composer
+  const nameEl = document.querySelector('.user-name');
+  const handleEl = document.querySelector('.user-handle');
   const composerAvatar = document.querySelector('.composer-avatar');
-  if (composerAvatar && currentProfile.avatar_url) {
-    composerAvatar.src = currentProfile.avatar_url;
+  const miniAvatar = document.querySelector('.user-mini .user-avatar img');
+
+  // Se o usuário não está logado
+  if (!currentProfile) {
+    if(nameEl) nameEl.textContent = "Fazer Login";
+    if(handleEl) handleEl.textContent = "Clique para entrar 🚀";
+    return;
   }
+
+  // Se o usuário está logado
+  if(nameEl) nameEl.textContent = currentProfile.name;
+  if(handleEl) handleEl.textContent = `@${currentProfile.handle}`;
+
+  // Se o usuário não subiu foto, usa o Dicebear com base no @ dele
+  const avatarSrc = currentProfile.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentProfile.handle}`;
+  
+  if (composerAvatar) composerAvatar.src = avatarSrc;
+  if (miniAvatar) miniAvatar.src = avatarSrc;
 }
 
 // ============================================================
-// CARREGA O FEED DE POSTS
+// SISTEMA DE NAVEGAÇÃO DE ABAS
+// ============================================================
+function setupNavigation() {
+  const navItems = document.querySelectorAll('.nav-item');
+  const pages = document.querySelectorAll('.page-container');
+
+  navItems.forEach(item => {
+    item.addEventListener('click', (e) => {
+      e.preventDefault(); 
+      
+      const targetDataPage = item.getAttribute('data-page');
+      
+      navItems.forEach(n => n.classList.remove('active'));
+      pages.forEach(p => p.classList.remove('active'));
+
+      item.classList.add('active');
+      
+      const targetPageId = targetDataPage + '-page';
+      const targetPage = document.getElementById(targetPageId);
+      if (targetPage) targetPage.classList.add('active');
+
+      if (targetPageId === 'profile-page') loadProfilePage();
+      if (targetPageId === 'messages-page') loadMessagesPage();
+    });
+  });
+}
+
+// ============================================================
+// FEED DE POSTS E RESTANTE DAS FUNÇÕES
 // ============================================================
 async function loadFeed() {
   const container = document.getElementById('postsContainer');
+  if(!container) return;
+  
   container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-secondary)">Carregando...</div>';
 
   try {
     const posts = await getPosts(20);
 
-    // Descobre quais posts o usuário curtiu (uma chamada só, mais eficiente)
     if (currentProfile) {
       const ids = posts.map(p => p.id);
       likedPostIds = await getLikedPostIds(ids);
     }
 
-    renderPosts(posts);
+    renderPosts(posts, container);
   } catch (err) {
     console.error('Erro ao carregar feed:', err);
     container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--danger)">Erro ao carregar posts.</div>';
   }
 }
 
-// ============================================================
-// RENDERIZA LISTA DE POSTS NO HTML
-// ============================================================
-function renderPosts(posts) {
-  const container = document.getElementById('postsContainer');
-
+function renderPosts(posts, containerElement) {
   if (posts.length === 0) {
-    container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-secondary)">Nenhum post ainda. Seja o primeiro! 🚀</div>';
+    containerElement.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-secondary)">Nenhum post ainda. Seja o primeiro! 🚀</div>';
     return;
   }
 
-  container.innerHTML = posts.map(post => createPostHTML(post)).join('');
+  containerElement.innerHTML = posts.map(post => createPostHTML(post)).join('');
   attachPostEventListeners();
 }
 
-// ============================================================
-// CRIA O HTML DE UM POST
-// ============================================================
 function createPostHTML(post) {
   const isLiked = likedPostIds.has(post.id);
   const avatar = post.author?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author?.handle}`;
@@ -141,41 +212,36 @@ function createPostHTML(post) {
   `;
 }
 
-// ============================================================
-// ADICIONA EVENTOS NOS BOTÕES DOS POSTS
-// Chamado toda vez que a lista é re-renderizada
-// ============================================================
 function attachPostEventListeners() {
   document.querySelectorAll('.like-action').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
+    const newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+
+    newBtn.addEventListener('click', async (e) => {
       e.stopPropagation();
       if (!currentProfile) {
         showNotification('Faça login para curtir! 🔐');
         return;
       }
 
-      const postId = btn.dataset.postId;
-      const wasLiked = btn.dataset.liked === 'true';
-      const countEl = btn.querySelector('span');
+      const postId = newBtn.dataset.postId;
+      const wasLiked = newBtn.dataset.liked === 'true';
+      const countEl = newBtn.querySelector('span');
 
-      // Atualiza a UI imediatamente (feedback instantâneo)
       const newLiked = !wasLiked;
-      btn.dataset.liked = newLiked;
-      btn.classList.toggle('liked', newLiked);
+      newBtn.dataset.liked = newLiked;
+      newBtn.classList.toggle('liked', newLiked);
       countEl.textContent = parseInt(countEl.textContent) + (newLiked ? 1 : -1);
 
-      // Atualiza o Set local
       if (newLiked) likedPostIds.add(postId);
       else likedPostIds.delete(postId);
 
-      // Envia para o banco (assíncrono)
       try {
         if (newLiked) await likePost(postId);
         else await unlikePost(postId);
       } catch (err) {
-        // Reverte se der erro
-        btn.dataset.liked = wasLiked;
-        btn.classList.toggle('liked', wasLiked);
+        newBtn.dataset.liked = wasLiked;
+        newBtn.classList.toggle('liked', wasLiked);
         countEl.textContent = parseInt(countEl.textContent) + (wasLiked ? 1 : -1);
         showNotification('Erro ao curtir. Tente novamente.');
       }
@@ -183,11 +249,9 @@ function attachPostEventListeners() {
   });
 }
 
-// ============================================================
-// ADICIONA UM ÚNICO POST NO TOPO DO FEED (para o realtime)
-// ============================================================
 function prependPost(post) {
   const container = document.getElementById('postsContainer');
+  if(!container) return;
   const emptyMsg = container.querySelector('[style*="Nenhum post"]');
   if (emptyMsg) emptyMsg.remove();
 
@@ -199,22 +263,17 @@ function prependPost(post) {
   attachPostEventListeners();
 }
 
-// ============================================================
-// COMPOSER DE POST (caixa de texto na timeline)
-// ============================================================
 function setupPostComposer() {
   const postInput = document.getElementById('postInput');
   const postSubmitBtn = document.getElementById('postSubmitBtn');
 
   if (!postInput || !postSubmitBtn) return;
 
-  // Auto-expande o textarea conforme digita
   postInput.addEventListener('input', function () {
     this.style.height = 'auto';
     this.style.height = this.scrollHeight + 'px';
   });
 
-  // Ctrl+Enter para postar
   postInput.addEventListener('keypress', (e) => {
     if (e.ctrlKey && e.key === 'Enter') handleSubmitPost(postInput.value);
   });
@@ -222,9 +281,6 @@ function setupPostComposer() {
   postSubmitBtn.addEventListener('click', () => handleSubmitPost(postInput.value));
 }
 
-// ============================================================
-// MODAL DE NOVO POST (botão "Novo Post" da sidebar)
-// ============================================================
 function setupPostModal() {
   const modal = document.getElementById('postModal');
   const openBtn = document.getElementById('postBtnSidebar');
@@ -253,9 +309,6 @@ function setupPostModal() {
   });
 }
 
-// ============================================================
-// LÓGICA DE ENVIO DE POST (usada pelo composer e pelo modal)
-// ============================================================
 async function handleSubmitPost(content) {
   content = content?.trim();
   if (!content) return;
@@ -265,7 +318,6 @@ async function handleSubmitPost(content) {
     return;
   }
 
-  // Limpa os inputs
   const postInput = document.getElementById('postInput');
   const modalInput = document.getElementById('modalPostInput');
   if (postInput) { postInput.value = ''; postInput.style.height = 'auto'; }
@@ -273,7 +325,6 @@ async function handleSubmitPost(content) {
 
   try {
     await createPost(content);
-    // O realtime vai detectar e adicionar o post no feed automaticamente
     showNotification('Post criado! ✨');
   } catch (err) {
     console.error('Erro ao criar post:', err);
@@ -281,24 +332,199 @@ async function handleSubmitPost(content) {
   }
 }
 
-// ============================================================
-// REALTIME — escuta novos posts e adiciona no feed
-// ============================================================
 function startRealtimeFeed() {
-  // Cancela subscription anterior se existir
   if (unsubscribePosts) unsubscribePosts();
 
   unsubscribePosts = subscribeToNewPosts((newPost) => {
-    // Não duplica se for o próprio post do usuário atual
-    // (o createPost já retornou e foi adicionado via handleSubmitPost)
     const exists = document.querySelector(`[data-post-id="${newPost.id}"]`);
     if (!exists) prependPost(newPost);
   });
 }
 
-// ============================================================
-// UTILITÁRIOS
-// ============================================================
+async function loadProfilePage() {
+  if (!currentProfile) return;
+
+  document.getElementById('profileName').textContent = currentProfile.name;
+  document.getElementById('profileHandle').textContent = `@${currentProfile.handle}`;
+  document.getElementById('profileBio').textContent = currentProfile.bio || 'Sem bio.';
+  
+  const profileAvatar = document.querySelector('.profile-avatar');
+  if (currentProfile.avatar_url) profileAvatar.src = currentProfile.avatar_url;
+
+  const statValues = document.querySelectorAll('.stat-value');
+  if(statValues.length >= 2) {
+    statValues[0].textContent = currentProfile.following_count || 0;
+    statValues[1].textContent = currentProfile.followers_count || 0;
+  }
+
+  const contentEl = document.getElementById('profileContent');
+  contentEl.innerHTML = '<p style="padding:20px;text-align:center;">Carregando posts...</p>';
+  try {
+    const userPosts = await getPostsByUser(currentProfile.id);
+    renderPosts(userPosts, contentEl);
+  } catch(err) {
+    contentEl.innerHTML = '<p style="color:var(--danger); text-align:center;">Erro ao carregar posts.</p>';
+  }
+}
+
+function setupProfileModal() {
+  const editModal = document.getElementById('editProfileModal');
+  const openBtn = document.getElementById('editProfileBtn');
+  const closeBtn = document.getElementById('closeEditModal');
+  const cancelBtn = document.getElementById('cancelEditBtn');
+  const saveBtn = document.getElementById('saveEditBtn');
+
+  openBtn?.addEventListener('click', () => {
+    if (!currentProfile) return;
+    document.getElementById('editName').value = currentProfile.name || '';
+    document.getElementById('editHandle').value = currentProfile.handle || '';
+    document.getElementById('editBio').value = currentProfile.bio || '';
+    editModal.classList.add('active');
+  });
+
+  const closeModal = () => editModal.classList.remove('active');
+  closeBtn?.addEventListener('click', closeModal);
+  cancelBtn?.addEventListener('click', closeModal);
+
+  saveBtn?.addEventListener('click', async () => {
+    saveBtn.textContent = 'Salvando...';
+    saveBtn.disabled = true;
+    try {
+      const updates = {
+        name: document.getElementById('editName').value.trim(),
+        handle: document.getElementById('editHandle').value.trim(),
+        bio: document.getElementById('editBio').value.trim()
+      };
+      const updated = await updateProfile(updates);
+      currentProfile = updated; 
+      
+      updateUserUI(); 
+      loadProfilePage(); 
+      showNotification('Perfil atualizado com sucesso! ✅');
+      closeModal();
+    } catch (err) {
+      console.error(err);
+      showNotification('Erro ao atualizar. Handle já em uso? ❌');
+    } finally {
+      saveBtn.textContent = 'Salvar';
+      saveBtn.disabled = false;
+    }
+  });
+}
+
+async function loadMessagesPage() {
+  const listEl = document.getElementById('conversationsList');
+  if(!listEl) return;
+  listEl.innerHTML = '<p style="padding:20px;text-align:center;">Carregando...</p>';
+
+  try {
+    const convs = await getConversations();
+    if (convs.length === 0) {
+      listEl.innerHTML = '<p style="padding:20px;text-align:center;color:var(--text-secondary)">Sem conversas.</p>';
+      return;
+    }
+
+    listEl.innerHTML = convs.map(c => {
+      const avatar = c.otherUser?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.otherUser?.handle}`;
+      return `
+        <div class="conversation-item" data-id="${c.id}">
+          <img src="${avatar}" alt="Avatar" class="conversation-avatar">
+          <div class="conversation-info">
+            <p class="conversation-name">${escapeHtml(c.otherUser?.name)}</p>
+            <p class="conversation-preview">@${escapeHtml(c.otherUser?.handle)}</p>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    document.querySelectorAll('.conversation-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const convId = item.dataset.id;
+        const otherUser = convs.find(c => c.id === convId).otherUser;
+        openChat(convId, otherUser);
+      });
+    });
+  } catch (err) {
+    console.error(err);
+    listEl.innerHTML = '<p style="color:var(--danger);padding:20px;">Erro ao carregar conversas.</p>';
+  }
+}
+
+async function openChat(convId, otherUser) {
+  const chatArea = document.getElementById('chatArea');
+  
+  chatArea.innerHTML = `
+    <div style="padding: 16px; border-bottom: 1px solid var(--border); background: var(--dark-bg-secondary);">
+      <strong style="font-size: 16px;">${escapeHtml(otherUser.name)}</strong> 
+      <span style="color:var(--text-secondary); font-size:13px; margin-left: 8px;">@${escapeHtml(otherUser.handle)}</span>
+    </div>
+    <div id="chatMessages" style="flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:10px; background: var(--dark-bg);">
+      <p style="text-align:center; color:var(--text-secondary);">Carregando histórico...</p>
+    </div>
+    <div style="padding:16px; border-top: 1px solid var(--border); display:flex; gap:10px; background: var(--dark-bg-secondary);">
+      <input type="text" id="msgInput" placeholder="Envie uma mensagem..." style="flex:1; padding:12px 16px; border-radius:20px; border:1px solid var(--border); background:var(--dark-bg); color:var(--text-primary); outline: none;">
+      <button id="sendMsgBtn" class="post-submit-btn" style="padding:0 24px;">Enviar</button>
+    </div>
+  `;
+
+  try {
+    const msgs = await getMessages(convId);
+    renderMessagesList(msgs);
+  } catch (err) {
+    document.getElementById('chatMessages').innerHTML = '<p style="color:var(--danger);">Erro ao carregar mensagens.</p>';
+  }
+
+  const input = document.getElementById('msgInput');
+  const btn = document.getElementById('sendMsgBtn');
+
+  const handleSend = async () => {
+    const content = input.value.trim();
+    if (!content) return;
+    input.value = '';
+    await sendMessage(convId, content);
+  };
+
+  btn.addEventListener('click', handleSend);
+  input.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSend(); });
+
+  if (unsubscribeCurrentChat) unsubscribeCurrentChat();
+  unsubscribeCurrentChat = subscribeToMessages(convId, (newMsg) => {
+    appendMessageToUI(newMsg);
+  });
+}
+
+function renderMessagesList(msgs) {
+  const container = document.getElementById('chatMessages');
+  container.innerHTML = msgs.length === 0 ? '<p style="text-align:center;color:var(--text-secondary);">Diga olá! 👋</p>' : '';
+  msgs.forEach(appendMessageToUI);
+}
+
+function appendMessageToUI(msg) {
+  const container = document.getElementById('chatMessages');
+  if (!container) return; 
+
+  const emptyText = container.querySelector('p');
+  if (emptyText && emptyText.textContent.includes('Diga olá')) emptyText.remove();
+
+  const isMe = msg.sender_id === currentProfile.id;
+  const bubble = document.createElement('div');
+  
+  bubble.style.cssText = `
+    max-width: 75%;
+    padding: 10px 14px;
+    border-radius: 18px;
+    font-size: 15px;
+    line-height: 1.4;
+    word-break: break-word;
+    ${isMe ? 
+      'background: var(--primary); color: white; align-self: flex-end; border-bottom-right-radius: 4px;' : 
+      'background: var(--dark-bg-tertiary); color: var(--text-primary); align-self: flex-start; border-bottom-left-radius: 4px;'
+    }
+  `;
+  bubble.textContent = msg.content;
+  container.appendChild(bubble);
+  container.scrollTop = container.scrollHeight; 
+}
 
 function escapeHtml(text) {
   if (!text) return '';
@@ -307,7 +533,6 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-// Converte timestamp ISO em "2h atrás", "agora", etc.
 function formatTimeAgo(isoString) {
   const date = new Date(isoString);
   const now = new Date();
@@ -327,13 +552,78 @@ function showNotification(message) {
     background: var(--primary); color: white;
     padding: 12px 20px; border-radius: 8px;
     font-weight: 600; z-index: 2000;
-    animation: slideUp 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    transition: opacity 0.3s ease;
   `;
   notification.textContent = message;
   document.body.appendChild(notification);
   setTimeout(() => {
     notification.style.opacity = '0';
-    notification.style.transition = 'opacity 0.3s';
     setTimeout(() => notification.remove(), 300);
   }, 3000);
+}
+
+// ============================================================
+// SISTEMA DE EMOJIS
+// ============================================================
+function setupEmojis() {
+  const emojis = ['😀','😂','🥰','😎','😭','😡','👍','👎','❤️','🔥','✨','🎉','🤔','👀','🙌','🙏','💀','🤡','💩','💯','✅','❌','⚠️','💡','🗣️','🧊','🍺','🍕','🎓','📚'];
+
+  const renderEmojis = (containerId, inputId) => {
+    const container = document.getElementById(containerId);
+    const input = document.getElementById(inputId);
+    if (!container || !input) return;
+
+    container.innerHTML = emojis.map(e => `<span class="emoji-item">${e}</span>`).join('');
+    
+    container.querySelectorAll('.emoji-item').forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.stopPropagation();
+        
+        const start = input.selectionStart;
+        const end = input.selectionEnd;
+        const text = input.value;
+        
+        input.value = text.substring(0, start) + item.textContent + text.substring(end);
+        
+        input.selectionStart = input.selectionEnd = start + item.textContent.length;
+        input.focus();
+        
+        input.dispatchEvent(new Event('input'));
+      });
+    });
+  };
+
+  renderEmojis('pickerEmojiFeed', 'postInput');
+  renderEmojis('pickerEmojiModal', 'modalPostInput');
+
+  const toggleFeed = document.getElementById('btnEmojiFeed');
+  const pickerFeed = document.getElementById('pickerEmojiFeed');
+  if (toggleFeed && pickerFeed) {
+    toggleFeed.addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      pickerFeed.classList.toggle('active');
+      document.getElementById('pickerEmojiModal')?.classList.remove('active'); 
+    });
+  }
+
+  const toggleModal = document.getElementById('btnEmojiModal');
+  const pickerModal = document.getElementById('pickerEmojiModal');
+  if (toggleModal && pickerModal) {
+    toggleModal.addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      pickerModal.classList.toggle('active');
+      document.getElementById('pickerEmojiFeed')?.classList.remove('active');
+    });
+  }
+
+  document.addEventListener('click', () => {
+    if(pickerFeed) pickerFeed.classList.remove('active');
+    if(pickerModal) pickerModal.classList.remove('active');
+  });
+  
+  if(pickerFeed) pickerFeed.addEventListener('click', e => e.stopPropagation());
+  if(pickerModal) pickerModal.addEventListener('click', e => e.stopPropagation());
 }

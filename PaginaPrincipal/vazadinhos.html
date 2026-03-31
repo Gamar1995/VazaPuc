@@ -9,7 +9,6 @@
 <body>
   <div class="app-container">
 
-    <!-- ===== SIDEBAR ESQUERDA ===== -->
     <aside class="sidebar">
       <div class="sidebar-header">
         <div class="logo">
@@ -53,12 +52,8 @@
         </div>
       </div>
     </aside>
-    <!-- fim .sidebar -->
-
-    <!-- ===== MAIN CONTENT ===== -->
     <main class="main-content">
 
-      <!-- HOME PAGE -->
       <div class="page-container active" id="home-page">
         <header class="feed-header">
           <h2>Seu Feed</h2>
@@ -74,11 +69,15 @@
             <div class="composer-input-wrapper">
               <textarea class="composer-input" id="postInput" placeholder="O que está em sua mente?" rows="3"></textarea>
               <div class="composer-toolbar">
-                <div class="toolbar-icons">
+                
+                <div class="toolbar-icons" style="position: relative;">
                   <button class="toolbar-btn" title="Imagem">🖼</button>
                   <button class="toolbar-btn" title="GIF">🎬</button>
-                  <button class="toolbar-btn" title="Emoji">😊</button>
+                  <button class="toolbar-btn" title="Emoji" id="btnEmojiFeed">😊</button>
+                  
+                  <div class="emoji-picker" id="pickerEmojiFeed"></div>
                 </div>
+
                 <button class="post-submit-btn" id="postSubmitBtn">Postar</button>
               </div>
             </div>
@@ -89,9 +88,6 @@
           <div class="posts-container" id="postsContainer"></div>
         </div>
       </div>
-      <!-- fim #home-page -->
-
-      <!-- EXPLORE PAGE -->
       <div class="page-container" id="explore-page">
         <header class="feed-header">
           <div class="search-box">
@@ -101,9 +97,6 @@
         </header>
         <div class="explore-content" id="exploreContent"></div>
       </div>
-      <!-- fim #explore-page -->
-
-      <!-- MESSAGES PAGE -->
       <div class="page-container" id="messages-page">
         <header class="feed-header">
           <h2>Mensagens</h2>
@@ -117,51 +110,43 @@
           </div>
         </div>
       </div>
-      <!-- fim #messages-page -->
+      <div class="page-container" id="profile-page">
+          <div class="profile-container">
+              <div class="profile-header">
+                  <div class="profile-cover"></div>
+                  <div class="profile-info">
+                      <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=currentuser" alt="Avatar" class="profile-avatar">
+                      <div class="profile-details">
+                          <h2 id="profileName">Seu Nome</h2>
+                          <p id="profileHandle">@seu_handle</p>
+                          <p id="profileBio">Bio do seu perfil aqui...</p>
+                          <div class="profile-stats">
+                              <div class="stat">
+                                  <span class="stat-value">0</span>
+                                  <span class="stat-label">Seguindo</span>
+                              </div>
+                              <div class="stat">
+                                  <span class="stat-value">0</span>
+                                  <span class="stat-label">Seguidores</span>
+                              </div>
+                          </div>
+                      </div>
+                      <button class="edit-profile-btn" id="editProfileBtn">Editar Perfil</button>
+                  </div>
+              </div>
 
-            <!-- PROFILE PAGE -->
-            <div class="page-container" id="profile-page">
-                <div class="profile-container">
-                    <!-- Header do Perfil -->
-                    <div class="profile-header">
-                        <div class="profile-cover"></div>
-                        <div class="profile-info">
-                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=currentuser" alt="Avatar" class="profile-avatar">
-                            <div class="profile-details">
-                                <h2 id="profileName">Seu Nome</h2>
-                                <p id="profileHandle">@seu_handle</p>
-                                <p id="profileBio">Bio do seu perfil aqui...</p>
-                                <div class="profile-stats">
-                                    <div class="stat">
-                                        <span class="stat-value">0</span>
-                                        <span class="stat-label">Seguindo</span>
-                                    </div>
-                                    <div class="stat">
-                                        <span class="stat-value">0</span>
-                                        <span class="stat-label">Seguidores</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <button class="edit-profile-btn" id="editProfileBtn">Editar Perfil</button>
-                        </div>
-                    </div>
+              <div class="profile-tabs">
+                  <button class="profile-tab-btn active" data-tab="posts">Posts</button>
+                  <button class="profile-tab-btn" data-tab="curtidos">Curtidos</button>
+                  <button class="profile-tab-btn" data-tab="midia">Mídia</button>
+              </div>
 
-                    <!-- Abas do Perfil -->
-                    <div class="profile-tabs">
-                        <button class="profile-tab-btn active" data-tab="posts">Posts</button>
-                        <button class="profile-tab-btn" data-tab="curtidos">Curtidos</button>
-                        <button class="profile-tab-btn" data-tab="midia">Mídia</button>
-                    </div>
+              <div class="profile-content" id="profileContent">
+                  </div>
+          </div>
+      </div>
+    </main>
 
-                    <!-- Conteúdo das Abas -->
-                    <div class="profile-content" id="profileContent">
-                        <!-- Posts do perfil serão adicionados aqui -->
-                    </div>
-                </div>
-            </div>
-        </main>
-
-    <!-- ===== RIGHT SIDEBAR ===== -->
     <aside class="right-sidebar" id="rightSidebar">
       <div class="trending-widget">
         <h3>Explore por blocos:</h3>
@@ -219,70 +204,67 @@
         </div>
       </div>
 
-      <!-- Oculto por padrão via CSS, mas o HTML está correto -->
       <div class="suggestions-widget">
         <h3>Quem Seguir</h3>
         <div class="suggestions-list" id="suggestionsList"></div>
       </div>
     </aside>
-    <!-- fim .right-sidebar -->
+    </div>
+  <div class="modal" id="postModal">
+      <div class="modal-content">
+          <div class="modal-header">
+              <h3>Compor Post</h3>
+              <button class="modal-close" id="closePostModal">✕</button>
+          </div>
+          <div class="modal-body">
+              <textarea id="modalPostInput" placeholder="O que está em sua mente?" rows="8"></textarea>
+              <div class="modal-toolbar">
+                  
+                  <div class="toolbar-icons" style="position: relative;">
+                      <button class="toolbar-btn">🖼</button>
+                      <button class="toolbar-btn">🎬</button>
+                      <button class="toolbar-btn" id="btnEmojiModal">😊</button>
+                      <button class="toolbar-btn">📌</button>
+                      
+                      <div class="emoji-picker" id="pickerEmojiModal"></div>
+                  </div>
 
+              </div>
+          </div>
+          <div class="modal-footer">
+              <button class="btn-secondary" id="cancelPostBtn">Cancelar</button>
+              <button class="btn-primary" id="submitPostBtn">Postar</button>
+          </div>
+      </div>
   </div>
-  <!-- fim .app-container -->
 
-    <!-- MODAIS -->
-    <!-- Modal de Novo Post -->
-    <div class="modal" id="postModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Compor Post</h3>
-                <button class="modal-close" id="closePostModal">✕</button>
-            </div>
-            <div class="modal-body">
-                <textarea id="modalPostInput" placeholder="O que está em sua mente?" rows="8"></textarea>
-                <div class="modal-toolbar">
-                    <div class="toolbar-icons">
-                        <button class="toolbar-btn">🖼</button>
-                        <button class="toolbar-btn">🎬</button>
-                        <button class="toolbar-btn">😊</button>
-                        <button class="toolbar-btn">📌</button>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-secondary" id="cancelPostBtn">Cancelar</button>
-                <button class="btn-primary" id="submitPostBtn">Postar</button>
-            </div>
-        </div>
-    </div>
+  <div class="modal" id="editProfileModal">
+      <div class="modal-content">
+          <div class="modal-header">
+              <h3>Editar Perfil</h3>
+              <button class="modal-close" id="closeEditModal">✕</button>
+          </div>
+          <div class="modal-body">
+              <div class="form-group">
+                  <label>Nome</label>
+                  <input type="text" id="editName" placeholder="Seu nome completo">
+              </div>
+              <div class="form-group">
+                  <label>Handle (@)</label>
+                  <input type="text" id="editHandle" placeholder="seu_handle">
+              </div>
+              <div class="form-group">
+                  <label>Bio</label>
+                  <textarea id="editBio" placeholder="Conte sobre você" rows="4"></textarea>
+              </div>
+          </div>
+          <div class="modal-footer">
+              <button class="btn-secondary" id="cancelEditBtn">Cancelar</button>
+              <button class="btn-primary" id="saveEditBtn">Salvar</button>
+          </div>
+      </div>
+  </div>
 
-    <!-- Modal de Editar Perfil -->
-    <div class="modal" id="editProfileModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Editar Perfil</h3>
-                <button class="modal-close" id="closeEditModal">✕</button>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label>Nome</label>
-                    <input type="text" id="editName" placeholder="Seu nome completo">
-                </div>
-                <div class="form-group">
-                    <label>Handle (@)</label>
-                    <input type="text" id="editHandle" placeholder="seu_handle">
-                </div>
-                <div class="form-group">
-                    <label>Bio</label>
-                    <textarea id="editBio" placeholder="Conte sobre você" rows="4"></textarea>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-secondary" id="cancelEditBtn">Cancelar</button>
-                <button class="btn-primary" id="saveEditBtn">Salvar</button>
-            </div>
-        </div>
-    </div>
-   <script type="module" src="../js/home.js"></script>
+  <script type="module" src="../js/home.js"></script>
 </body>
 </html>

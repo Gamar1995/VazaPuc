@@ -277,10 +277,12 @@ h1 em {
 /* ── SOBRE NÓS ── */
 .sobre-nos {
     background-color: var(--bg);
-    padding: 100px 10%; /* Aumentei um pouco o espaçamento lateral para a leitura ficar mais elegante */
+    padding: 100px 10%;
     display: flex;
     align-items: center;
-    justify-content: flex-start; /* Joga o bloco todo para a esquerda */
+    justify-content: space-between; /* Mudou de flex-start para space-between */
+    gap: 40px; /* Adiciona respiro entre o texto e as bolhas */
+    flex-wrap: wrap; /* Garante que em telas menores eles fiquem um abaixo do outro */
     color: var(--text);
     position: relative;
     z-index: 1;
@@ -519,4 +521,59 @@ footer {
   height: 1px;
   background: var(--border);
   margin: 0 2.5rem;
+}
+
+/* ==========================================
+   BOLHAS DE EMOJIS (QUEM SOMOS)
+========================================== */
+.bolhas-container {
+    position: relative;
+    width: 450px;
+    height: 450px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* O wrapper faz a animação constante de flutuar */
+.bolha-wrapper {
+    position: absolute;
+}
+
+/* O interior faz a reação ao mouse (Física) */
+.bolha-emoji {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(232, 50, 90, 0.08); /* Fundo vinho/rosa bem transparente */
+    border: 1px solid rgba(255, 143, 163, 0.3); /* Borda brilhante sutil */
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 50%;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2), inset 0 0 15px rgba(255, 255, 255, 0.05);
+    transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+    cursor: default;
+    user-select: none;
+}
+
+/* Tamanhos, posições e tempos de flutuação de cada bolha */
+.bolha-1 { top: 5%; left: 10%; font-size: 50px; width: 100px; height: 100px; animation: floatUp 4s ease-in-out infinite alternate; z-index: 2; }
+.bolha-2 { top: 40%; left: -5%; font-size: 70px; width: 130px; height: 130px; animation: floatDown 5s ease-in-out infinite alternate; z-index: 3; }
+.bolha-3 { bottom: 10%; left: 20%; font-size: 60px; width: 110px; height: 110px; animation: floatSide 6s ease-in-out infinite alternate; z-index: 1; }
+.bolha-4 { top: 15%; right: 5%; font-size: 80px; width: 140px; height: 140px; animation: floatDown 4.5s ease-in-out infinite alternate; z-index: 4; }
+.bolha-5 { bottom: 20%; right: 5%; font-size: 40px; width: 80px; height: 80px; animation: floatUp 5.5s ease-in-out infinite alternate; z-index: 2; }
+.bolha-6 { top: 45%; right: 35%; font-size: 55px; width: 100px; height: 100px; animation: floatSide 4.2s ease-in-out infinite alternate; z-index: 5; }
+
+/* As animações de ficar subindo e descendo sozinhas */
+@keyframes floatUp { 0% { transform: translateY(0px) rotate(0deg); } 100% { transform: translateY(-25px) rotate(10deg); } }
+@keyframes floatDown { 0% { transform: translateY(0px) rotate(0deg); } 100% { transform: translateY(25px) rotate(-10deg); } }
+@keyframes floatSide { 0% { transform: translateX(0px) rotate(0deg); } 100% { transform: translateX(20px) rotate(15deg); } }
+
+@media (max-width: 900px) {
+    .bolhas-container {
+        width: 100%;
+        height: 350px;
+        transform: scale(0.85);
+        margin-top: 20px;
+    }
 }

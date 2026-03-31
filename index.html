@@ -53,6 +53,15 @@
         </p>
         <a href="#features" class="btn-cta">Entenda mais...</a>
     </div>
+
+    <div class="bolhas-container">
+        <div class="bolha-wrapper bolha-1"><div class="bolha-emoji">👀</div></div>
+        <div class="bolha-wrapper bolha-2"><div class="bolha-emoji">🔥</div></div>
+        <div class="bolha-wrapper bolha-3"><div class="bolha-emoji">💬</div></div>
+        <div class="bolha-wrapper bolha-4"><div class="bolha-emoji">🤫</div></div>
+        <div class="bolha-wrapper bolha-5"><div class="bolha-emoji">🍿</div></div>
+        <div class="bolha-wrapper bolha-6"><div class="bolha-emoji">🎓</div></div>
+    </div>
   </section>
 
   <section id="feedback" class="section section-cascade">
@@ -209,5 +218,55 @@
   </footer>
 
   <script type="module" src="js/home.js"></script>
+
+  <script type="module" src="js/home.js"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const bolhas = document.querySelectorAll('.bolha-emoji');
+      const container = document.querySelector('.bolhas-container');
+
+      if (container && bolhas.length > 0) {
+        container.addEventListener('mousemove', (e) => {
+          // Pega a posição do mouse relativa à caixa das bolhas
+          const rect = container.getBoundingClientRect();
+          const mouseX = e.clientX - rect.left;
+          const mouseY = e.clientY - rect.top;
+
+          bolhas.forEach(bolha => {
+            // Encontra o centro de cada bolha
+            const bolhaRect = bolha.getBoundingClientRect();
+            const bolhaX = (bolhaRect.left - rect.left) + (bolhaRect.width / 2);
+            const bolhaY = (bolhaRect.top - rect.top) + (bolhaRect.height / 2);
+
+            // Calcula a distância entre o mouse e o centro da bolha
+            const distX = mouseX - bolhaX;
+            const distY = mouseY - bolhaY;
+            const distance = Math.sqrt(distX * distX + distY * distY);
+
+            // Se o mouse chegar a menos de 150 pixels perto da bolha, ela foge!
+            if (distance < 150) {
+              const force = (150 - distance) / 150; // Quanto mais perto, maior a força
+              const moveX = -(distX / distance) * force * 50; // Empurra até 50px no eixo X
+              const moveY = -(distY / distance) * force * 50; // Empurra até 50px no eixo Y
+              
+              // Aplica o empurrão
+              bolha.style.transform = `translate(${moveX}px, ${moveY}px) scale(0.95)`;
+            } else {
+              // Retorna a bolha ao estado normal quando o mouse afasta
+              bolha.style.transform = `translate(0px, 0px) scale(1)`;
+            }
+          });
+        });
+
+        // Quando o mouse sai da caixa, reseta todas
+        container.addEventListener('mouseleave', () => {
+          bolhas.forEach(bolha => {
+            bolha.style.transform = `translate(0px, 0px) scale(1)`;
+          });
+        });
+      }
+    });
+  </script>
 </body>
 </html>
