@@ -153,6 +153,41 @@ ON public.profiles FOR UPDATE USING (auth.uid() = id);
 -- ============================================================
 -- RLS OUTRAS TABELAS
 -- ============================================================
+// ============================================================
+// SQL — Rode no editor do Supabase para criar a tabela
+// ============================================================
+ 
+
+CREATE TABLE IF NOT EXISTS notifications (
+  id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id     UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  actor_id    UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  type        TEXT NOT NULL CHECK (type IN ('like', 'reply', 'follow', 'mention')),
+  post_id     UUID REFERENCES posts(id) ON DELETE CASCADE,
+  read        BOOLEAN DEFAULT FALSE,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+ 
+-- Índice para busca rápida por usuário
+CREATE INDEX ON notifications (user_id, created_at DESC);
+ 
+-- RLS (Row Level Security)
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+ 
+CREATE POLICY "Usuário vê só suas notificações"
+  ON notifications FOR SELECT
+  USING (auth.uid() = user_id);
+ 
+CREATE POLICY "Qualquer usuário logado pode criar notificações"
+  ON notifications FOR INSERT
+  WITH CHECK (auth.uid() = actor_id);
+ 
+CREATE POLICY "Usuário atualiza só as suas"
+  ON notifications FOR UPDATE
+  USING (auth.uid() = user_id);
+ 
+-- Ativar Realtime para a tabela
+ALTER PUBLICATION supabase_realtime ADD TABLE notifications;
 
 ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Posts SELECT" ON posts FOR SELECT USING (true);

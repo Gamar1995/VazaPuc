@@ -5,6 +5,20 @@
 
 import { supabase, getCurrentUser } from './supabase.js';
 import { getCurrentProfile, onAuthChange, signOut,  } from './supabase.js';
+
+import {
+  createNotification,
+  getNotifications,
+  getUnreadCount,
+  markAllAsRead,
+  markAsRead,
+  subscribeToNotifications,
+  getNotifText,
+  getNotifIcon,
+  formatTimeAgoNotif,
+  NOTIF_TYPES,
+} from './notifications.js';
+
 import {
   getPosts,
   createPost,
@@ -15,6 +29,8 @@ import {
   getPostsByUser,
   getLikedPosts
 } from './posts.js';
+
+let unsubscribeNotifs = null;
 let viewingProfile = null;
 
 import {updateProfile } from './profile.js';
@@ -81,6 +97,7 @@ let unsubscribeCurrentChat = null;
 // ============================================================
 try {
   console.log("⚙️ Conectando os botões da interface...");
+  setupNotifications();
   setupNavigation();
   setupPostComposer();
   setupPostModal();
@@ -101,6 +118,7 @@ try {
       console.log("Usuário logado! Carregando dados do perfil...");
       currentProfile = await getCurrentProfile();
       updateUserUI();
+      await initNotifications();
       await loadFeed();
       startRealtimeFeed();
     } else {
@@ -342,8 +360,36 @@ function attachPostEventListeners() {
       else likedPostIds.delete(postId);
 
       try {
-        if (newLiked) await likePost(postId);
-        else await unlikePost(postId);
+       if (newLiked) {
+  await likePost(postId);
+ 
+  // Busca o dono do post para notificá-lo
+  const postCard = document.querySelector(`[data-post-id="${postId}"]`);
+  if (postCard && currentProfile) {
+    // O handle do autor está no botão .clickable-avatar
+    const authorHandle = postCard.querySelector('.clickable-avatar')?.dataset.handle;
+    if (authorHandle && authorHandle !== currentProfile.handle) {
+      // Busca o post para pegar o user_id do autor
+      // Você pode adaptar aqui: se já tiver o author_id no DOM via data-*, use diretamente
+      const { data: postData } = await supabase
+        .from('posts')
+        .select('user_id')
+        .eq('id', postId)
+        .single();
+ 
+      if (postData?.user_id) {
+        await createNotification({
+          toUserId: postData.user_id,
+          actorId:  currentProfile.id,
+          type:     NOTIF_TYPES.LIKE,
+          postId,
+        });
+      }
+    }
+  }
+} else {
+  await unlikePost(postId);
+}
       } catch (err) {
         newBtn.dataset.liked = wasLiked;
         newBtn.classList.toggle('liked', wasLiked);
@@ -398,6 +444,20 @@ function attachPostEventListeners() {
       e.stopPropagation();
       if (!currentProfile) {
         showNotification('Faça login para comentar! 🔐');
+        const { data: postOwner } = await supabase
+  .from('posts')
+  .select('user_id')
+  .eq('id', postId)
+  .single();
+ 
+if (postOwner?.user_id && postOwner.user_id !== currentProfile.id) {
+  await createNotification({
+    toUserId: postOwner.user_id,
+    actorId:  currentProfile.id,
+    type:     NOTIF_TYPES.REPLY,
+    postId,
+  });
+}
         return;
       }
 
@@ -539,8 +599,8 @@ async function handleSubmitPost(content) {
   if (modalInput) modalInput.value = '';
 
   try {
-    await createPost(content);
-    showNotification('Post criado! ✨');
+    const newPost = await createPost(content);
+showNotification('Post criado! ✨');
   } catch (err) {
     console.error('Erro ao criar post:', err);
     showNotification('Erro ao criar post. Tente novamente.');
@@ -1098,4 +1158,159 @@ function setupTrendingWidget() {
       widget.classList.toggle('expanded'); // Alterna entre o estado grande e pequeno
     });
   }
+}
+async function initNotifications() {
+  if (!currentProfile) return;
+ 
+  // Atualiza o badge com a contagem atual
+  await refreshNotifBadge();
+ 
+  // Inscreve em notificações em tempo real
+  if (unsubscribeNotifs) unsubscribeNotifs();
+ 
+  unsubscribeNotifs = subscribeToNotifications(currentProfile.id, (newNotif) => {
+    // Atualiza o badge
+    refreshNotifBadge();
+ 
+    // Mostra o toast de nova notificação
+    showNotifToast(newNotif);
+  });
+}
+ 
+// --- Atualiza o número no badge ---
+async function refreshNotifBadge() {
+  const badge = document.getElementById('notifBadge');
+  if (!badge) return;
+ 
+  const count = await getUnreadCount();
+ 
+  if (count > 0) {
+    badge.textContent = count > 99 ? '99+' : count;
+    badge.classList.add('visible');
+  } else {
+    badge.classList.remove('visible');
+  }
+}
+ 
+// --- Configura o botão do sino e o painel ---
+function setupNotifications() {
+  const bellBtn   = document.getElementById('notifBellBtn');
+  const panel     = document.getElementById('notifPanel');
+  const backdrop  = document.getElementById('notifBackdrop');
+  const markAllBtn = document.getElementById('notifMarkAllBtn');
+ 
+  if (!bellBtn || !panel) return;
+ 
+  bellBtn.addEventListener('click', async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+ 
+    if (!currentProfile) {
+      showNotification('Faça login para ver suas notificações! 🔐');
+      return;
+    }
+ 
+    panel.classList.toggle('active');
+ 
+    // Carrega a lista sempre que abre
+    if (panel.classList.contains('active')) {
+      await renderNotifList();
+    }
+  });
+ 
+  backdrop?.addEventListener('click', () => {
+    panel.classList.remove('active');
+  });
+ 
+  markAllBtn?.addEventListener('click', async () => {
+    await markAllAsRead();
+    await refreshNotifBadge();
+    await renderNotifList();
+    showNotification('Todas as notificações foram lidas! ✅');
+  });
+}
+ 
+// --- Renderiza a lista dentro do painel ---
+async function renderNotifList() {
+  const listEl = document.getElementById('notifList');
+  if (!listEl) return;
+ 
+  listEl.innerHTML = '<div class="notif-empty"><span class="notif-empty-icon">⏳</span>Carregando...</div>';
+ 
+  const notifs = await getNotifications(30);
+ 
+  if (notifs.length === 0) {
+    listEl.innerHTML = `
+      <div class="notif-empty">
+        <span class="notif-empty-icon">🔔</span>
+        Nenhuma notificação ainda.<br>Interaja com a galera!
+      </div>
+    `;
+    return;
+  }
+ 
+  listEl.innerHTML = notifs.map(n => {
+    const avatar = n.actor?.avatar_url
+      || `https://api.dicebear.com/7.x/avataaars/svg?seed=${n.actor?.handle || 'anon'}`;
+ 
+    return `
+      <div class="notif-item ${n.read ? '' : 'unread'}" data-notif-id="${n.id}">
+        <img src="${avatar}" class="notif-item-avatar" alt="Avatar">
+        <div class="notif-item-icon">${getNotifIcon(n.type)}</div>
+        <div class="notif-item-body">
+          <p class="notif-item-text">${escapeHtml(getNotifText(n))}</p>
+          <p class="notif-item-time">${formatTimeAgoNotif(n.created_at)}</p>
+        </div>
+      </div>
+    `;
+  }).join('');
+ 
+  // Marca como lida ao clicar
+  listEl.querySelectorAll('.notif-item').forEach(item => {
+    item.addEventListener('click', async () => {
+      const notifId = item.dataset.notifId;
+      item.classList.remove('unread');
+      await markAsRead(notifId);
+      await refreshNotifBadge();
+    });
+  });
+ 
+  // Marca todas como lidas após 3s com o painel aberto
+  setTimeout(async () => {
+    const panel = document.getElementById('notifPanel');
+    if (panel?.classList.contains('active')) {
+      await markAllAsRead();
+      await refreshNotifBadge();
+    }
+  }, 3000);
+}
+ 
+// --- Toast de nova notificação (aparece no canto inferior) ---
+function showNotifToast(notif) {
+  const existing = document.querySelector('.notif-toast');
+  if (existing) existing.remove();
+ 
+  const toast = document.createElement('div');
+  toast.className = 'notif-toast';
+  toast.innerHTML = `
+    <span class="notif-toast-icon">${getNotifIcon(notif.type)}</span>
+    <p class="notif-toast-text">${escapeHtml(getNotifText(notif))}</p>
+  `;
+ 
+  toast.addEventListener('click', async () => {
+    removeToast(toast);
+    // Abre o painel de notificações
+    document.getElementById('notifPanel')?.classList.add('active');
+    await renderNotifList();
+  });
+ 
+  document.body.appendChild(toast);
+ 
+  // Remove automaticamente após 5s
+  setTimeout(() => removeToast(toast), 5000);
+}
+ 
+function removeToast(toast) {
+  toast.classList.add('removing');
+  setTimeout(() => toast.remove(), 300);
 }

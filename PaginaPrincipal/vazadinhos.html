@@ -34,12 +34,32 @@
           <span class="nav-icon">◎</span>
           <span class="nav-label">Perfil</span>
         </a>
+         <a href="#notifications" class="notif-bell-wrapper" id="notifBellBtn">
+    <span class="notif-bell-icon">🔔</span>
+    <span class="nav-label">Notificações</span>
+    <span class="notif-badge" id="notifBadge">0</span>
+  </a>
       </nav>
 
       <button class="post-btn" id="postBtnSidebar">
         <span>Novo Post</span>
       </button>
-
+ <!-- Painel dropdown -->
+  <div class="notif-panel" id="notifPanel">
+    <div class="notif-panel-backdrop" id="notifBackdrop"></div>
+    <div class="notif-panel-box">
+      <div class="notif-panel-header">
+        <h3>Notificações</h3>
+        <button class="notif-mark-all-btn" id="notifMarkAllBtn">Marcar todas como lidas</button>
+      </div>
+      <div class="notif-list" id="notifList">
+        <div class="notif-empty">
+          <span class="notif-empty-icon">🔔</span>
+          Carregando...
+        </div>
+      </div>
+    </div>
+  </div>
       <div class="sidebar-footer" style="position: relative;">
         <div class="user-login-popup" id="userLoginPopup">
           <p>Faça login para interagir, curtir fofocas e ter o seu próprio perfil na PUC!</p>
