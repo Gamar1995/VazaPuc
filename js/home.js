@@ -27,7 +27,8 @@ import {
   getLikedPostIds,
   subscribeToNewPosts,
   getPostsByUser,
-  getLikedPosts
+  getLikedPosts,
+   addReply
 } from './posts.js';
 
 let unsubscribeNotifs = null;
@@ -337,67 +338,62 @@ function createPostHTML(post) {
 function attachPostEventListeners() {
   // 1. LÓGICA DE CURTIR
   document.querySelectorAll('.like-action').forEach(btn => {
-    const newBtn = btn.cloneNode(true);
-    btn.parentNode.replaceChild(newBtn, btn);
-
-    newBtn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      if (!currentProfile) {
-        showNotification('Faça login para curtir! 🔐');
-        return;
-      }
-
-      const postId = newBtn.dataset.postId;
-      const wasLiked = newBtn.dataset.liked === 'true';
-      const countEl = newBtn.querySelector('span');
-
-      const newLiked = !wasLiked;
-      newBtn.dataset.liked = newLiked;
-      newBtn.classList.toggle('liked', newLiked);
-      countEl.textContent = parseInt(countEl.textContent) + (newLiked ? 1 : -1);
-
-      if (newLiked) likedPostIds.add(postId);
-      else likedPostIds.delete(postId);
-
-      try {
-       if (newLiked) {
-  await likePost(postId);
+  const newBtn = btn.cloneNode(true);
+  btn.parentNode.replaceChild(newBtn, btn);
  
-  // Busca o dono do post para notificá-lo
-  const postCard = document.querySelector(`[data-post-id="${postId}"]`);
-  if (postCard && currentProfile) {
-    // O handle do autor está no botão .clickable-avatar
-    const authorHandle = postCard.querySelector('.clickable-avatar')?.dataset.handle;
-    if (authorHandle && authorHandle !== currentProfile.handle) {
-      // Busca o post para pegar o user_id do autor
-      // Você pode adaptar aqui: se já tiver o author_id no DOM via data-*, use diretamente
-      const { data: postData } = await supabase
-        .from('posts')
-        .select('user_id')
-        .eq('id', postId)
-        .single();
- 
-      if (postData?.user_id) {
-        await createNotification({
-          toUserId: postData.user_id,
-          actorId:  currentProfile.id,
-          type:     NOTIF_TYPES.LIKE,
-          postId,
-        });
-      }
+  newBtn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    if (!currentProfile) {
+      showNotification('Faça login para curtir! 🔐');
+      return;
     }
-  }
-} else {
-  await unlikePost(postId);
-}
-      } catch (err) {
-        newBtn.dataset.liked = wasLiked;
-        newBtn.classList.toggle('liked', wasLiked);
-        countEl.textContent = parseInt(countEl.textContent) + (wasLiked ? 1 : -1);
-        showNotification('Erro ao curtir. Tente novamente.');
+ 
+    const postId = newBtn.dataset.postId;
+    const wasLiked = newBtn.dataset.liked === 'true';
+    const countEl = newBtn.querySelector('span');
+ 
+    // Feedback visual imediato (optimistic update)
+    const newLiked = !wasLiked;
+    newBtn.dataset.liked = newLiked;
+    newBtn.classList.toggle('liked', newLiked);
+    countEl.textContent = parseInt(countEl.textContent) + (newLiked ? 1 : -1);
+ 
+    if (newLiked) likedPostIds.add(postId);
+    else likedPostIds.delete(postId);
+ 
+    try {
+      if (newLiked) {
+        await likePost(postId);
+ 
+        // Busca o dono do post para notificá-lo
+        const { data: postData } = await supabase
+          .from('posts')
+          .select('user_id')
+          .eq('id', postId)
+          .single();
+ 
+        if (postData?.user_id && postData.user_id !== currentProfile.id) {
+          await createNotification({
+            toUserId: postData.user_id,
+            actorId:  currentProfile.id,
+            type:     NOTIF_TYPES.LIKE,
+            postId,
+          });
+        }
+      } else {
+        await unlikePost(postId);
       }
-    });
+    } catch (err) {
+      // Reverte o feedback visual se der erro no banco
+      newBtn.dataset.liked = wasLiked;
+      newBtn.classList.toggle('liked', wasLiked);
+      countEl.textContent = parseInt(countEl.textContent) + (wasLiked ? 1 : -1);
+      if (wasLiked) likedPostIds.add(postId);
+      else likedPostIds.delete(postId);
+      showNotification('Erro ao curtir. Tente novamente.');
+    }
   });
+});
   //logica de clicar no avatar pra entrar no perfil 
   document.querySelectorAll('.clickable-avatar').forEach(el => {
     el.addEventListener('click', () => {
@@ -437,91 +433,93 @@ function attachPostEventListeners() {
 
   // 3. LÓGICA DE ENVIAR O COMENTÁRIO
   document.querySelectorAll('.reply-submit-btn').forEach(btn => {
-    const newBtn = btn.cloneNode(true);
-    btn.parentNode.replaceChild(newBtn, btn);
-
-    newBtn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      if (!currentProfile) {
-        showNotification('Faça login para comentar! 🔐');
-        const { data: postOwner } = await supabase
-  .from('posts')
-  .select('user_id')
-  .eq('id', postId)
-  .single();
+  const newBtn = btn.cloneNode(true);
+  btn.parentNode.replaceChild(newBtn, btn);
  
-if (postOwner?.user_id && postOwner.user_id !== currentProfile.id) {
-  await createNotification({
-    toUserId: postOwner.user_id,
-    actorId:  currentProfile.id,
-    type:     NOTIF_TYPES.REPLY,
-    postId,
-  });
-}
-        return;
-      }
-
-      const postId = newBtn.dataset.postId;
-      const input = document.getElementById(`reply-input-${postId}`);
-      const privacyCheckbox = document.getElementById(`reply-privacy-${postId}`);
-
-      const content = input.value.trim();
-      const isPrivate = privacyCheckbox.checked;
-
-      if (!content) return;
-
-      newBtn.disabled = true;
-      newBtn.textContent = '...';
-
-      try {
-        /*
-          AQUI ENTRA O SEU BACKEND SUPABASE (EXEMPLO):
-          await addReply(postId, content, isPrivate);
-        */
-
-        // Criação visual imediata na tela (Feedback instantâneo)
-        const repliesList = document.getElementById(`replies-list-${postId}`);
-        const userAvatar = currentProfile.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentProfile.handle}`;
-
-        const replyHTML = `
-            <div class="reply-item" style="animation: slideDown 0.3s ease;">
-                <img src="${userAvatar}" class="reply-avatar" style="width: 30px; height: 30px;">
-                <div class="reply-bubble">
-                    <div class="reply-header">
-                        <div>
-                          <span class="reply-author">${escapeHtml(currentProfile.name)}</span>
-                          <span class="reply-handle">@${escapeHtml(currentProfile.handle)}</span>
-                        </div>
-                        ${isPrivate ? '<span class="reply-private-badge">🔒 Privado</span>' : ''}
-                    </div>
-                    <p style="font-size: 13.5px; color: var(--text-primary); line-height: 1.4;">${escapeHtml(content)}</p>
-                </div>
+  newBtn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+ 
+    // ✅ CORREÇÃO: verificação de login ANTES de qualquer outra coisa
+    if (!currentProfile) {
+      showNotification('Faça login para comentar! 🔐');
+      return; // para aqui, sem tentar acessar postId
+    }
+ 
+    const postId = newBtn.dataset.postId;
+    const input = document.getElementById(`reply-input-${postId}`);
+    const privacyCheckbox = document.getElementById(`reply-privacy-${postId}`);
+ 
+    const content = input.value.trim();
+    const isPrivate = privacyCheckbox.checked;
+ 
+    if (!content) return;
+ 
+    newBtn.disabled = true;
+    newBtn.textContent = '...';
+ 
+    try {
+      // ✅ CORREÇÃO: chama o backend antes de atualizar o visual
+      // Você precisa ter uma função addReply em posts.js (ver abaixo)
+      await addReply(postId, content, isPrivate);
+ 
+      // Feedback visual na tela após confirmação do banco
+      const repliesList = document.getElementById(`replies-list-${postId}`);
+      const userAvatar = currentProfile.avatar_url
+        || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentProfile.handle}`;
+ 
+      const replyHTML = `
+        <div class="reply-item" style="animation: slideDown 0.3s ease;">
+          <img src="${userAvatar}" class="reply-avatar" style="width: 30px; height: 30px;">
+          <div class="reply-bubble">
+            <div class="reply-header">
+              <div>
+                <span class="reply-author">${escapeHtml(currentProfile.name)}</span>
+                <span class="reply-handle">@${escapeHtml(currentProfile.handle)}</span>
+              </div>
+              ${isPrivate ? '<span class="reply-private-badge">🔒 Privado</span>' : ''}
             </div>
-        `;
-
-        // Joga o comentário novo no topo da lista
-        repliesList.insertAdjacentHTML('afterbegin', replyHTML);
-
-        // Atualiza o número de comentários no ícone 💬
-        const replyCountSpan = document.querySelector(`.reply-action[data-post-id="${postId}"] .reply-count`);
-        if (replyCountSpan) {
-          replyCountSpan.textContent = parseInt(replyCountSpan.textContent) + 1;
-        }
-
-        // Limpa a caixa
-        input.value = '';
-        privacyCheckbox.checked = false;
-        showNotification(isPrivate ? 'Comentário enviado em modo privado! 🤫' : 'Comentário enviado! 💬');
-
-      } catch (err) {
-        console.error('Erro ao comentar:', err);
-        showNotification('Erro ao enviar. Tente novamente.');
-      } finally {
-        newBtn.disabled = false;
-        newBtn.textContent = 'Responder';
+            <p style="font-size: 13.5px; color: var(--text-primary); line-height: 1.4;">${escapeHtml(content)}</p>
+          </div>
+        </div>
+      `;
+ 
+      repliesList.insertAdjacentHTML('afterbegin', replyHTML);
+ 
+      // ✅ Atualiza o contador de comentários no ícone 💬
+      const replyCountSpan = document.querySelector(`.reply-action[data-post-id="${postId}"] .reply-count`);
+      if (replyCountSpan) {
+        replyCountSpan.textContent = parseInt(replyCountSpan.textContent) + 1;
       }
-    });
+ 
+      input.value = '';
+      privacyCheckbox.checked = false;
+      showNotification(isPrivate ? 'Comentário enviado em modo privado! 🤫' : 'Comentário enviado! 💬');
+ 
+      // ✅ Notifica o dono do post
+      const { data: postOwner } = await supabase
+        .from('posts')
+        .select('user_id')
+        .eq('id', postId)
+        .single();
+ 
+      if (postOwner?.user_id && postOwner.user_id !== currentProfile.id) {
+        await createNotification({
+          toUserId: postOwner.user_id,
+          actorId:  currentProfile.id,
+          type:     NOTIF_TYPES.REPLY,
+          postId,
+        });
+      }
+ 
+    } catch (err) {
+      console.error('Erro ao comentar:', err);
+      showNotification('Erro ao enviar. Tente novamente.');
+    } finally {
+      newBtn.disabled = false;
+      newBtn.textContent = 'Responder';
+    }
   });
+});
 }
 
 function prependPost(post) {

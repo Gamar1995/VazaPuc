@@ -232,3 +232,39 @@ USING (
 CREATE POLICY "Messages INSERT"
 ON messages FOR INSERT
 WITH CHECK (auth.uid() = sender_id);
+
+CREATE TABLE IF NOT EXISTS replies (
+  id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  post_id     UUID REFERENCES posts(id) ON DELETE CASCADE,
+  author_id   UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  content     TEXT NOT NULL,
+  is_private  BOOLEAN DEFAULT FALSE,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS replies_post_id_idx ON replies (post_id, created_at DESC);
+
+ALTER TABLE replies ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Qualquer um pode ver replies publicas"
+  ON replies FOR SELECT
+  USING (
+    is_private = FALSE
+    OR author_id = auth.uid()
+    OR post_id IN (
+      SELECT id FROM posts WHERE author_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Usuario logado pode criar reply"
+  ON replies FOR INSERT
+  WITH CHECK (auth.uid() = author_id);
+
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS replies_count INT DEFAULT 0;
+
+CREATE OR REPLACE FUNCTION increment_replies(post_id UUID)
+RETURNS void AS $$
+  UPDATE posts
+  SET replies_count = COALESCE(replies_count, 0) + 1
+  WHERE id = post_id;
+$$ LANGUAGE sql SECURITY DEFINER;

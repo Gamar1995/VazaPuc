@@ -147,6 +147,33 @@ export async function likePost(postId) {
   if (error) throw error;
 }
 
+export async function addReply(postId, content, isPrivate = false) {
+  const user = await getCurrentUser();
+  if (!user) throw new Error('Precisa estar logado para comentar.');
+ 
+  // Insere o comentário na tabela replies
+  const { data, error } = await supabase
+    .from('replies')
+    .insert({
+      post_id:    postId,
+      author_id:  user.id,
+      content,
+      is_private: isPrivate,
+    })
+    .select(`
+      *,
+      author:profiles(id, name, handle, avatar_url)
+    `)
+    .single();
+ 
+  if (error) throw error;
+ 
+  // Incrementa o contador de replies no post
+  await supabase.rpc('increment_replies', { post_id: postId });
+ 
+  return data;
+}
+ 
 // Remove a curtida de um post
 export async function unlikePost(postId) {
   const user = await getCurrentUser();
