@@ -17,7 +17,7 @@
     <a class="logo" href="#">Vaza PUC</a>
     <ul class="nav-links">
       <li><a href="#Home">Home</a></li>
-      <li><a href="premuim.html">Premium</a></li>
+      <li><a href="premium.html">Premium</a></li>
     </ul>
     <div class="ms-lg-3">
       <a class="btn custom-btn custom-border-btn" href="inicial/cadastro.html">
@@ -35,7 +35,7 @@
       Veja, compartilhe e descubra os bastidores com a comunidade mais quente da universidade.
     </p>
     <div class="cta-row">
-      <a class="btn btn-primary" href="#cascade">👀 Explorar Agora 👀</a>
+      <a class="btn btn-primary" href="PaginaPrincipal/vazadinhos.html">👀 Explorar Agora 👀</a>
       <a class="btn btn-ghost" href="#contato">Fale Conosco 🗯️</a>
     </div>
   </section>
@@ -68,100 +68,10 @@
     <div class="container">
         <h2 class="section-title text-center" style="text-align: center;">O que andam falando por aí...</h2>
         
-        <div class="cascade-container">
-            <div class="cascade-item post-vertical">
-                <div class="post-internal-border">
-                    <div class="post-header-vertical">
-                        <img src="https://via.placeholder.com/40" alt="User Avatar" class="post-avatar-vertical">
-                        <div class="post-user-info-vertical">
-                            <span class="post-name-vertical">Pi2</span>
-                            <span class="post-handle-vertical">@Pietro17523063</span>
-                        </div>
-                    </div>
-                    <div class="post-content-vertical">
-                        <p>Vazadinhos ta ficando cada vez pior pqp quem fez essa p#### de site.</p>
-                    </div>
-                </div>
+        <div class="cascade-container" id="landingPostsContainer">
             </div>
-
-            <div class="cascade-item post-vertical">
-                <div class="post-internal-border">
-                    <div class="post-header-vertical">
-                        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT3Raqy3QT7wB1rmbooMPZ4WO5Itu557WTYDQ&s" alt="User Avatar" class="post-avatar-vertical">
-                        <div class="post-user-info-vertical">
-                            <span class="post-name-vertical">palio enrique</span>
-                            <span class="post-handle-vertical">@tiquinho7884</span>
-                        </div>
-                    </div>
-                    <div class="post-content-vertical">
-                        <p>O pietro de engenharia de software é um gostoso pqp 🔥</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="cascade-item post-vertical">
-                <div class="post-internal-border">
-                    <div class="post-header-vertical">
-                        <img src="https://www.marciapiovesan.com.br/wp-content/uploads/2023/02/Virginia-Fonseca-2.png" alt="User Avatar" class="post-avatar-vertical">
-                        <div class="post-user-info-vertical">
-                            <span class="post-name-vertical">Mariana Silva</span>
-                            <span class="post-handle-vertical">@mari_silva</span>
-                        </div>
-                    </div>
-                    <div class="post-content-vertical">
-                        <p>Ainda chocada com o exposed da atlética. Como descobrem isso tão rápido? 🗣️</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="cascade-item post-vertical">
-                <div class="post-internal-border">
-                    <div class="post-header-vertical">
-                        <img src="https://via.placeholder.com/40" alt="User Avatar" class="post-avatar-vertical">
-                        <div class="post-user-info-vertical">
-                            <span class="post-name-vertical">Pedro H.</span>
-                            <span class="post-handle-vertical">@ph_eng</span>
-                        </div>
-                    </div>
-                    <div class="post-content-vertical">
-                        <p>Cálculo tá foda, mas esse site é meu refúgio diário. 🕵️‍♂️</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="cascade-item post-vertical">
-                <div class="post-internal-border">
-                    <div class="post-header-vertical">
-                        <img src="https://via.placeholder.com/40" alt="User Avatar" class="post-avatar-vertical">
-                        <div class="post-user-info-vertical">
-                            <span class="post-name-vertical">Julia Costa</span>
-                            <span class="post-handle-vertical">@juju_costa</span>
-                        </div>
-                    </div>
-                    <div class="post-content-vertical">
-                        <p>Já preparem as pipocas, as festas vão render muito comentário! 🍿</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="cascade-item post-vertical">
-                <div class="post-internal-border">
-                    <div class="post-header-vertical">
-                        <img src="https://via.placeholder.com/40" alt="User Avatar" class="post-avatar-vertical">
-                        <div class="post-user-info-vertical">
-                            <span class="post-name-vertical">Thiago Ramos</span>
-                            <span class="post-handle-vertical">@thiaguin_r</span>
-                        </div>
-                    </div>
-                    <div class="post-content-vertical">
-                        <p>A organização tá de parabéns, melhor que meus trabalhos em grupo. 😂</p>
-                    </div>
-                </div>
-            </div>
-
-        </div>
+        
     </div>
-  </section>
   </section>
   
   <div class="divider"></div>
@@ -217,9 +127,71 @@
     <span>Por Pedro L. e Pietro G.</span>
   </footer>
 
-  <script type="module" src="js/home.js"></script>
+  <script type="module">
+    import { getPosts } from './js/posts.js';
 
-  <script type="module" src="js/home.js"></script>
+    async function carregarPostsDestaque() {
+      const container = document.getElementById('landingPostsContainer');
+      if (!container) return;
+
+      container.innerHTML = '<p style="text-align: center; width: 100%; color: #bba3ab; padding: 20px;">Analisando os maiores babados... 🔥</p>';
+
+      try {
+        // Busca os últimos 20 posts gerais do banco de dados
+        const posts = await getPosts(20);
+        
+        // Filtra os 6 com mais curtidas (Em Alta)
+        const topPosts = [...posts]
+          .sort((a, b) => (b.likes_count || 0) - (a.likes_count || 0))
+          .slice(0, 6);
+
+        if (topPosts.length === 0) {
+          container.innerHTML = '<p style="text-align: center; width: 100%; color: #bba3ab;">Ainda não há posts. Entre e seja o primeiro a vazar algo!</p>';
+          return;
+        }
+
+        // Função básica para evitar quebra de HTML no texto
+        const escapeHtml = (text) => {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        };
+
+        // Renderiza os cartões dinamicamente
+        container.innerHTML = topPosts.map(post => {
+          const avatar = post.author?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author?.handle}`;
+          
+          return `
+            <div class="cascade-item post-vertical">
+                <div class="post-internal-border">
+                    <div class="post-header-vertical">
+                        <img src="${avatar}" alt="Avatar" class="post-avatar-vertical">
+                        <div class="post-user-info-vertical">
+                            <span class="post-name-vertical">${escapeHtml(post.author?.name || 'Usuário')}</span>
+                            <span class="post-handle-vertical">@${escapeHtml(post.author?.handle || 'anonimo')}</span>
+                        </div>
+                    </div>
+                    <div class="post-content-vertical">
+                        <p>${escapeHtml(post.content)}</p>
+                    </div>
+                    <div style="margin-top: 12px; font-size: 13px; color: #bba3ab; display: flex; gap: 10px;">
+                        <span>❤️ ${post.likes_count || 0}</span>
+                        <span>💬 ${post.replies_count || 0}</span>
+                    </div>
+                </div>
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error("Erro ao carregar os posts destaque:", err);
+        container.innerHTML = '<p style="text-align: center; width: 100%; color: #E74C3C;">Erro ao carregar as fofocas do servidor. ❌</p>';
+      }
+    }
+
+    // Executa a busca assim que a página carregar
+    document.addEventListener('DOMContentLoaded', carregarPostsDestaque);
+  </script>
 
   <script>
     document.addEventListener("DOMContentLoaded", () => {
@@ -228,38 +200,31 @@
 
       if (container && bolhas.length > 0) {
         container.addEventListener('mousemove', (e) => {
-          // Pega a posição do mouse relativa à caixa das bolhas
           const rect = container.getBoundingClientRect();
           const mouseX = e.clientX - rect.left;
           const mouseY = e.clientY - rect.top;
 
           bolhas.forEach(bolha => {
-            // Encontra o centro de cada bolha
             const bolhaRect = bolha.getBoundingClientRect();
             const bolhaX = (bolhaRect.left - rect.left) + (bolhaRect.width / 2);
             const bolhaY = (bolhaRect.top - rect.top) + (bolhaRect.height / 2);
 
-            // Calcula a distância entre o mouse e o centro da bolha
             const distX = mouseX - bolhaX;
             const distY = mouseY - bolhaY;
             const distance = Math.sqrt(distX * distX + distY * distY);
 
-            // Se o mouse chegar a menos de 150 pixels perto da bolha, ela foge!
             if (distance < 150) {
-              const force = (150 - distance) / 150; // Quanto mais perto, maior a força
-              const moveX = -(distX / distance) * force * 50; // Empurra até 50px no eixo X
-              const moveY = -(distY / distance) * force * 50; // Empurra até 50px no eixo Y
+              const force = (150 - distance) / 150; 
+              const moveX = -(distX / distance) * force * 50; 
+              const moveY = -(distY / distance) * force * 50; 
               
-              // Aplica o empurrão
               bolha.style.transform = `translate(${moveX}px, ${moveY}px) scale(0.95)`;
             } else {
-              // Retorna a bolha ao estado normal quando o mouse afasta
               bolha.style.transform = `translate(0px, 0px) scale(1)`;
             }
           });
         });
 
-        // Quando o mouse sai da caixa, reseta todas
         container.addEventListener('mouseleave', () => {
           bolhas.forEach(bolha => {
             bolha.style.transform = `translate(0px, 0px) scale(1)`;

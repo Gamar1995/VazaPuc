@@ -41,7 +41,6 @@
       </button>
 
       <div class="sidebar-footer" style="position: relative;">
-        
         <div class="user-login-popup" id="userLoginPopup">
           <p>Faça login para interagir, curtir fofocas e ter o seu próprio perfil na PUC!</p>
           <button id="btnPopupLogin" class="btn-primary" style="width: 100%;">Entrar na Conta</button>
@@ -58,6 +57,7 @@
         </div>
       </div>
     </aside> 
+
     <main class="main-content">
       
       <div class="page-container active" id="home-page">
@@ -145,27 +145,64 @@
     </main>
 
     <aside class="right-sidebar" id="rightSidebar">
-      <div class="trending-widget">
+      
+      <div class="trending-widget" id="trendingWidget">
         <h3>Explore por blocos:</h3>
-        <div class="trends-list">
-          <div class="trend-item"><div class="trend-label">Amarelo</div><div class="trend-title">#Bloco 01</div><div class="trend-count">500 posts recentes</div></div>
-          <div class="trend-item"><div class="trend-label">Azul</div><div class="trend-title">#Bloco 02</div><div class="trend-count">85 posts recentes</div></div>
-          <div class="trend-item"><div class="trend-label">Verde</div><div class="trend-title">#Bloco 03</div><div class="trend-count">278 posts recentes</div></div>
-          <div class="trend-item"><div class="trend-label">Laranja</div><div class="trend-title">#Bloco 04</div><div class="trend-count">394 posts recentes</div></div>
-          <div class="trend-item"><div class="trend-label">Vermelho</div><div class="trend-title">#Bloco 05</div><div class="trend-count">97 posts recentes</div></div>
-          <div class="trend-item"><div class="trend-label">Politécnica</div><div class="trend-title">#Bloco 06</div><div class="trend-count">67 posts recentes</div></div>
-          <div class="trend-item"><div class="trend-label">Politécnica</div><div class="trend-title">#Bloco 07</div><div class="trend-count">328 posts recentes</div></div>
-          <div class="trend-item"><div class="trend-label">Politécnica</div><div class="trend-title">#Bloco 08</div><div class="trend-count">124 posts recentes</div></div>
-          <div class="trend-item"><div class="trend-label">Politécnica</div><div class="trend-title">#Bloco 09</div><div class="trend-count">273 posts recentes</div></div>
-          <div class="trend-item"><div class="trend-label">Politécnica</div><div class="trend-title">#Bloco 10</div><div class="trend-count">211 posts recentes</div></div>
+        
+        <div class="trends-list-wrapper">
+          <div class="trends-list">
+            <div class="trend-item"><div class="trend-label">Amarelo</div><div class="trend-title">#Bloco 01</div><div class="trend-count">500 posts recentes</div></div>
+            <div class="trend-item"><div class="trend-label">Azul</div><div class="trend-title">#Bloco 02</div><div class="trend-count">85 posts recentes</div></div>
+            <div class="trend-item"><div class="trend-label">Verde</div><div class="trend-title">#Bloco 03</div><div class="trend-count">278 posts recentes</div></div>
+            <div class="trend-item"><div class="trend-label">Laranja</div><div class="trend-title">#Bloco 04</div><div class="trend-count">394 posts recentes</div></div>
+            <div class="trend-item"><div class="trend-label">Vermelho</div><div class="trend-title">#Bloco 05</div><div class="trend-count">97 posts recentes</div></div>
+            <div class="trend-item"><div class="trend-label">Politécnica</div><div class="trend-title">#Bloco 06</div><div class="trend-count">67 posts recentes</div></div>
+            <div class="trend-item"><div class="trend-label">Politécnica</div><div class="trend-title">#Bloco 07</div><div class="trend-count">328 posts recentes</div></div>
+            <div class="trend-item"><div class="trend-label">Politécnica</div><div class="trend-title">#Bloco 08</div><div class="trend-count">124 posts recentes</div></div>
+            <div class="trend-item"><div class="trend-label">Politécnica</div><div class="trend-title">#Bloco 09</div><div class="trend-count">273 posts recentes</div></div>
+            <div class="trend-item"><div class="trend-label">Politécnica</div><div class="trend-title">#Bloco 10</div><div class="trend-count">211 posts recentes</div></div>
+          </div>
+          <div class="trends-fade"></div>
+        </div>
+
+        <button class="toggle-blocks-btn" id="toggleBlocksBtn" title="Expandir/Recolher">︾</button>
+      </div>
+<div class="official-notices-widget">
+        <h3>📌 Avisos Oficiais</h3>
+        <div class="notices-list">
+          
+          <div class="notice-item">
+            <div class="notice-icon">🏛️</div>
+            <div class="notice-content">
+              <div class="notice-title">Semana de Provas</div>
+              <div class="notice-desc">Fique atento: as avaliações P1 começam no dia 15/04.</div>
+            </div>
+          </div>
+          
+          <div class="notice-item">
+            <div class="notice-icon">🎉</div>
+            <div class="notice-content">
+              <div class="notice-title">Calourada 2026</div>
+              <div class="notice-desc">Garanta seu ingresso para a festa oficial dos calouros.</div>
+            </div>
+          </div>
+          
+          <div class="notice-item">
+            <div class="notice-icon">⚠️</div>
+            <div class="notice-content">
+              <div class="notice-title">Manutenção do Sistema</div>
+              <div class="notice-desc">O portal do aluno ficará offline neste domingo de madrugada.</div>
+            </div>
+          </div>
+
         </div>
       </div>
       <div class="suggestions-widget">
         <h3>Quem Seguir</h3>
         <div class="suggestions-list" id="suggestionsList"></div>
       </div>
-    </aside>
 
+    </aside>
   </div> <div class="modal" id="postModal">
     <div class="modal-content">
       <div class="modal-header">

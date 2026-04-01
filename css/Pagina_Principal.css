@@ -475,12 +475,27 @@ h1 em {
   font-weight: 300;
 }
 
+.post-content-vertical {
+  flex-grow: 1; /* Preenche o espaço vazio para empurrar os ícones de like para o rodapé */
+}
+
 .post-content-vertical p {
   font-size: 0.85rem;
   color: var(--text);
   line-height: 1.5;
   font-weight: 300;
-  text-align: left; /* Centralizado fica melhor em colunas muito estreitas */
+  text-align: left;
+  
+  /* 1. Impede que palavras longas vazem para fora da caixa */
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  
+  /* 2. Limita dinamicamente a 8 linhas para manter o design padrão (adiciona "..." no final se passar disso) */
+  display: -webkit-box;
+  -webkit-line-clamp: 8;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 /* ── CONTACT FORM ── */

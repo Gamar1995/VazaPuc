@@ -10,7 +10,7 @@ import {
   unlikePost,
   getLikedPostIds,
   subscribeToNewPosts,
-  getPostsByUser, // <--- Vírgula corrigida aqui!
+  getPostsByUser,
   getLikedPosts 
 } from './posts.js';
 
@@ -38,7 +38,8 @@ try {
   setupProfileModal(); // <--- Controla o botão do Perfil
   setupEmojis(); 
   setupUserMini();     // <--- Controla a caixa "Seu Usuário"
-  setupProfileTabs();  // <--- ABA DE PERFIL ATIVADA AQUI!
+  setupProfileTabs();
+  setupTrendingWidget();  // <--- ABA DE BLOCOS ATIVADA AQUI!
   console.log("✅ Botões conectados e prontos!");
 } catch (erroInterface) {
   console.error("❌ Erro grave ao carregar a interface:", erroInterface);
@@ -160,6 +161,7 @@ function setupNavigation() {
 
       if (targetPageId === 'profile-page') loadProfilePage();
       if (targetPageId === 'messages-page') loadMessagesPage();
+      if (targetPageId === 'explore-page') loadExplorePage();
     });
   });
 }
@@ -198,41 +200,66 @@ function renderPosts(posts, containerElement) {
   attachPostEventListeners();
 }
 
+// === FUNÇÃO SUBSTITUÍDA: HTML DOS COMENTÁRIOS EXPANSÍVEIS ===
 function createPostHTML(post) {
   const isLiked = likedPostIds.has(post.id);
   const avatar = post.author?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author?.handle}`;
   const timeAgo = formatTimeAgo(post.created_at);
+  const userAvatar = currentProfile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=anon`;
 
   return `
-    <div class="post-card" data-post-id="${post.id}">
-      <img src="${avatar}" alt="${post.author?.name}" class="post-avatar">
-      <div class="post-content">
-        <div class="post-header">
-          <span class="post-author">${escapeHtml(post.author?.name ?? 'Usuário')}</span>
-          <span class="post-handle">@${escapeHtml(post.author?.handle ?? '')}</span>
-          <span class="post-time">${timeAgo}</span>
-        </div>
-        <p class="post-text">${escapeHtml(post.content)}</p>
-        <div class="post-actions">
-          <div class="post-action reply-action" title="Responder">
-            💬 <span>${post.replies_count ?? 0}</span>
+    <div class="post-card" data-post-id="${post.id}" style="flex-direction: column;">
+      
+      <div class="post-main" style="display: flex; gap: 16px; width: 100%;">
+        <img src="${avatar}" alt="${post.author?.name}" class="post-avatar">
+        <div class="post-content">
+          <div class="post-header">
+            <span class="post-author">${escapeHtml(post.author?.name ?? 'Usuário')}</span>
+            <span class="post-handle">@${escapeHtml(post.author?.handle ?? '')}</span>
+            <span class="post-time">${timeAgo}</span>
           </div>
-          <div class="post-action like-action ${isLiked ? 'liked' : ''}"
-               title="Curtir"
-               data-post-id="${post.id}"
-               data-liked="${isLiked}">
-            ❤️ <span>${post.likes_count ?? 0}</span>
-          </div>
-          <div class="post-action share-action" title="Compartilhar">
-            📤
+          <p class="post-text">${escapeHtml(post.content)}</p>
+          <div class="post-actions">
+            <div class="post-action reply-action" title="Responder" data-post-id="${post.id}">
+              💬 <span class="reply-count">${post.replies_count ?? 0}</span>
+            </div>
+            <div class="post-action like-action ${isLiked ? 'liked' : ''}"
+                 title="Curtir"
+                 data-post-id="${post.id}"
+                 data-liked="${isLiked}">
+              ❤️ <span>${post.likes_count ?? 0}</span>
+            </div>
+            <div class="post-action share-action" title="Compartilhar">
+              📤
+            </div>
           </div>
         </div>
       </div>
+
+      <div class="post-replies-section" id="replies-${post.id}" style="display: none;">
+          <div class="reply-composer">
+              <img src="${userAvatar}" class="reply-avatar">
+              <div class="reply-input-wrapper">
+                  <textarea class="reply-input" id="reply-input-${post.id}" placeholder="Postar sua resposta..." rows="1"></textarea>
+                  <div class="reply-toolbar">
+                      <label class="privacy-toggle" title="Se marcado, apenas o dono deste post verá sua resposta">
+                          <input type="checkbox" id="reply-privacy-${post.id}">
+                          <span class="privacy-label">🔒 Apenas o autor pode ver</span>
+                      </label>
+                      <button class="reply-submit-btn" data-post-id="${post.id}">Responder</button>
+                  </div>
+              </div>
+          </div>
+          <div class="replies-list" id="replies-list-${post.id}"></div>
+      </div>
+
     </div>
   `;
 }
 
+// === FUNÇÃO SUBSTITUÍDA: LÓGICA DE CLIQUE (LIKE E COMENTÁRIOS) ===
 function attachPostEventListeners() {
+  // 1. LÓGICA DE CURTIR
   document.querySelectorAll('.like-action').forEach(btn => {
     const newBtn = btn.cloneNode(true);
     btn.parentNode.replaceChild(newBtn, btn);
@@ -264,6 +291,101 @@ function attachPostEventListeners() {
         newBtn.classList.toggle('liked', wasLiked);
         countEl.textContent = parseInt(countEl.textContent) + (wasLiked ? 1 : -1);
         showNotification('Erro ao curtir. Tente novamente.');
+      }
+    });
+  });
+
+  // 2. LÓGICA DE ABRIR A CAIXA DE COMENTÁRIOS
+  document.querySelectorAll('.reply-action').forEach(btn => {
+    const newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+
+    newBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const postId = newBtn.dataset.postId;
+      const repliesSection = document.getElementById(`replies-${postId}`);
+      
+      // Alterna entre abrir e fechar a caixa
+      if (repliesSection.style.display === 'none') {
+        repliesSection.style.display = 'block';
+        const input = document.getElementById(`reply-input-${postId}`);
+        if(input) input.focus();
+      } else {
+        repliesSection.style.display = 'none';
+      }
+    });
+  });
+
+  // 3. LÓGICA DE ENVIAR O COMENTÁRIO
+  document.querySelectorAll('.reply-submit-btn').forEach(btn => {
+    const newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+
+    newBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (!currentProfile) {
+        showNotification('Faça login para comentar! 🔐');
+        return;
+      }
+
+      const postId = newBtn.dataset.postId;
+      const input = document.getElementById(`reply-input-${postId}`);
+      const privacyCheckbox = document.getElementById(`reply-privacy-${postId}`);
+      
+      const content = input.value.trim();
+      const isPrivate = privacyCheckbox.checked;
+
+      if (!content) return;
+
+      newBtn.disabled = true;
+      newBtn.textContent = '...';
+
+      try {
+        /*
+          AQUI ENTRA O SEU BACKEND SUPABASE (EXEMPLO):
+          await addReply(postId, content, isPrivate);
+        */
+
+        // Criação visual imediata na tela (Feedback instantâneo)
+        const repliesList = document.getElementById(`replies-list-${postId}`);
+        const userAvatar = currentProfile.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentProfile.handle}`;
+        
+        const replyHTML = `
+            <div class="reply-item" style="animation: slideDown 0.3s ease;">
+                <img src="${userAvatar}" class="reply-avatar" style="width: 30px; height: 30px;">
+                <div class="reply-bubble">
+                    <div class="reply-header">
+                        <div>
+                          <span class="reply-author">${escapeHtml(currentProfile.name)}</span>
+                          <span class="reply-handle">@${escapeHtml(currentProfile.handle)}</span>
+                        </div>
+                        ${isPrivate ? '<span class="reply-private-badge">🔒 Privado</span>' : ''}
+                    </div>
+                    <p style="font-size: 13.5px; color: var(--text-primary); line-height: 1.4;">${escapeHtml(content)}</p>
+                </div>
+            </div>
+        `;
+        
+        // Joga o comentário novo no topo da lista
+        repliesList.insertAdjacentHTML('afterbegin', replyHTML);
+
+        // Atualiza o número de comentários no ícone 💬
+        const replyCountSpan = document.querySelector(`.reply-action[data-post-id="${postId}"] .reply-count`);
+        if (replyCountSpan) {
+            replyCountSpan.textContent = parseInt(replyCountSpan.textContent) + 1;
+        }
+
+        // Limpa a caixa
+        input.value = '';
+        privacyCheckbox.checked = false;
+        showNotification(isPrivate ? 'Comentário enviado em modo privado! 🤫' : 'Comentário enviado! 💬');
+
+      } catch (err) {
+        console.error('Erro ao comentar:', err);
+        showNotification('Erro ao enviar. Tente novamente.');
+      } finally {
+        newBtn.disabled = false;
+        newBtn.textContent = 'Responder';
       }
     });
   });
@@ -743,4 +865,118 @@ function setupEmojis() {
   
   if(pickerFeed) pickerFeed.addEventListener('click', e => e.stopPropagation());
   if(pickerModal) pickerModal.addEventListener('click', e => e.stopPropagation());
+}
+
+// ============================================================
+// ABA EXPLORAR (ALGORITMO DE RECOMENDAÇÃO SIMULADO)
+// ============================================================
+async function loadExplorePage() {
+  const exploreContent = document.getElementById('exploreContent');
+  if (!exploreContent) return;
+
+  exploreContent.innerHTML = '<p style="text-align:center; padding: 40px; color: var(--text-secondary);">Analisando o algoritmo e carregando recomendações... 🔄</p>';
+
+  try {
+    const posts = await getPosts(30); 
+    
+    const topPosts = [...posts].sort((a, b) => (b.likes_count || 0) - (a.likes_count || 0)).slice(0, 4);
+    const recentPosts = [...posts].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 4);
+    const friendsLiked = [...posts].sort(() => 0.5 - Math.random()).slice(0, 4);
+
+    const suggestedUsers = [
+      { name: "Diretório Central", handle: "dce_puc", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=dce" },
+      { name: "Atlética de Exatas", handle: "atletica_exatas", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=exatas" },
+      { name: "Bateria Fúria", handle: "bateria_furia", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=furia" },
+      { name: "Lucas Mendes", handle: "lucas_mendes", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=lucas" },
+      { name: "Mariana Souza", handle: "mari_sz", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=mari" }
+    ];
+
+    const renderMiniPost = (post, contextLabel, contextIcon) => {
+      const avatar = post.author?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author?.handle}`;
+      return `
+        <div class="explore-post-card" onclick="alert('Funcionalidade de abrir post detalhado em breve!')">
+          ${contextLabel ? `<div class="explore-context"><span class="explore-context-icon">${contextIcon}</span> ${contextLabel}</div>` : ''}
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <img src="${avatar}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover;">
+            <div>
+              <div style="font-weight: 700; font-size: 14px; color: var(--text-primary);">${escapeHtml(post.author?.name)}</div>
+              <div style="color: var(--text-secondary); font-size: 12px;">@${escapeHtml(post.author?.handle)}</div>
+            </div>
+          </div>
+          <div style="font-size: 14px; color: var(--text-primary); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;">
+            ${escapeHtml(post.content)}
+          </div>
+          <div style="color: var(--text-secondary); font-size: 12px; display: flex; justify-content: space-between; margin-top: auto; padding-top: 8px;">
+            <span style="display: flex; gap: 12px;">
+              <span>❤️ ${post.likes_count || 0}</span>
+              <span>💬 ${post.replies_count || 0}</span>
+            </span>
+            <span>📍 PUC</span>
+          </div>
+        </div>
+      `;
+    };
+
+    exploreContent.innerHTML = `
+      <div class="explore-sections">
+        
+        <section>
+          <h3 class="explore-section-title">✨ Sugestões para você</h3>
+          <div class="suggested-users-row">
+            ${suggestedUsers.map(u => `
+              <div class="suggested-user-card">
+                <img src="${u.avatar}" alt="${u.name}">
+                <div>
+                  <h4>${u.name}</h4>
+                  <p>@${u.handle}</p>
+                </div>
+                <button class="btn-follow-small">Seguir</button>
+              </div>
+            `).join('')}
+          </div>
+        </section>
+
+        <section>
+          <h3 class="explore-section-title">🔥 Em Alta no VazaPUC</h3>
+          <div class="explore-grid">
+            ${topPosts.map(p => renderMiniPost(p, 'Baseado nos seus gostos', '⭐')).join('')}
+          </div>
+        </section>
+
+        <section>
+          <h3 class="explore-section-title">👀 O que a galera tá vendo</h3>
+          <div class="explore-grid">
+            ${friendsLiked.map(p => renderMiniPost(p, 'Amigos também interagiram', '👥')).join('')}
+          </div>
+        </section>
+
+        <section>
+          <h3 class="explore-section-title">🕒 Acabou de vazar</h3>
+          <div class="explore-grid">
+            ${recentPosts.map(p => renderMiniPost(p, 'Postado recentemente', '✨')).join('')}
+          </div>
+        </section>
+
+      </div>
+    `;
+
+  } catch (err) {
+    console.error('Erro ao carregar explorar:', err);
+    exploreContent.innerHTML = '<p style="color:var(--danger); text-align:center; padding: 20px;">Ocorreu um erro ao carregar o algoritmo. Tente novamente!</p>';
+  }
+}
+
+// ============================================================
+// WIDGET EXPANSÍVEL DOS BLOCOS (SIDEBAR DIREITA)
+// ============================================================
+function setupTrendingWidget() {
+  const widget = document.getElementById('trendingWidget');
+  const btn = document.getElementById('toggleBlocksBtn');
+  
+  if (widget && btn) {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      widget.classList.toggle('expanded'); // Alterna entre o estado grande e pequeno
+    });
+  }
 }
