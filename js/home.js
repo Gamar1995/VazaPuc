@@ -2,7 +2,9 @@
 // js/home.js — Código completo da Home (Feed, Perfil, Chat)
 // ============================================================
 
-import { getCurrentProfile, onAuthChange, signOut } from './supabase.js';
+
+import { supabase, getCurrentUser } from './supabase.js';
+import { getCurrentProfile, onAuthChange, signOut,  } from './supabase.js';
 import {
   getPosts,
   createPost,
@@ -11,14 +13,61 @@ import {
   getLikedPostIds,
   subscribeToNewPosts,
   getPostsByUser,
-  getLikedPosts 
+  getLikedPosts
 } from './posts.js';
+let viewingProfile = null;
 
-import { updateProfile } from './profile.js';
+import {updateProfile } from './profile.js';
 import { getConversations, getMessages, sendMessage, subscribeToMessages } from './messages.js';
+import { getProfileByHandle} from './profile.js';
 
+async function uploadAvatar(file) {
+  const user = await getCurrentUser();
+  if (!user) throw new Error('Não autenticado');
+
+  if (!file.type.startsWith('image/')) {
+    throw new Error('Arquivo inválido');
+  }
+
+  if (file.size > 2 * 1024 * 1024) {
+    throw new Error('Imagem muito grande');
+  }
+
+  const fileExt = file.name.split('.').pop();
+  const filePath = `avatars/${user.id}-${Date.now()}.${fileExt}`;
+
+  const { error } = await supabase.storage
+    .from('avatars')
+    .upload(filePath, file);
+
+  if (error) throw error;
+
+  const { data } = supabase.storage
+    .from('avatars')
+    .getPublicUrl(filePath);
+
+  return data.publicUrl + '?t=' + Date.now();
+}
+const params = new URLSearchParams(window.location.search);
+const profileHandle = params.get('handle');
+
+async function loadProfileByHandle(handle) {
+  const profile = await getProfileByHandle(handle);
+
+  viewingProfile = profile; // 🔥 guarda perfil visitado
+
+   loadProfilePage();
+
+  document.getElementById('profileName').textContent = profile.name;
+  document.getElementById('profileHandle').textContent = '@' + profile.handle;
+  document.getElementById('profileBio').textContent = profile.bio || '';
+
+  const profileAvatar = document.querySelector('.profile-avatar');
+  profileAvatar.src =
+    profile.avatar_url ||
+    `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.handle}`;
+}
 console.log("🚀 VazaPUC: Arquivo home.js foi acionado com sucesso!");
-
 // ============================================================
 // ESTADO LOCAL
 // ============================================================
@@ -36,7 +85,7 @@ try {
   setupPostComposer();
   setupPostModal();
   setupProfileModal(); // <--- Controla o botão do Perfil
-  setupEmojis(); 
+  setupEmojis();
   setupUserMini();     // <--- Controla a caixa "Seu Usuário"
   setupProfileTabs();
   setupTrendingWidget();  // <--- ABA DE BLOCOS ATIVADA AQUI!
@@ -76,10 +125,10 @@ function setupUserMini() {
   if (userMini) {
     userMini.addEventListener('click', async (e) => {
       e.preventDefault();
-      e.stopPropagation(); 
-      
+      e.stopPropagation();
+
       if (!currentProfile) {
-        if(loginPopup) loginPopup.classList.toggle('active');
+        if (loginPopup) loginPopup.classList.toggle('active');
       } else {
         const querSair = confirm('Deseja sair da sua conta no VazaPUC?');
         if (querSair) {
@@ -123,16 +172,16 @@ function updateUserUI() {
   const miniAvatar = document.querySelector('.user-mini .user-avatar img');
 
   if (!currentProfile) {
-    if(nameEl) nameEl.textContent = "Fazer Login";
-    if(handleEl) handleEl.textContent = "Clique para entrar 🚀";
+    if (nameEl) nameEl.textContent = "Fazer Login";
+    if (handleEl) handleEl.textContent = "Clique para entrar 🚀";
     return;
   }
 
-  if(nameEl) nameEl.textContent = currentProfile.name;
-  if(handleEl) handleEl.textContent = `@${currentProfile.handle}`;
+  if (nameEl) nameEl.textContent = currentProfile.name;
+  if (handleEl) handleEl.textContent = `@${currentProfile.handle}`;
 
   const avatarSrc = currentProfile.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentProfile.handle}`;
-  
+
   if (composerAvatar) composerAvatar.src = avatarSrc;
   if (miniAvatar) miniAvatar.src = avatarSrc;
 }
@@ -146,15 +195,15 @@ function setupNavigation() {
 
   navItems.forEach(item => {
     item.addEventListener('click', (e) => {
-      e.preventDefault(); 
-      
+      e.preventDefault();
+
       const targetDataPage = item.getAttribute('data-page');
-      
+
       navItems.forEach(n => n.classList.remove('active'));
       pages.forEach(p => p.classList.remove('active'));
 
       item.classList.add('active');
-      
+
       const targetPageId = targetDataPage + '-page';
       const targetPage = document.getElementById(targetPageId);
       if (targetPage) targetPage.classList.add('active');
@@ -171,8 +220,8 @@ function setupNavigation() {
 // ============================================================
 async function loadFeed() {
   const container = document.getElementById('postsContainer');
-  if(!container) return;
-  
+  if (!container) return;
+
   container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-secondary)">Carregando...</div>';
 
   try {
@@ -211,10 +260,19 @@ function createPostHTML(post) {
     <div class="post-card" data-post-id="${post.id}" style="flex-direction: column;">
       
       <div class="post-main" style="display: flex; gap: 16px; width: 100%;">
-        <img src="${avatar}" alt="${post.author?.name}" class="post-avatar">
+         <img 
+        src="${post.author.avatar_url}" 
+        class="avatar clickable-avatar"
+       data-handle="${post.author.handle}"
+      >
         <div class="post-content">
           <div class="post-header">
-            <span class="post-author">${escapeHtml(post.author?.name ?? 'Usuário')}</span>
+           <span 
+  class="post-author clickable-avatar" 
+  data-handle="${post.author.handle}"
+>
+  ${escapeHtml(post.author?.name ?? 'Usuário')}
+</span>
             <span class="post-handle">@${escapeHtml(post.author?.handle ?? '')}</span>
             <span class="post-time">${timeAgo}</span>
           </div>
@@ -294,7 +352,22 @@ function attachPostEventListeners() {
       }
     });
   });
+  //logica de clicar no avatar pra entrar no perfil 
+  document.querySelectorAll('.clickable-avatar').forEach(el => {
+    el.addEventListener('click', () => {
+      const handle = el.dataset.handle;
 
+      // salva quem foi clicado
+      window.selectedProfileHandle = handle;
+
+      // troca para página de perfil (SPA)
+      document.querySelectorAll('.page-container').forEach(p => p.classList.remove('active'));
+      document.getElementById('profile-page').classList.add('active');
+
+      // carrega perfil
+      loadProfileByHandle(handle);
+    });
+  });
   // 2. LÓGICA DE ABRIR A CAIXA DE COMENTÁRIOS
   document.querySelectorAll('.reply-action').forEach(btn => {
     const newBtn = btn.cloneNode(true);
@@ -304,12 +377,12 @@ function attachPostEventListeners() {
       e.stopPropagation();
       const postId = newBtn.dataset.postId;
       const repliesSection = document.getElementById(`replies-${postId}`);
-      
+
       // Alterna entre abrir e fechar a caixa
       if (repliesSection.style.display === 'none') {
         repliesSection.style.display = 'block';
         const input = document.getElementById(`reply-input-${postId}`);
-        if(input) input.focus();
+        if (input) input.focus();
       } else {
         repliesSection.style.display = 'none';
       }
@@ -331,7 +404,7 @@ function attachPostEventListeners() {
       const postId = newBtn.dataset.postId;
       const input = document.getElementById(`reply-input-${postId}`);
       const privacyCheckbox = document.getElementById(`reply-privacy-${postId}`);
-      
+
       const content = input.value.trim();
       const isPrivate = privacyCheckbox.checked;
 
@@ -349,7 +422,7 @@ function attachPostEventListeners() {
         // Criação visual imediata na tela (Feedback instantâneo)
         const repliesList = document.getElementById(`replies-list-${postId}`);
         const userAvatar = currentProfile.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentProfile.handle}`;
-        
+
         const replyHTML = `
             <div class="reply-item" style="animation: slideDown 0.3s ease;">
                 <img src="${userAvatar}" class="reply-avatar" style="width: 30px; height: 30px;">
@@ -365,14 +438,14 @@ function attachPostEventListeners() {
                 </div>
             </div>
         `;
-        
+
         // Joga o comentário novo no topo da lista
         repliesList.insertAdjacentHTML('afterbegin', replyHTML);
 
         // Atualiza o número de comentários no ícone 💬
         const replyCountSpan = document.querySelector(`.reply-action[data-post-id="${postId}"] .reply-count`);
         if (replyCountSpan) {
-            replyCountSpan.textContent = parseInt(replyCountSpan.textContent) + 1;
+          replyCountSpan.textContent = parseInt(replyCountSpan.textContent) + 1;
         }
 
         // Limpa a caixa
@@ -393,7 +466,7 @@ function attachPostEventListeners() {
 
 function prependPost(post) {
   const container = document.getElementById('postsContainer');
-  if(!container) return;
+  if (!container) return;
   const emptyMsg = container.querySelector('[style*="Nenhum post"]');
   if (emptyMsg) emptyMsg.remove();
 
@@ -490,11 +563,11 @@ function setupProfileTabs() {
   const tabs = document.querySelectorAll('.profile-tab-btn');
   tabs.forEach(tab => {
     tab.addEventListener('click', (e) => {
-      if (!currentProfile) return; 
-      
+      if (!currentProfile) return;
+
       tabs.forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
-      
+
       const tabType = tab.getAttribute('data-tab');
       loadProfileTabContent(tabType);
     });
@@ -509,13 +582,13 @@ async function loadProfileTabContent(tabType) {
 
   try {
     let postsToRender = [];
-    
+
     if (tabType === 'posts') {
       postsToRender = await getPostsByUser(currentProfile.id);
-    } 
+    }
     else if (tabType === 'curtidos') {
       postsToRender = await getLikedPosts(currentProfile.id);
-    } 
+    }
     else if (tabType === 'midia') {
       const allPosts = await getPostsByUser(currentProfile.id);
       postsToRender = allPosts.filter(p => p.content && p.content.includes('http'));
@@ -525,8 +598,8 @@ async function loadProfileTabContent(tabType) {
 
     if (postsToRender.length === 0) {
       const msg = tabType === 'curtidos' ? 'Você ainda não curtiu nenhum post. ❤️' :
-                  tabType === 'midia' ? 'Você ainda não tem posts com mídia. 📷' :
-                  'Nenhum post encontrado. 🚀';
+        tabType === 'midia' ? 'Você ainda não tem posts com mídia. 📷' :
+          'Nenhum post encontrado. 🚀';
       contentEl.innerHTML = `<p style="padding:40px;text-align:center;color:var(--text-secondary)">${msg}</p>`;
       return;
     }
@@ -541,52 +614,84 @@ async function loadProfileTabContent(tabType) {
 async function loadProfilePage() {
   const editBtn = document.getElementById('editProfileBtn');
 
-  if (!currentProfile) {
+  // 🔥 define qual perfil mostrar
+  const profile = viewingProfile || currentProfile;
+
+  // =========================
+  // 🚫 USUÁRIO NÃO LOGADO
+  // =========================
+  if (!profile) {
     document.getElementById('profileName').textContent = "Visitante";
     document.getElementById('profileHandle').textContent = "@anonimo";
-    document.getElementById('profileBio').textContent = "Faça login para ter seu próprio perfil, fazer posts e interagir com a galera da PUC!";
-    
+    document.getElementById('profileBio').textContent =
+      "Faça login para ter seu próprio perfil, fazer posts e interagir com a galera da PUC!";
+
     const profileAvatar = document.querySelector('.profile-avatar');
-    if (profileAvatar) profileAvatar.src = "https://api.dicebear.com/7.x/avataaars/svg?seed=visitante";
+    if (profileAvatar) {
+      profileAvatar.src = "https://api.dicebear.com/7.x/avataaars/svg?seed=visitante";
+    }
 
     const statValues = document.querySelectorAll('.stat-value');
-    if(statValues.length >= 2) {
+    if (statValues.length >= 2) {
       statValues[0].textContent = "0";
       statValues[1].textContent = "0";
     }
 
     if (editBtn) {
       editBtn.textContent = "Fazer Login";
-      editBtn.style.borderColor = "";
-      editBtn.style.color = "";
+      editBtn.style.display = 'block';
       editBtn.classList.add('btn-login-animado');
     }
 
     const contentEl = document.getElementById('profileContent');
-    contentEl.innerHTML = '<p style="padding:40px 20px; text-align:center; color:var(--text-secondary);">Faça login para visualizar e gerenciar seus posts. 🚀</p>';
-    return; 
+    contentEl.innerHTML =
+      '<p style="padding:40px 20px; text-align:center; color:var(--text-secondary);">Faça login para visualizar e gerenciar seus posts. 🚀</p>';
+    return;
   }
 
-  document.getElementById('profileName').textContent = currentProfile.name;
-  document.getElementById('profileHandle').textContent = `@${currentProfile.handle}`;
-  document.getElementById('profileBio').textContent = currentProfile.bio || 'Sem bio.';
-  
+  // =========================
+  // 👤 PERFIL (SEU OU DE OUTRO)
+  // =========================
+  document.getElementById('profileName').textContent = profile.name;
+  document.getElementById('profileHandle').textContent = `@${profile.handle}`;
+  document.getElementById('profileBio').textContent = profile.bio || 'Sem bio.';
+
   const profileAvatar = document.querySelector('.profile-avatar');
-  if (currentProfile.avatar_url) profileAvatar.src = currentProfile.avatar_url;
 
+  const avatar =
+    profile.avatar_url ||
+    `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.handle}`;
+
+  if (profileAvatar) profileAvatar.src = avatar;
+
+  // =========================
+  // 📊 STATS
+  // =========================
   const statValues = document.querySelectorAll('.stat-value');
-  if(statValues.length >= 2) {
-    statValues[0].textContent = currentProfile.following_count || 0;
-    statValues[1].textContent = currentProfile.followers_count || 0;
+  if (statValues.length >= 2) {
+    statValues[0].textContent = profile.following_count || 0;
+    statValues[1].textContent = profile.followers_count || 0;
   }
 
+  // =========================
+  // ✏️ BOTÃO EDITAR
+  // =========================
   if (editBtn) {
-    editBtn.textContent = "Editar Perfil";
-    editBtn.classList.remove('btn-login-animado');
+    if (currentProfile && profile.id === currentProfile.id) {
+      editBtn.textContent = "Editar Perfil";
+      editBtn.style.display = 'block';
+      editBtn.classList.remove('btn-login-animado');
+    } else {
+      editBtn.style.display = 'none'; // 🔥 esconde se não for você
+    }
   }
 
+  // =========================
+  // 📂 TABS
+  // =========================
   const tabs = document.querySelectorAll('.profile-tab-btn');
   tabs.forEach(t => t.classList.remove('active'));
+
   const postsTab = document.querySelector('.profile-tab-btn[data-tab="posts"]');
   if (postsTab) postsTab.classList.add('active');
 
@@ -611,7 +716,7 @@ function setupProfileModal() {
       window.location.assign('../inicial/login.html');
       return;
     }
-    
+
     document.getElementById('editName').value = currentProfile.name || '';
     document.getElementById('editHandle').value = currentProfile.handle || '';
     document.getElementById('editBio').value = currentProfile.bio || '';
@@ -623,29 +728,43 @@ function setupProfileModal() {
   cancelBtn?.addEventListener('click', closeModal);
 
   saveBtn?.addEventListener('click', async () => {
-    saveBtn.textContent = 'Salvando...';
-    saveBtn.disabled = true;
-    try {
-      const updates = {
-        name: document.getElementById('editName').value.trim(),
-        handle: document.getElementById('editHandle').value.trim(),
-        bio: document.getElementById('editBio').value.trim()
-      };
-      const updated = await updateProfile(updates);
-      currentProfile = updated; 
-      
-      updateUserUI(); 
-      loadProfilePage(); 
-      showNotification('Perfil atualizado com sucesso! ✅');
-      closeModal();
-    } catch (err) {
-      console.error(err);
-      showNotification('Erro ao atualizar. Handle já em uso? ❌');
-    } finally {
-      saveBtn.textContent = 'Salvar';
-      saveBtn.disabled = false;
+  saveBtn.textContent = 'Salvando...';
+  saveBtn.disabled = true;
+
+  try {
+    const fileInput = document.getElementById('avatarInput');
+
+    let avatarUrl = currentProfile?.avatar_url;
+
+    // 🔥 NOVO: upload da imagem
+    if (fileInput && fileInput.files.length > 0) {
+      avatarUrl = await uploadAvatar(fileInput.files[0]);
     }
-  });
+
+    const updates = {
+      name: document.getElementById('editName').value.trim(),
+      handle: document.getElementById('editHandle').value.trim(),
+      bio: document.getElementById('editBio').value.trim(),
+      avatar_url: avatarUrl // 🔥 IMPORTANTE
+    };
+
+    const updated = await updateProfile(updates);
+    currentProfile = updated;
+
+    updateUserUI();
+    loadProfilePage();
+
+    showNotification('Perfil atualizado com sucesso! ✅');
+    closeModal();
+
+  } catch (err) {
+  console.error('ERRO REAL:', err);
+  alert(err.message);
+}finally {
+    saveBtn.textContent = 'Salvar';
+    saveBtn.disabled = false;
+  }
+});
 }
 
 // ============================================================
@@ -653,7 +772,7 @@ function setupProfileModal() {
 // ============================================================
 async function loadMessagesPage() {
   const listEl = document.getElementById('conversationsList');
-  if(!listEl) return;
+  if (!listEl) return;
   listEl.innerHTML = '<p style="padding:20px;text-align:center;">Carregando...</p>';
 
   try {
@@ -691,7 +810,7 @@ async function loadMessagesPage() {
 
 async function openChat(convId, otherUser) {
   const chatArea = document.getElementById('chatArea');
-  
+
   chatArea.innerHTML = `
     <div style="padding: 16px; border-bottom: 1px solid var(--border); background: var(--dark-bg-secondary);">
       <strong style="font-size: 16px;">${escapeHtml(otherUser.name)}</strong> 
@@ -740,14 +859,14 @@ function renderMessagesList(msgs) {
 
 function appendMessageToUI(msg) {
   const container = document.getElementById('chatMessages');
-  if (!container) return; 
+  if (!container) return;
 
   const emptyText = container.querySelector('p');
   if (emptyText && emptyText.textContent.includes('Diga olá')) emptyText.remove();
 
   const isMe = msg.sender_id === currentProfile.id;
   const bubble = document.createElement('div');
-  
+
   bubble.style.cssText = `
     max-width: 75%;
     padding: 10px 14px;
@@ -755,14 +874,14 @@ function appendMessageToUI(msg) {
     font-size: 15px;
     line-height: 1.4;
     word-break: break-word;
-    ${isMe ? 
-      'background: var(--primary); color: white; align-self: flex-end; border-bottom-right-radius: 4px;' : 
+    ${isMe ?
+      'background: var(--primary); color: white; align-self: flex-end; border-bottom-right-radius: 4px;' :
       'background: var(--dark-bg-tertiary); color: var(--text-primary); align-self: flex-start; border-bottom-left-radius: 4px;'
     }
   `;
   bubble.textContent = msg.content;
   container.appendChild(bubble);
-  container.scrollTop = container.scrollHeight; 
+  container.scrollTop = container.scrollHeight;
 }
 
 function escapeHtml(text) {
@@ -806,7 +925,7 @@ function showNotification(message) {
 // SISTEMA DE EMOJIS
 // ============================================================
 function setupEmojis() {
-  const emojis = ['😀','😂','🥰','😎','😭','😡','👍','👎','❤️','🔥','✨','🎉','🤔','👀','🙌','🙏','💀','🤡','💩','💯','✅','❌','⚠️','💡','🗣️','🧊','🍺','🍕','🎓','📚'];
+  const emojis = ['😀', '😂', '🥰', '😎', '😭', '😡', '👍', '👎', '❤️', '🔥', '✨', '🎉', '🤔', '👀', '🙌', '🙏', '💀', '🤡', '💩', '💯', '✅', '❌', '⚠️', '💡', '🗣️', '🧊', '🍺', '🍕', '🎓', '📚'];
 
   const renderEmojis = (containerId, inputId) => {
     const container = document.getElementById(containerId);
@@ -814,20 +933,20 @@ function setupEmojis() {
     if (!container || !input) return;
 
     container.innerHTML = emojis.map(e => `<span class="emoji-item">${e}</span>`).join('');
-    
+
     container.querySelectorAll('.emoji-item').forEach(item => {
       item.addEventListener('click', (e) => {
         e.stopPropagation();
-        
+
         const start = input.selectionStart;
         const end = input.selectionEnd;
         const text = input.value;
-        
+
         input.value = text.substring(0, start) + item.textContent + text.substring(end);
-        
+
         input.selectionStart = input.selectionEnd = start + item.textContent.length;
         input.focus();
-        
+
         input.dispatchEvent(new Event('input'));
       });
     });
@@ -843,7 +962,7 @@ function setupEmojis() {
       e.stopPropagation();
       e.preventDefault();
       pickerFeed.classList.toggle('active');
-      document.getElementById('pickerEmojiModal')?.classList.remove('active'); 
+      document.getElementById('pickerEmojiModal')?.classList.remove('active');
     });
   }
 
@@ -859,12 +978,12 @@ function setupEmojis() {
   }
 
   document.addEventListener('click', () => {
-    if(pickerFeed) pickerFeed.classList.remove('active');
-    if(pickerModal) pickerModal.classList.remove('active');
+    if (pickerFeed) pickerFeed.classList.remove('active');
+    if (pickerModal) pickerModal.classList.remove('active');
   });
-  
-  if(pickerFeed) pickerFeed.addEventListener('click', e => e.stopPropagation());
-  if(pickerModal) pickerModal.addEventListener('click', e => e.stopPropagation());
+
+  if (pickerFeed) pickerFeed.addEventListener('click', e => e.stopPropagation());
+  if (pickerModal) pickerModal.addEventListener('click', e => e.stopPropagation());
 }
 
 // ============================================================
@@ -877,8 +996,8 @@ async function loadExplorePage() {
   exploreContent.innerHTML = '<p style="text-align:center; padding: 40px; color: var(--text-secondary);">Analisando o algoritmo e carregando recomendações... 🔄</p>';
 
   try {
-    const posts = await getPosts(30); 
-    
+    const posts = await getPosts(30);
+
     const topPosts = [...posts].sort((a, b) => (b.likes_count || 0) - (a.likes_count || 0)).slice(0, 4);
     const recentPosts = [...posts].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 4);
     const friendsLiked = [...posts].sort(() => 0.5 - Math.random()).slice(0, 4);
@@ -972,7 +1091,7 @@ async function loadExplorePage() {
 function setupTrendingWidget() {
   const widget = document.getElementById('trendingWidget');
   const btn = document.getElementById('toggleBlocksBtn');
-  
+
   if (widget && btn) {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
