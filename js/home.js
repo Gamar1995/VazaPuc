@@ -10,7 +10,8 @@ import {
   unlikePost,
   getLikedPostIds,
   subscribeToNewPosts,
-  getPostsByUser
+  getPostsByUser, // <--- Vírgula corrigida aqui!
+  getLikedPosts 
 } from './posts.js';
 
 import { updateProfile } from './profile.js';
@@ -37,6 +38,7 @@ try {
   setupProfileModal(); // <--- Controla o botão do Perfil
   setupEmojis(); 
   setupUserMini();     // <--- Controla a caixa "Seu Usuário"
+  setupProfileTabs();  // <--- ABA DE PERFIL ATIVADA AQUI!
   console.log("✅ Botões conectados e prontos!");
 } catch (erroInterface) {
   console.error("❌ Erro grave ao carregar a interface:", erroInterface);
@@ -65,9 +67,6 @@ try {
 // ============================================================
 // LOGIN / LOGOUT (CAIXA "SEU USUÁRIO" NO MENU LATERAL)
 // ============================================================
-// ============================================================
-// LOGIN / LOGOUT (CAIXA "SEU USUÁRIO" NO MENU LATERAL)
-// ============================================================
 function setupUserMini() {
   const userMini = document.querySelector('.user-mini');
   const loginPopup = document.getElementById('userLoginPopup');
@@ -76,13 +75,11 @@ function setupUserMini() {
   if (userMini) {
     userMini.addEventListener('click', async (e) => {
       e.preventDefault();
-      e.stopPropagation(); // Evita que o clique feche a janelinha imediatamente
+      e.stopPropagation(); 
       
       if (!currentProfile) {
-        // Se NÃO estiver logado -> Mostra ou esconde a janelinha suavemente
         if(loginPopup) loginPopup.classList.toggle('active');
       } else {
-        // Se ESTIVER logado -> Pergunta se quer sair normalmente
         const querSair = confirm('Deseja sair da sua conta no VazaPUC?');
         if (querSair) {
           try {
@@ -97,7 +94,6 @@ function setupUserMini() {
     });
   }
 
-  // Quando clicar no botão vermelho DENTRO da janelinha, aí sim leva pro login!
   if (btnPopupLogin) {
     btnPopupLogin.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -105,14 +101,12 @@ function setupUserMini() {
     });
   }
 
-  // Mágica: Fecha a janelinha se o usuário clicar em qualquer outro lugar da tela
   document.addEventListener('click', () => {
     if (loginPopup && loginPopup.classList.contains('active')) {
       loginPopup.classList.remove('active');
     }
   });
 
-  // Impedir que clicar dentro da própria janelinha a faça fechar sem querer
   if (loginPopup) {
     loginPopup.addEventListener('click', (e) => e.stopPropagation());
   }
@@ -368,12 +362,63 @@ function startRealtimeFeed() {
 }
 
 // ============================================================
-// PERFIL (PÁGINA)
+// PERFIL (PÁGINA) E ABAS DO PERFIL
 // ============================================================
+function setupProfileTabs() {
+  const tabs = document.querySelectorAll('.profile-tab-btn');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', (e) => {
+      if (!currentProfile) return; 
+      
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      
+      const tabType = tab.getAttribute('data-tab');
+      loadProfileTabContent(tabType);
+    });
+  });
+}
+
+async function loadProfileTabContent(tabType) {
+  const contentEl = document.getElementById('profileContent');
+  contentEl.innerHTML = '<p style="padding:20px;text-align:center;">Carregando...</p>';
+
+  if (!currentProfile) return;
+
+  try {
+    let postsToRender = [];
+    
+    if (tabType === 'posts') {
+      postsToRender = await getPostsByUser(currentProfile.id);
+    } 
+    else if (tabType === 'curtidos') {
+      postsToRender = await getLikedPosts(currentProfile.id);
+    } 
+    else if (tabType === 'midia') {
+      const allPosts = await getPostsByUser(currentProfile.id);
+      postsToRender = allPosts.filter(p => p.content && p.content.includes('http'));
+    }
+
+    postsToRender = postsToRender.filter(p => p != null);
+
+    if (postsToRender.length === 0) {
+      const msg = tabType === 'curtidos' ? 'Você ainda não curtiu nenhum post. ❤️' :
+                  tabType === 'midia' ? 'Você ainda não tem posts com mídia. 📷' :
+                  'Nenhum post encontrado. 🚀';
+      contentEl.innerHTML = `<p style="padding:40px;text-align:center;color:var(--text-secondary)">${msg}</p>`;
+      return;
+    }
+
+    renderPosts(postsToRender, contentEl);
+  } catch (err) {
+    console.error(err);
+    contentEl.innerHTML = '<p style="color:var(--danger); text-align:center;">Erro ao carregar conteúdo.</p>';
+  }
+}
+
 async function loadProfilePage() {
   const editBtn = document.getElementById('editProfileBtn');
 
-  // 1. SE O USUÁRIO NÃO ESTIVER LOGADO (Visitante)
   if (!currentProfile) {
     document.getElementById('profileName').textContent = "Visitante";
     document.getElementById('profileHandle').textContent = "@anonimo";
@@ -400,7 +445,6 @@ async function loadProfilePage() {
     return; 
   }
 
-  // 2. SE O USUÁRIO ESTIVER LOGADO
   document.getElementById('profileName').textContent = currentProfile.name;
   document.getElementById('profileHandle').textContent = `@${currentProfile.handle}`;
   document.getElementById('profileBio').textContent = currentProfile.bio || 'Sem bio.';
@@ -419,14 +463,12 @@ async function loadProfilePage() {
     editBtn.classList.remove('btn-login-animado');
   }
 
-  const contentEl = document.getElementById('profileContent');
-  contentEl.innerHTML = '<p style="padding:20px;text-align:center;">Carregando posts...</p>';
-  try {
-    const userPosts = await getPostsByUser(currentProfile.id);
-    renderPosts(userPosts, contentEl);
-  } catch(err) {
-    contentEl.innerHTML = '<p style="color:var(--danger); text-align:center;">Erro ao carregar posts.</p>';
-  }
+  const tabs = document.querySelectorAll('.profile-tab-btn');
+  tabs.forEach(t => t.classList.remove('active'));
+  const postsTab = document.querySelector('.profile-tab-btn[data-tab="posts"]');
+  if (postsTab) postsTab.classList.add('active');
+
+  loadProfileTabContent('posts');
 }
 
 // ============================================================
@@ -442,14 +484,12 @@ function setupProfileModal() {
   openBtn?.addEventListener('click', (e) => {
     e.preventDefault();
 
-    // Se NÃO tiver perfil logado, leva pra tela de Login
     if (!currentProfile) {
       console.log("Redirecionando para Login pela aba de Perfil...");
       window.location.assign('../inicial/login.html');
       return;
     }
     
-    // Se TEM perfil logado, abre a edição
     document.getElementById('editName').value = currentProfile.name || '';
     document.getElementById('editHandle').value = currentProfile.handle || '';
     document.getElementById('editBio').value = currentProfile.bio || '';
@@ -486,6 +526,9 @@ function setupProfileModal() {
   });
 }
 
+// ============================================================
+// MENSAGENS E CHAT
+// ============================================================
 async function loadMessagesPage() {
   const listEl = document.getElementById('conversationsList');
   if(!listEl) return;

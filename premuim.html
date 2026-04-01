@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Vazadinhos da PUC - Premium</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Syne:wght@400;700;800&family=DM+Sans:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="css/Pagina_Principal.css">
+  
+  <style>
+    /* ===== HERO PREMIUM ===== */
+    .premium-hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 10rem 1rem 4rem 1rem;
+      position: relative;
+    }
+    
+    .premium-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #ffd700, #ff8c00);
+      color: #1a0008;
+      font-weight: 800;
+      padding: 0.5rem 1.5rem;
+      border-radius: 50px;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 2rem;
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+      opacity: 0;
+      animation: fadeUp 0.7s ease forwards 0.2s;
+    }
+
+    .premium-hero h1 {
+      opacity: 0;
+      animation: fadeUp 0.7s ease forwards 0.4s;
+    }
+
+    .premium-hero .hero-sub {
+      margin: 1.5rem auto 0;
+      opacity: 0;
+      animation: fadeUp 0.7s ease forwards 0.6s;
+    }
+
+    /* ===== CARTÕES DE PLANOS ===== */
+    .plans-container {
+      display: flex;
+      justify-content: center;
+      align-items: stretch; /* Faz os cartões terem a mesma altura */
+      gap: 2rem;
+      padding: 2rem 2.5rem 6rem;
+      flex-wrap: wrap;
+      position: relative;
+      z-index: 1;
+      opacity: 0;
+      animation: fadeUp 0.7s ease forwards 0.8s;
+    }
+
+    .plan-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 3rem 2rem;
+      width: 100%;
+      max-width: 350px;
+      text-align: left;
+      transition: transform 0.3s, box-shadow 0.3s;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column; /* Permite empurrar o botão pro fundo */
+    }
+
+    .plan-card:hover {
+      transform: translateY(-10px);
+    }
+
+    .plan-card.pro {
+      border-color: var(--accent);
+      box-shadow: 0 10px 40px rgba(232, 50, 90, 0.2);
+    }
+
+    .plan-card.pro::before {
+      content: 'MAIS POPULAR';
+      position: absolute;
+      top: 20px;
+      right: -35px;
+      background: var(--accent);
+      color: white;
+      font-size: 0.7rem;
+      font-weight: 800;
+      padding: 5px 40px;
+      transform: rotate(45deg);
+    }
+
+    .plan-price {
+      font-family: 'Syne', sans-serif;
+      font-size: 3rem;
+      font-weight: 800;
+      margin: 1.5rem 0;
+      color: var(--text);
+    }
+
+    .plan-price span {
+      font-size: 1rem;
+      color: var(--muted);
+      font-weight: 400;
+    }
+
+    /* ===== LISTA DE VANTAGENS ===== */
+    .plan-features {
+      list-style: none;
+      margin-bottom: 2.5rem;
+      flex-grow: 1; /* Preenche o espaço vazio empurrando o botão para baixo */
+    }
+
+    .plan-features li {
+      margin-bottom: 1rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.95rem;
+    }
+
+    .plan-features li::before {
+      content: '✓';
+      color: var(--accent2);
+      font-weight: bold;
+      width: 16px;
+      text-align: center;
+    }
+    
+    .plan-features.pro-features li::before {
+      color: var(--accent);
+    }
+
+    /* Itens desabilitados no plano grátis */
+    .plan-features li.disabled-feature {
+      opacity: 0.35;
+    }
+
+    .plan-features li.disabled-feature::before {
+      content: '✕';
+      color: var(--muted);
+    }
+
+    .btn-plan {
+      width: 100%;
+      text-align: center;
+      justify-content: center;
+      margin-top: auto; /* Trava o botão perfeitamente na base do cartão */
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a class="logo" href="index.html">Vaza PUC</a>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="premium.html" style="color: var(--text); font-weight: 600;">Premium</a></li>
+    </ul>
+    <div class="ms-lg-3">
+      <a class="btn custom-btn custom-border-btn" href="inicial/cadastro.html">
+        Entrar 👤
+      </a>
+    </div>
+  </nav>
+
+  <section class="premium-hero">
+    <div class="hero-glow"></div>
+    <div class="hero-glow2"></div>
+    <div class="premium-badge">Vaza PUC Premium</div>
+    <h1>Eleve sua <em>Experiência</em></h1>
+    <p class="hero-sub">
+      Desbloqueie recursos exclusivos, destaque seu perfil e saiba de tudo antes de todo mundo. Escolha o plano perfeito para você.
+    </p>
+  </section>
+
+  <section class="plans-container">
+    <div class="plan-card">
+      <h3 style="font-family: 'Syne', sans-serif; font-size: 1.5rem; color: var(--text);">Olheiro</h3>
+      <div class="plan-price">Grátis</div>
+      <ul class="plan-features">
+        <li>Acesso ao feed principal</li>
+        <li>Curtir e comentar</li>
+        <li>Modo anônimo básico</li>
+        <li>Mensagens diretas limitadas</li>
+        <li class="disabled-feature">Sem selo de verificado</li>
+        <li class="disabled-feature">Veja quem visitou seu perfil</li>
+        <li class="disabled-feature">Posts padrão no feed</li>
+        <li class="disabled-feature">Sem modo anônimo avançado</li>
+        <li class="disabled-feature">Contem anúncios</li>
+      </ul>
+      <a href="inicial/cadastro.html" class="btn btn-ghost btn-plan">Continuar Grátis</a>
+    </div>
+
+    <div class="plan-card pro">
+      <h3 style="font-family: 'Syne', sans-serif; font-size: 1.5rem; color: var(--accent);">Elite Universitária</h3>
+      <div class="plan-price">R$ 9<span>,90/mês</span></div>
+      <ul class="plan-features pro-features">
+        <li>Acesso ao feed principal</li>
+        <li>Curtir e comentar</li>
+        <li>Modo anônimo básico</li>
+        <li>Mensagens diretas ilimitadas</li>
+        <li style="color: var(--text);">Selo de verificado Premium</li>
+        <li style="color: var(--text);">Veja quem visitou seu perfil</li>
+        <li style="color: var(--text);">Posts em destaque no feed</li>
+        <li style="color: var(--text);">Modo anônimo avançado (Ghost)</li>
+        <li style="color: var(--text);">Sem anúncios</li>
+      </ul>
+      <a href="#" class="btn btn-primary btn-plan">Assinar Agora 🚀</a>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <footer>
+    <span>© 2026 Vazadinhos da PUC</span>
+    <span>Por Pedro L. e Pietro G.</span>
+  </footer>
+
+</body>
+</html>
