@@ -1,0 +1,42 @@
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<input type="password" id="newPassword" placeholder="Nova senha">
+<button onclick="updatePassword()">Atualizar senha</button>
+
+<script>
+  // Suas credenciais (a anon_key é pública por padrão, mas evite compartilhar online)
+  const SUPABASE_URL = 'https://ocaizkdbdpmijljgxorh.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jYWl6a2RiZHBtaWpsamd4b3JoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MjM0NTIsImV4cCI6MjA5MDM5OTQ1Mn0.TD7qI0xoLfUrnFvBvmJByJbE3TNJ4W6JHlC1tSRymvU';
+
+  // Inicializando o cliente
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+sb.auth.onAuthStateChange((event, session) => {
+  if (event === "PASSWORD_RECOVERY") {
+    console.log("Usuário autorizado para trocar senha!");
+  }
+});
+
+  async function updatePassword() {
+    const password = document.getElementById('newPassword').value;
+
+    // Validação simples para evitar envio de senha vazia
+    if (!password || password.length < 6) {
+      alert('Por favor, digite uma senha com pelo menos 6 caracteres.');
+      return;
+    }
+
+    // Atualizando o usuário
+    const { error } = await sb.auth.updateUser({
+      password: password
+    });
+
+    if (error) {
+      alert('Erro ao atualizar a senha: ' + error.message);
+      console.error(error); // Útil para debugar no console (F12)
+    } else {
+      alert('Senha atualizada com sucesso!');
+      window.location.href = 'login.html';
+    }
+  }
+</script>

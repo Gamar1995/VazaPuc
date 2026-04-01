@@ -189,8 +189,9 @@ document.getElementById('forgotPassword').addEventListener('click', async () => 
 
   try {
     const { error } = await sb.auth.resetPasswordForEmail(email, {
-      redirectTo: 'http://localhost:5500/reset.html'
-    });
+  // Troque a URL do GitHub pela do seu Localhost temporariamente
+  redirectTo: 'http://127.0.0.1:5500/VazaPuc/reset.html' 
+});
 
     if (error) throw error;
 
