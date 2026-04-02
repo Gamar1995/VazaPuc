@@ -268,3 +268,20 @@ RETURNS void AS $$
   SET replies_count = COALESCE(replies_count, 0) + 1
   WHERE id = post_id;
 $$ LANGUAGE sql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION decrement_likes(post_id UUID)
+  RETURNS void AS $$
+    UPDATE posts
+    SET likes_count = GREATEST(0, COALESCE(likes_count, 0) - 1)
+    WHERE id = post_id;
+  $$ LANGUAGE sql SECURITY DEFINER;
+ 
+  CREATE OR REPLACE FUNCTION increment_likes(post_id UUID)
+  RETURNS void AS $$
+    UPDATE posts
+    SET likes_count = COALESCE(likes_count, 0) + 1
+    WHERE id = post_id;
+  $$ LANGUAGE sql SECURITY DEFINER;
+ 
+  -- Adicione unique constraint em likes para evitar curtidas duplicadas:
+  ALTER TABLE likes ADD CONSTRAINT likes_unique UNIQUE (post_id, user_id);

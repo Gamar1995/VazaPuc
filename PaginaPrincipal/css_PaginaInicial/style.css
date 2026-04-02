@@ -1651,3 +1651,45 @@ body {
     right: 20px;
   }
 }
+@keyframes bellPulse {
+  0%   { transform: scale(1) rotate(0deg); }
+  25%  { transform: scale(1.15) rotate(-15deg); }
+  50%  { transform: scale(1.15) rotate(15deg); }
+  75%  { transform: scale(1.1) rotate(-8deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+ 
+.notif-bell-pulse .notif-bell-icon {
+  display: inline-block;
+  animation: bellPulse 0.6s ease;
+}
+ 
+/* Badge piscando quando há notificações não lidas */
+@keyframes badgeBlink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
+}
+ 
+.notif-badge.visible {
+  animation: badgePop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), badgeBlink 2s ease 0.3s 3;
+}
+ 
+/* Botão de mensagem e seguir no perfil */
+#msgProfileBtn,
+#followProfileBtn {
+  transition: all 0.2s ease;
+  margin-top: 4px;
+}
+ 
+#msgProfileBtn:hover {
+  background: rgba(163, 31, 75, 0.15) !important;
+  transform: translateY(-1px);
+}
+ 
+/* Fix: garante que replies ficam legíveis */
+.replies-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 8px 0;
+}

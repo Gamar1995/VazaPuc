@@ -1,43 +1,24 @@
 // ============================================================
-// js/posts.js — Toda a lógica de posts (criar, buscar, curtir)
-//
-// Este arquivo "fala" com o banco de dados via Supabase.
-// Ele não mexe no HTML — só retorna dados ou joga erro.
-// Quem mexe no HTML é o arquivo da página (home.js, explore.js).
+// js/posts.js — versão corrigida completa
 // ============================================================
 
 import { supabase, getCurrentUser } from './supabase.js';
 
-// ============================================================
-// BUSCAR POSTS
-// Retorna posts com os dados do autor já inclusos (JOIN automático)
-// ============================================================
-
-// Busca todos os posts, do mais recente pro mais antigo
 export async function getPosts(limit = 20, offset = 0) {
   const { data, error } = await supabase
     .from('posts')
-    .select(`
-      *,
-      author:profiles(id, name, handle, avatar_url)
-    `)
-    // O * pega tudo de posts
-    // author:profiles(...) faz JOIN automático via foreign key author_id
+    .select('*, author:profiles(id, name, handle, avatar_url)')
     .order('created_at', { ascending: false })
-    .range(offset, offset + limit - 1); // paginação simples
+    .range(offset, offset + limit - 1);
 
   if (error) throw error;
   return data;
 }
 
-// Busca posts de um usuário específico pelo profile id
 export async function getPostsByUser(userId, limit = 20) {
   const { data, error } = await supabase
     .from('posts')
-    .select(`
-      *,
-      author:profiles(id, name, handle, avatar_url)
-    `)
+    .select('*, author:profiles(id, name, handle, avatar_url)')
     .eq('author_id', userId)
     .order('created_at', { ascending: false })
     .limit(limit);
@@ -46,28 +27,17 @@ export async function getPostsByUser(userId, limit = 20) {
   return data;
 }
 
-// Busca posts que o usuário curtiu
 export async function getLikedPosts(userId) {
   const { data, error } = await supabase
     .from('likes')
-    .select(`
-      post:posts(
-        *,
-        author:profiles(id, name, handle, avatar_url)
-      )
-    `)
+    .select('post:posts(*, author:profiles(id, name, handle, avatar_url))')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  // "data" vem como [{ post: {...} }, ...] — extraímos só o post
-  return data.map(item => item.post);
+  return data.map(item => item.post).filter(Boolean);
 }
 
-// ============================================================
-// CRIAR POST
-// Insere um novo post no banco para o usuário logado
-// ============================================================
 export async function createPost(content) {
   const user = await getCurrentUser();
   if (!user) throw new Error('Você precisa estar logado para postar.');
@@ -75,34 +45,18 @@ export async function createPost(content) {
   const { data, error } = await supabase
     .from('posts')
     .insert({ content, author_id: user.id })
-    .select(`
-      *,
-      author:profiles(id, name, handle, avatar_url)
-    `)
-    .single(); // retorna o post criado já com os dados do autor
+    .select('*, author:profiles(id, name, handle, avatar_url)')
+    .single();
 
   if (error) throw error;
   return data;
 }
 
-// ============================================================
-// DELETAR POST
-// Só funciona se for o próprio autor (o RLS do banco garante isso)
-// ============================================================
 export async function deletePost(postId) {
-  const { error } = await supabase
-    .from('posts')
-    .delete()
-    .eq('id', postId);
-
+  const { error } = await supabase.from('posts').delete().eq('id', postId);
   if (error) throw error;
 }
 
-// ============================================================
-// CURTIDAS
-// ============================================================
-
-// Verifica se o usuário já curtiu um post específico
 export async function hasLiked(postId) {
   const user = await getCurrentUser();
   if (!user) return false;
@@ -112,13 +66,11 @@ export async function hasLiked(postId) {
     .select('id')
     .eq('post_id', postId)
     .eq('user_id', user.id)
-    .maybeSingle(); // retorna null se não encontrar (sem jogar erro)
+    .maybeSingle();
 
-  return !!data; // true se curtiu, false se não
+  return !!data;
 }
 
-// Verifica quais posts da lista o usuário já curtiu (mais eficiente)
-// Retorna um Set de post IDs: Set{ 'uuid1', 'uuid2', ... }
 export async function getLikedPostIds(postIds) {
   const user = await getCurrentUser();
   if (!user || postIds.length === 0) return new Set();
@@ -127,60 +79,30 @@ export async function getLikedPostIds(postIds) {
     .from('likes')
     .select('post_id')
     .eq('user_id', user.id)
-    .in('post_id', postIds); // filtra só pelos posts da lista atual
+    .in('post_id', postIds);
 
   return new Set(data?.map(l => l.post_id) ?? []);
 }
 
-// Curte um post (insere na tabela likes)
+// FIX: protege contra likes negativos com GREATEST
 export async function likePost(postId) {
   const user = await getCurrentUser();
   if (!user) throw new Error('Precisa estar logado para curtir.');
 
-  // Incrementa o contador no post
-  await supabase.rpc('increment_likes', { post_id: postId });
-
-  const { error } = await supabase
+  // Insere o like primeiro — se já existir, vai dar erro de unique constraint
+  const { error: likeError } = await supabase
     .from('likes')
     .insert({ post_id: postId, user_id: user.id });
 
-  if (error) throw error;
+  if (likeError) throw likeError;
+
+  // Incrementa o contador
+  await supabase.rpc('increment_likes', { post_id: postId });
 }
 
-export async function addReply(postId, content, isPrivate = false) {
-  const user = await getCurrentUser();
-  if (!user) throw new Error('Precisa estar logado para comentar.');
- 
-  // Insere o comentário na tabela replies
-  const { data, error } = await supabase
-    .from('replies')
-    .insert({
-      post_id:    postId,
-      author_id:  user.id,
-      content,
-      is_private: isPrivate,
-    })
-    .select(`
-      *,
-      author:profiles(id, name, handle, avatar_url)
-    `)
-    .single();
- 
-  if (error) throw error;
- 
-  // Incrementa o contador de replies no post
-  await supabase.rpc('increment_replies', { post_id: postId });
- 
-  return data;
-}
- 
-// Remove a curtida de um post
 export async function unlikePost(postId) {
   const user = await getCurrentUser();
   if (!user) return;
-
-  // Decrementa o contador
-  await supabase.rpc('decrement_likes', { post_id: postId });
 
   const { error } = await supabase
     .from('likes')
@@ -189,27 +111,57 @@ export async function unlikePost(postId) {
     .eq('user_id', user.id);
 
   if (error) throw error;
+
+  // Decrementa protegido contra negativo
+  await supabase.rpc('decrement_likes', { post_id: postId });
 }
 
-// ============================================================
-// REALTIME — escuta novos posts em tempo real
-// Chame essa função passando um callback que recebe o novo post
-//
-// Uso:
-//   const unsubscribe = subscribeToNewPosts((post) => {
-//     renderPost(post); // adiciona no topo do feed
-//   });
-//   // Para parar de ouvir: unsubscribe();
-// ============================================================
+// FIX: função getReplies para carregar comentários existentes
+export async function getReplies(postId, currentUserId = null) {
+  const { data, error } = await supabase
+    .from('replies')
+    .select('*, author:profiles(id, name, handle, avatar_url)')
+    .eq('post_id', postId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+
+  // Filtra replies privadas: só mostra se for o autor da reply
+  // ou se for o dono do post (o backend/RLS já faz isso, mas filtramos no cliente também)
+  return (data || []).filter(r => {
+    if (!r.is_private) return true;
+    if (!currentUserId) return false;
+    return r.author_id === currentUserId;
+  });
+}
+
+export async function addReply(postId, content, isPrivate = false) {
+  const user = await getCurrentUser();
+  if (!user) throw new Error('Precisa estar logado para comentar.');
+
+  const { data, error } = await supabase
+    .from('replies')
+    .insert({
+      post_id: postId,
+      author_id: user.id,
+      content,
+      is_private: isPrivate,
+    })
+    .select('*, author:profiles(id, name, handle, avatar_url)')
+    .single();
+
+  if (error) throw error;
+
+  await supabase.rpc('increment_replies', { post_id: postId });
+
+  return data;
+}
+
 export function subscribeToNewPosts(callback) {
   const channel = supabase
     .channel('public:posts')
-    .on(
-      'postgres_changes',
-      { event: 'INSERT', schema: 'public', table: 'posts' },
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' },
       async (payload) => {
-        // O payload tem o post novo, mas sem os dados do autor
-        // Buscamos o profile do autor separadamente
         const { data: author } = await supabase
           .from('profiles')
           .select('id, name, handle, avatar_url')
@@ -217,25 +169,17 @@ export function subscribeToNewPosts(callback) {
           .single();
 
         callback({ ...payload.new, author });
-      }
-    )
+      })
     .subscribe();
 
-  // Retorna função para cancelar a subscription
   return () => supabase.removeChannel(channel);
 }
 
-// ============================================================
-// BUSCA DE POSTS (para a página Explorar)
-// ============================================================
 export async function searchPosts(query) {
   const { data, error } = await supabase
     .from('posts')
-    .select(`
-      *,
-      author:profiles(id, name, handle, avatar_url)
-    `)
-    .ilike('content', `%${query}%`) // ilike = case-insensitive LIKE
+    .select('*, author:profiles(id, name, handle, avatar_url)')
+    .ilike('content', `%${query}%`)
     .order('created_at', { ascending: false })
     .limit(30);
 
