@@ -1,5 +1,5 @@
 // ============================================================
-// js/home.js — Versão corrigida completa
+// js/home.js — Versão CORRIGIDA FINAL com fix de listeners
 // ============================================================
 
 import { supabase, getCurrentUser } from './supabase.js';
@@ -44,8 +44,11 @@ let unsubscribeCurrentChat = null;
 let unsubscribeNotifs = null;
 let viewingProfile = null;
 
-// FIX: controllers para remover listeners dos botões de perfil sem duplicar
+// FIX: controllers para remover listeners dos botões de perfil
 let profileBtnControllers = [];
+
+// FIX: AbortController para limpar listeners de posts
+let postListenersController = null;
 
 // ============================================================
 // INICIALIZAÇÃO IMEDIATA
@@ -55,7 +58,7 @@ try {
   setupNavigation();
   setupPostComposer();
   setupPostModal();
-  setupPostDetailModal(); // NOVO: modal de detalhe do post
+  setupPostDetailModal();
   setupProfileModal();
   setupEmojis();
   setupUserMini();
@@ -216,6 +219,9 @@ async function loadFeed() {
   const container = document.getElementById('postsContainer');
   if (!container) return;
 
+  // Limpa listeners antigos
+  cleanupPostListeners();
+
   container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-secondary)">Carregando...</div>';
 
   try {
@@ -231,6 +237,14 @@ async function loadFeed() {
     console.error('Erro ao carregar feed:', err);
     container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--danger)">Erro ao carregar posts.</div>';
   }
+}
+
+// FIX: Função para limpar todos os listeners de posts
+function cleanupPostListeners() {
+  if (postListenersController) {
+    postListenersController.abort();
+  }
+  postListenersController = new AbortController();
 }
 
 function renderPosts(posts, containerElement) {
@@ -275,8 +289,8 @@ function createPostHTML(post) {
               ❤️ <span class="like-count">${post.likes_count ?? 0}</span>
             </div>
             <div class="post-action repost-action" title="Republicar" data-post-id="${post.id}">
-  🔁 <span class="repost-count">${post.reposts_count ?? 0}</span>
-</div>
+              🔁 <span class="repost-count">${post.reposts_count ?? 0}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -304,33 +318,31 @@ function createPostHTML(post) {
 }
 
 // ============================================================
-// EVENT LISTENERS DOS POSTS
+// EVENT LISTENERS DOS POSTS — FIX COMPLETO
 // ============================================================
 function attachPostEventListeners() {
+  const signal = postListenersController.signal;
 
-  // CURTIR
+  // LIKE
   document.querySelectorAll('.like-action').forEach(btn => {
-    const newBtn = btn.cloneNode(true);
-    btn.parentNode.replaceChild(newBtn, btn);
-
-    newBtn.addEventListener('click', async (e) => {
+    const handleLikeClick = async (e) => {
       e.stopPropagation();
       if (!currentProfile) {
         showNotification('Faça login para curtir! 🔐');
         return;
       }
 
-      const postId = newBtn.dataset.postId;
-      const authorId = newBtn.dataset.authorId;
-      const wasLiked = newBtn.dataset.liked === 'true';
-      const countEl = newBtn.querySelector('.like-count');
+      const postId = btn.dataset.postId;
+      const authorId = btn.dataset.authorId;
+      const wasLiked = btn.dataset.liked === 'true';
+      const countEl = btn.querySelector('.like-count');
       const currentCount = parseInt(countEl.textContent) || 0;
 
-      newBtn.style.pointerEvents = 'none';
+      btn.style.pointerEvents = 'none';
 
       const newLiked = !wasLiked;
-      newBtn.dataset.liked = newLiked;
-      newBtn.classList.toggle('liked', newLiked);
+      btn.dataset.liked = newLiked;
+      btn.classList.toggle('liked', newLiked);
       countEl.textContent = Math.max(0, currentCount + (newLiked ? 1 : -1));
 
       if (newLiked) likedPostIds.add(postId);
@@ -351,75 +363,68 @@ function attachPostEventListeners() {
           await unlikePost(postId);
         }
       } catch (err) {
-        newBtn.dataset.liked = wasLiked;
-        newBtn.classList.toggle('liked', wasLiked);
+        btn.dataset.liked = wasLiked;
+        btn.classList.toggle('liked', wasLiked);
         countEl.textContent = Math.max(0, currentCount);
         if (wasLiked) likedPostIds.add(postId);
         else likedPostIds.delete(postId);
         showNotification('Erro ao curtir. Tente novamente.');
       } finally {
-        newBtn.style.pointerEvents = '';
+        btn.style.pointerEvents = '';
       }
-    });
+    };
+
+    btn.addEventListener('click', handleLikeClick, { signal });
   });
 
-
+  // REPOST
   document.querySelectorAll('.repost-action').forEach(btn => {
-  btn.addEventListener('click', async (e) => {
-    e.stopPropagation(); // ESSENCIAL: impede de abrir o modal ao "retuitar"
-    
-    if (!currentProfile) {
-      showNotification('Faça login para republicar! 🚀');
-      return;
-    }
-
-    const postId = btn.dataset.postId;
-    console.log('Lógica de retweet para o post:', postId);
-    
-    // Aqui você vai inserir sua chamada para o Supabase no futuro
-    // Ex: await repostPost(postId);
-    
-    showNotification('Post republicado com sucesso! 🔁');
-  });
-});
-
-  // CLIQUE NO AVATAR / NOME — vai pro perfil
-  document.querySelectorAll('.clickable-avatar').forEach(el => {
-    const newEl = el.cloneNode(true);
-    // Para img precisamos preservar o src
-    if (el.tagName === 'IMG') newEl.src = el.src;
-    el.parentNode.replaceChild(newEl, el);
-
-    newEl.addEventListener('click', (e) => {
+    const handleRepostClick = async (e) => {
       e.stopPropagation();
-      const handle = newEl.dataset.handle;
+      if (!currentProfile) {
+        showNotification('Faça login para republicar! 🚀');
+        return;
+      }
+      const postId = btn.dataset.postId;
+      console.log('Repost para:', postId);
+      showNotification('Post republicado com sucesso! 🔁');
+    };
+
+    btn.addEventListener('click', handleRepostClick, { signal });
+  });
+
+  // CLIQUE NO AVATAR / NOME
+  document.querySelectorAll('.clickable-avatar').forEach(el => {
+    const handleAvatarClick = (e) => {
+      e.stopPropagation();
+      const handle = el.dataset.handle;
       if (!handle) return;
 
       document.querySelectorAll('.page-container').forEach(p => p.classList.remove('active'));
       document.getElementById('profile-page').classList.add('active');
-
       loadProfileByHandle(handle);
-    });
+    };
+
+    el.addEventListener('click', handleAvatarClick, { signal });
   });
 
-  // CLIQUE NO CARD INTEIRO — abre modal de detalhe
-document.querySelectorAll('.post-card').forEach(card => {
-  card.addEventListener('click', () => {
-    const postId = card.dataset.postId;
-    if (postId) {
-      openPostDetailModal(postId);
-    }
-  });
-});
+  // CLIQUE NO POST INTEIRO
+  document.querySelectorAll('.post-card').forEach(card => {
+    const handleCardClick = () => {
+      const postId = card.dataset.postId;
+      if (postId) {
+        openPostDetailModal(postId);
+      }
+    };
 
-  // ABRIR SEÇÃO DE COMENTÁRIOS INLINE
+    card.addEventListener('click', handleCardClick, { signal });
+  });
+
+  // ABRIR SEÇÃO DE COMENTÁRIOS
   document.querySelectorAll('.reply-action').forEach(btn => {
-    const newBtn = btn.cloneNode(true);
-    btn.parentNode.replaceChild(newBtn, btn);
-
-    newBtn.addEventListener('click', async (e) => {
+    const handleReplyClick = async (e) => {
       e.stopPropagation();
-      const postId = newBtn.dataset.postId;
+      const postId = btn.dataset.postId;
       const repliesSection = document.getElementById(`replies-${postId}`);
 
       if (repliesSection.style.display === 'none') {
@@ -429,15 +434,14 @@ document.querySelectorAll('.post-card').forEach(card => {
       } else {
         repliesSection.style.display = 'none';
       }
-    });
+    };
+
+    btn.addEventListener('click', handleReplyClick, { signal });
   });
 
   // ENVIAR COMENTÁRIO
   document.querySelectorAll('.reply-submit-btn').forEach(btn => {
-    const newBtn = btn.cloneNode(true);
-    btn.parentNode.replaceChild(newBtn, btn);
-
-    newBtn.addEventListener('click', async (e) => {
+    const handleReplySubmit = async (e) => {
       e.stopPropagation();
 
       if (!currentProfile) {
@@ -445,8 +449,8 @@ document.querySelectorAll('.post-card').forEach(card => {
         return;
       }
 
-      const postId = newBtn.dataset.postId;
-      const authorId = newBtn.dataset.authorId;
+      const postId = btn.dataset.postId;
+      const authorId = btn.dataset.authorId;
       const input = document.getElementById(`reply-input-${postId}`);
       const privacyCheckbox = document.getElementById(`reply-privacy-${postId}`);
       const content = input.value.trim();
@@ -454,8 +458,8 @@ document.querySelectorAll('.post-card').forEach(card => {
 
       if (!content) return;
 
-      newBtn.disabled = true;
-      newBtn.textContent = '...';
+      btn.disabled = true;
+      btn.textContent = '...';
 
       try {
         await addReply(postId, content, isPrivate);
@@ -500,23 +504,23 @@ document.querySelectorAll('.post-card').forEach(card => {
             postId,
           });
         }
-
       } catch (err) {
         console.error('Erro ao comentar:', err);
         showNotification('Erro ao enviar. Tente novamente.');
       } finally {
-        newBtn.disabled = false;
-        newBtn.textContent = 'Responder';
+        btn.disabled = false;
+        btn.textContent = 'Responder';
       }
-    });
+    };
+
+    btn.addEventListener('click', handleReplySubmit, { signal });
   });
 }
 
 // ============================================================
-// MODAL DE DETALHE DO POST — NOVO
+// MODAL DE DETALHE DO POST
 // ============================================================
 function setupPostDetailModal() {
-  // Cria o modal se não existir
   if (document.getElementById('postDetailModal')) return;
 
   const modal = document.createElement('div');
@@ -590,7 +594,6 @@ async function openPostDetailModal(postId) {
   content.innerHTML = '<p style="text-align:center;padding:40px;color:var(--text-secondary);">Carregando...</p>';
 
   try {
-    // Busca o post do DOM (já carregado no feed)
     const postCard = document.querySelector(`.post-card[data-post-id="${postId}"]`);
     const authorName = postCard?.querySelector('.post-author')?.textContent?.trim() ?? 'Usuário';
     const authorHandle = postCard?.querySelector('.post-handle')?.textContent?.trim() ?? '';
@@ -607,7 +610,6 @@ async function openPostDetailModal(postId) {
     const handle = authorHandle.replace('@', '');
 
     content.innerHTML = `
-      <!-- Post principal -->
       <div style="display:flex;gap:14px;margin-bottom:20px;">
         <img src="${authorAvatar}" 
              class="detail-clickable-avatar"
@@ -630,7 +632,6 @@ async function openPostDetailModal(postId) {
         </div>
       </div>
 
-      <!-- Estatísticas -->
       <div style="
         display:flex;gap:20px;
         padding:14px 0;
@@ -646,7 +647,6 @@ async function openPostDetailModal(postId) {
         </span>
       </div>
 
-      <!-- Ações -->
       <div style="
         display:flex;gap:24px;
         padding-bottom:16px;
@@ -673,7 +673,6 @@ async function openPostDetailModal(postId) {
         </button>
       </div>
 
-      <!-- Composer de resposta -->
       <div id="detailReplyComposer" style="display:none;margin-bottom:16px;">
         <div style="display:flex;gap:12px;">
           <img src="${userAvatar}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;">
@@ -704,13 +703,12 @@ async function openPostDetailModal(postId) {
         </div>
       </div>
 
-      <!-- Lista de respostas -->
       <div id="detailRepliesList">
         <p style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Carregando respostas...</p>
       </div>
     `;
 
-    // Clique em avatar/nome dentro do modal → vai pro perfil
+    // Listeners do modal
     content.querySelectorAll('.detail-clickable-avatar').forEach(el => {
       el.addEventListener('click', () => {
         const h = el.dataset.handle;
@@ -739,7 +737,6 @@ async function openPostDetailModal(postId) {
       detailLikeBtn.innerHTML = `${newLiked ? '❤️' : '🤍'} <span id="detailLikeCount">${Math.max(0, currentCount + (newLiked ? 1 : -1))}</span>`;
       detailLikeBtn.style.color = newLiked ? 'var(--danger, #e0245e)' : 'var(--text-secondary)';
 
-      // Sincroniza no feed também
       const feedLikeBtn = document.querySelector(`.like-action[data-post-id="${pid}"]`);
       if (feedLikeBtn) {
         feedLikeBtn.dataset.liked = newLiked;
@@ -766,7 +763,6 @@ async function openPostDetailModal(postId) {
       }
     });
 
-    // Toggle responder
     document.getElementById('detailReplyToggle')?.addEventListener('click', () => {
       const composer = document.getElementById('detailReplyComposer');
       if (composer.style.display === 'none') {
@@ -777,7 +773,6 @@ async function openPostDetailModal(postId) {
       }
     });
 
-    // Enviar resposta no modal
     document.getElementById('detailReplySubmit')?.addEventListener('click', async (e) => {
       if (!currentProfile) { showNotification('Faça login para comentar! 🔐'); return; }
       const btn = e.currentTarget;
@@ -788,7 +783,8 @@ async function openPostDetailModal(postId) {
       const text = input.value.trim();
       if (!text) return;
 
-      btn.disabled = true; btn.textContent = '...';
+      btn.disabled = true;
+      btn.textContent = '...';
 
       try {
         await addReply(pid, text, privacy.checked);
@@ -797,7 +793,6 @@ async function openPostDetailModal(postId) {
         document.getElementById('detailReplyComposer').style.display = 'none';
         showNotification(privacy.checked ? 'Resposta privada enviada! 🤫' : 'Resposta enviada! 💬');
 
-        // Atualiza contador no feed
         const replyCountEl = document.querySelector(`.reply-action[data-post-id="${pid}"] .reply-count`);
         if (replyCountEl) replyCountEl.textContent = parseInt(replyCountEl.textContent) + 1;
 
@@ -805,16 +800,15 @@ async function openPostDetailModal(postId) {
           await createNotification({ toUserId: aid, actorId: currentProfile.id, type: NOTIF_TYPES.REPLY, postId: pid });
         }
 
-        // Recarrega respostas no modal
         await loadDetailReplies(pid);
       } catch (err) {
         showNotification('Erro ao enviar resposta.');
       } finally {
-        btn.disabled = false; btn.textContent = 'Responder';
+        btn.disabled = false;
+        btn.textContent = 'Responder';
       }
     });
 
-    // Carrega respostas
     await loadDetailReplies(postId);
 
   } catch (err) {
@@ -867,7 +861,6 @@ async function loadDetailReplies(postId) {
       `;
     }).join('');
 
-    // Avatares nas respostas também levam ao perfil
     container.querySelectorAll('.detail-reply-avatar').forEach(el => {
       el.addEventListener('click', () => {
         const h = el.dataset.handle;
@@ -885,7 +878,7 @@ async function loadDetailReplies(postId) {
 }
 
 // ============================================================
-// CARREGA REPLIES INLINE NO FEED
+// CARREGA REPLIES INLINE
 // ============================================================
 async function loadRepliesForPost(postId) {
   const repliesList = document.getElementById(`replies-list-${postId}`);
@@ -1006,7 +999,7 @@ function startRealtimeFeed() {
 }
 
 // ============================================================
-// PERFIL — FIX DEFINITIVO para não duplicar botões
+// PERFIL — VERSÃO CORRIGIDA
 // ============================================================
 function setupProfileTabs() {
   const tabs = document.querySelectorAll('.profile-tab-btn');
@@ -1022,6 +1015,9 @@ function setupProfileTabs() {
 async function loadProfileTabContent(tabType) {
   const contentEl = document.getElementById('profileContent');
   if (!contentEl) return;
+
+  // Limpa listeners antigos
+  cleanupPostListeners();
 
   const profileToLoad = viewingProfile || currentProfile;
 
@@ -1066,11 +1062,11 @@ async function loadProfileTabContent(tabType) {
   }
 }
 
-// FIX DEFINITIVO: usa AbortController para cancelar listeners antigos
 async function loadProfilePage() {
-  // Cancela todos os listeners dos botões de perfil anteriores
+  // Limpa listeners antigos
   profileBtnControllers.forEach(ctrl => ctrl.abort());
   profileBtnControllers = [];
+  cleanupPostListeners();
 
   const editBtn = document.getElementById('editProfileBtn');
   const profile = viewingProfile || currentProfile;
@@ -1091,7 +1087,6 @@ async function loadProfilePage() {
       editBtn.classList.add('btn-login-animado');
     }
 
-    // Remove botões extras com segurança
     document.getElementById('msgProfileBtn')?.remove();
     document.getElementById('followProfileBtn')?.remove();
 
@@ -1100,7 +1095,6 @@ async function loadProfilePage() {
     return;
   }
 
-  // Preenche dados
   document.getElementById('profileName').textContent = profile.name;
   document.getElementById('profileHandle').textContent = `@${profile.handle}`;
   document.getElementById('profileBio').textContent = profile.bio || 'Sem bio.';
@@ -1117,7 +1111,6 @@ async function loadProfilePage() {
     statValues[1].textContent = profile.followers_count || 0;
   }
 
-  // FIX: remove botões antigos SEMPRE antes de criar novos
   document.getElementById('msgProfileBtn')?.remove();
   document.getElementById('followProfileBtn')?.remove();
 
@@ -1134,12 +1127,11 @@ async function loadProfilePage() {
     if (editBtn) editBtn.style.display = 'none';
 
     if (currentProfile) {
-      // Cria controller para este par de botões
       const controller = new AbortController();
       profileBtnControllers.push(controller);
       const signal = controller.signal;
 
-      // Botão Mensagem — criado fresh, sem clone
+      // Botão Mensagem
       const msgBtn = document.createElement('button');
       msgBtn.id = 'msgProfileBtn';
       msgBtn.className = 'edit-profile-btn';
@@ -1158,13 +1150,12 @@ async function loadProfilePage() {
       }, { signal });
       profileInfo.appendChild(msgBtn);
 
-      // Botão Seguir/Seguindo
+      // Botão Seguir
       const followBtn = document.createElement('button');
       followBtn.id = 'followProfileBtn';
       followBtn.className = 'edit-profile-btn';
       followBtn.style.cssText = 'margin-left:8px;';
 
-      // Carrega estado de seguindo assincronamente
       let alreadyFollowing = false;
       try {
         alreadyFollowing = await isFollowing(profile.id);
@@ -1178,7 +1169,6 @@ async function loadProfilePage() {
       setFollowState(alreadyFollowing);
 
       followBtn.addEventListener('click', async () => {
-        // Bloqueia duplo clique
         followBtn.disabled = true;
         try {
           const currentlyFollowing = followBtn.textContent.includes('Seguindo');
@@ -1205,7 +1195,6 @@ async function loadProfilePage() {
     }
   }
 
-  // Reseta tabs e carrega posts
   const tabs = document.querySelectorAll('.profile-tab-btn');
   tabs.forEach(t => t.classList.remove('active'));
   document.querySelector('.profile-tab-btn[data-tab="posts"]')?.classList.add('active');
