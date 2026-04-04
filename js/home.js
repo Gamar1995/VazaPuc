@@ -324,9 +324,10 @@ function attachPostEventListeners() {
   const signal = postListenersController.signal;
 
   // LIKE
-  document.querySelectorAll('.like-action').forEach(btn => {
+ document.querySelectorAll('.like-action').forEach(btn => {
     const handleLikeClick = async (e) => {
       e.stopPropagation();
+      
       if (!currentProfile) {
         showNotification('Faça login para curtir! 🔐');
         return;
@@ -335,19 +336,34 @@ function attachPostEventListeners() {
       const postId = btn.dataset.postId;
       const authorId = btn.dataset.authorId;
       const wasLiked = btn.dataset.liked === 'true';
+      
       const countEl = btn.querySelector('.like-count');
       const currentCount = parseInt(countEl.textContent) || 0;
 
+      // Trava o botão atual para não dar duplo clique rápido
       btn.style.pointerEvents = 'none';
 
+      // Define os novos valores
       const newLiked = !wasLiked;
-      btn.dataset.liked = newLiked;
-      btn.classList.toggle('liked', newLiked);
-      countEl.textContent = Math.max(0, currentCount + (newLiked ? 1 : -1));
+      const newCount = Math.max(0, currentCount + (newLiked ? 1 : -1));
+
+      // ==========================================
+      // A MÁGICA DA SINCRONIZAÇÃO ACONTECE AQUI
+      // Atualiza TODOS os likes desse post de uma vez (Modal e Feed)
+      // ==========================================
+      const allLikeButtonsForThisPost = document.querySelectorAll(`.like-action[data-post-id="${postId}"]`);
+      
+      allLikeButtonsForThisPost.forEach(targetBtn => {
+        targetBtn.dataset.liked = newLiked;
+        targetBtn.classList.toggle('liked', newLiked);
+        const targetCountEl = targetBtn.querySelector('.like-count');
+        if (targetCountEl) targetCountEl.textContent = newCount;
+      });
 
       if (newLiked) likedPostIds.add(postId);
       else likedPostIds.delete(postId);
 
+      // Comunicação com o Supabase
       try {
         if (newLiked) {
           await likePost(postId);
@@ -363,12 +379,21 @@ function attachPostEventListeners() {
           await unlikePost(postId);
         }
       } catch (err) {
-        btn.dataset.liked = wasLiked;
-        btn.classList.toggle('liked', wasLiked);
-        countEl.textContent = Math.max(0, currentCount);
+        // Se der erro no banco, reverte a animação em TODOS os botões
+        allLikeButtonsForThisPost.forEach(targetBtn => {
+          targetBtn.dataset.liked = wasLiked;
+          targetBtn.classList.toggle('liked', wasLiked);
+          const targetCountEl = targetBtn.querySelector('.like-count');
+          if (targetCountEl) targetCountEl.textContent = currentCount; // Volta o número antigo
+        });
+
         if (wasLiked) likedPostIds.add(postId);
         else likedPostIds.delete(postId);
-        showNotification('Erro ao curtir. Tente novamente.');
+        
+        // Só avisa de erro se não for o famoso erro 409 (Duplicata)
+        if (err?.status !== 409) {
+            showNotification('Erro ao curtir. Tente novamente.');
+        }
       } finally {
         btn.style.pointerEvents = '';
       }
@@ -410,13 +435,16 @@ function attachPostEventListeners() {
 
   // CLIQUE NO POST INTEIRO
   document.querySelectorAll('.post-card').forEach(card => {
-    const handleCardClick = () => {
+    const handleCardClick = (e) => {
+      // Impede que clicar em botões abra o modal
+      const isAction = e.target.closest('.post-action') || e.target.closest('.clickable-avatar');
+      if (isAction) return;
+
       const postId = card.dataset.postId;
       if (postId) {
         openPostDetailModal(postId);
       }
     };
-
     card.addEventListener('click', handleCardClick, { signal });
   });
 
