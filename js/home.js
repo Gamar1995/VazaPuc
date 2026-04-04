@@ -274,7 +274,9 @@ function createPostHTML(post) {
                  data-liked="${isLiked}">
               ❤️ <span class="like-count">${post.likes_count ?? 0}</span>
             </div>
-            <div class="post-action share-action" title="Compartilhar">📤</div>
+            <div class="post-action repost-action" title="Republicar" data-post-id="${post.id}">
+  🔁 <span class="repost-count">${post.reposts_count ?? 0}</span>
+</div>
           </div>
         </div>
       </div>
@@ -361,6 +363,26 @@ function attachPostEventListeners() {
     });
   });
 
+
+  document.querySelectorAll('.repost-action').forEach(btn => {
+  btn.addEventListener('click', async (e) => {
+    e.stopPropagation(); // ESSENCIAL: impede de abrir o modal ao "retuitar"
+    
+    if (!currentProfile) {
+      showNotification('Faça login para republicar! 🚀');
+      return;
+    }
+
+    const postId = btn.dataset.postId;
+    console.log('Lógica de retweet para o post:', postId);
+    
+    // Aqui você vai inserir sua chamada para o Supabase no futuro
+    // Ex: await repostPost(postId);
+    
+    showNotification('Post republicado com sucesso! 🔁');
+  });
+});
+
   // CLIQUE NO AVATAR / NOME — vai pro perfil
   document.querySelectorAll('.clickable-avatar').forEach(el => {
     const newEl = el.cloneNode(true);
@@ -380,14 +402,15 @@ function attachPostEventListeners() {
     });
   });
 
-  // CLIQUE NO TEXTO DO POST — abre modal de detalhe
-  document.querySelectorAll('.post-clickable-body').forEach(el => {
-    el.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const postId = el.dataset.postId;
+  // CLIQUE NO CARD INTEIRO — abre modal de detalhe
+document.querySelectorAll('.post-card').forEach(card => {
+  card.addEventListener('click', () => {
+    const postId = card.dataset.postId;
+    if (postId) {
       openPostDetailModal(postId);
-    });
+    }
   });
+});
 
   // ABRIR SEÇÃO DE COMENTÁRIOS INLINE
   document.querySelectorAll('.reply-action').forEach(btn => {

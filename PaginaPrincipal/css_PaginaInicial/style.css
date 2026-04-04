@@ -1693,3 +1693,17 @@ body {
   gap: 10px;
   padding: 8px 0;
 }
+.post-card {
+  transition: background-color 0.2s ease;
+  cursor: pointer;
+}
+
+.post-card:hover {
+  background-color: rgba(255, 255, 255, 0.03); /* Dá um leve destaque ao passar o mouse */
+}
+
+/* Garanta que os botões dentro do card continuem com o cursor correto */
+.post-action, .avatar, .clickable-avatar {
+  position: relative;
+  z-index: 2; /* Garante que fiquem "acima" do clique do card se necessário */
+}
