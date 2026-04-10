@@ -1707,3 +1707,75 @@ body {
   position: relative;
   z-index: 2; /* Garante que fiquem "acima" do clique do card se necessário */
 }
+/* ===== GAVETA DE OPÇÕES DO POST ===== */
+.post-options-wrapper {
+    position: relative;
+    margin-left: 8px;
+}
+
+.post-options-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0 8px;
+    border-radius: 50%;
+    transition: background 0.2s;
+    line-height: 1;
+}
+
+.post-options-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+}
+
+.post-options-menu {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    background: var(--dark-bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 8px;
+    width: 180px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+    z-index: 100;
+}
+
+.post-options-menu.active {
+    display: flex;
+    animation: slideDown 0.2s ease;
+}
+
+.post-option-item {
+    background: none;
+    border: none;
+    text-align: left;
+    padding: 10px 12px;
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.post-option-item:hover {
+    background: var(--dark-bg-tertiary);
+}
+
+.post-option-item.danger {
+    color: var(--danger);
+}
+
+.post-option-item.danger:hover {
+    background: rgba(231, 76, 60, 0.1);
+}

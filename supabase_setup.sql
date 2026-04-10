@@ -285,3 +285,6 @@ CREATE OR REPLACE FUNCTION decrement_likes(post_id UUID)
  
   -- Adicione unique constraint em likes para evitar curtidas duplicadas:
   ALTER TABLE likes ADD CONSTRAINT likes_unique UNIQUE (post_id, user_id);
+
+  ALTER TABLE public.posts ADD COLUMN IF NOT EXISTS is_private BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.posts ADD COLUMN IF NOT EXISTS is_archived BOOLEAN DEFAULT FALSE;

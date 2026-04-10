@@ -186,3 +186,22 @@ export async function searchPosts(query) {
   if (error) throw error;
   return data;
 }
+// ============================================================
+// AÇÕES DO POST (EDITAR, APAGAR, ARQUIVAR, PRIVACIDADE)
+// ============================================================
+
+export async function updatePost(postId, newContent) {
+  const { data, error } = await supabase.from('posts').update({ content: newContent }).eq('id', postId).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function setPostPrivacy(postId, isPrivate) {
+  const { error } = await supabase.from('posts').update({ is_private: isPrivate }).eq('id', postId);
+  if (error) throw error;
+}
+
+export async function setPostArchive(postId, isArchived) {
+  const { error } = await supabase.from('posts').update({ is_archived: isArchived }).eq('id', postId);
+  if (error) throw error;
+}

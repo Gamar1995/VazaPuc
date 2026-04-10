@@ -208,10 +208,22 @@
     .block-option.selected .block-name { color: var(--accent); }
 
     /* Termos */
-    .terms-check { display:flex; align-items:flex-start; gap:12px; cursor:pointer; }
-    .terms-check input[type="checkbox"] { width:20px; height:20px; padding:0; flex-shrink:0; cursor:pointer; accent-color:var(--primary); }
-    .terms-check span { font-size:13px; color:var(--text-muted); line-height:1.5; }
-    .terms-check a { color:var(--accent); text-decoration:none; }
+/* Termos */
+.terms-check { display:flex; align-items:flex-start; gap:12px; cursor:pointer; }
+
+.terms-check input[type="checkbox"] { 
+  appearance: auto; /* Restaura o comportamento do checkbox */
+  -webkit-appearance: auto; /* Para navegadores baseados em WebKit (Chrome, Safari) */
+  width: 20px; 
+  height: 20px; 
+  padding: 0; 
+  flex-shrink: 0; 
+  cursor: pointer; 
+  accent-color: var(--primary); /* Mantém a cor do seu tema quando marcado */
+}
+
+.terms-check span { font-size:13px; color:var(--text-muted); line-height:1.5; }
+.terms-check a { color:var(--accent); text-decoration:none; }
 
     /* Botões */
     .btn-row { display:flex; gap:12px; margin-top:8px; }

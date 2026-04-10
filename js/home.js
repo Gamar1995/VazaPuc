@@ -1,5 +1,5 @@
 // ============================================================
-// js/home.js — Versão CORRIGIDA FINAL com fix de listeners
+// js/home.js — Versão CORRIGIDA FINAL com fix de listeners e GAVETA
 // ============================================================
 
 import { supabase, getCurrentUser } from './supabase.js';
@@ -264,8 +264,27 @@ function createPostHTML(post) {
   const authorAvatar = post.author?.avatar_url
     || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author?.handle}`;
 
+  // Verifica se o post é do usuário logado para mostrar a gaveta
+  const isMyPost = currentProfile && currentProfile.id === post.author?.id;
+  
+  const optionsMenu = isMyPost ? `
+    <div class="post-options-wrapper">
+      <button class="post-options-btn" data-post-id="${post.id}">⋮</button>
+      <div class="post-options-menu" id="menu-${post.id}">
+        <button class="post-option-item edit-post" data-post-id="${post.id}">✏️ Editar</button>
+        <button class="post-option-item privacy-post" data-post-id="${post.id}" data-private="${post.is_private || false}">
+          ${post.is_private ? '🔓 Tornar Público' : '🔒 Somente Seguidores'}
+        </button>
+        <button class="post-option-item archive-post" data-post-id="${post.id}" data-archived="${post.is_archived || false}">
+          ${post.is_archived ? '📤 Desarquivar' : '📥 Arquivar'}
+        </button>
+        <button class="post-option-item danger delete-post" data-post-id="${post.id}">🗑️ Apagar</button>
+      </div>
+    </div>
+  ` : '';
+
   return `
-    <div class="post-card" data-post-id="${post.id}" data-author-id="${post.author?.id ?? ''}" style="flex-direction:column;cursor:pointer;">
+    <div class="post-card" data-post-id="${post.id}" data-author-id="${post.author?.id ?? ''}" style="flex-direction:column;cursor:pointer; opacity: ${post.is_archived ? '0.5' : '1'};">
       <div class="post-main" style="display:flex;gap:16px;width:100%;">
         <img src="${authorAvatar}" class="avatar clickable-avatar" data-handle="${post.author?.handle}" style="cursor:pointer;">
         <div class="post-content" style="flex:1;min-width:0;">
@@ -275,6 +294,7 @@ function createPostHTML(post) {
             </span>
             <span class="post-handle">@${escapeHtml(post.author?.handle ?? '')}</span>
             <span class="post-time">${timeAgo}</span>
+            ${optionsMenu}
           </div>
           <p class="post-text post-clickable-body" data-post-id="${post.id}">${escapeHtml(post.content)}</p>
           <div class="post-actions">
@@ -323,8 +343,106 @@ function createPostHTML(post) {
 function attachPostEventListeners() {
   const signal = postListenersController.signal;
 
+  // MENU DE OPÇÕES (Gaveta)
+  document.querySelectorAll('.post-options-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const postId = btn.dataset.postId;
+      const menu = document.getElementById(`menu-${postId}`);
+      
+      // Fecha outros menus abertos
+      document.querySelectorAll('.post-options-menu').forEach(m => {
+        if (m.id !== `menu-${postId}`) m.classList.remove('active');
+      });
+      menu.classList.toggle('active');
+    });
+  });
+
+  // Fecha o menu ao clicar em qualquer outro lugar da tela
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.post-options-menu').forEach(m => m.classList.remove('active'));
+  }, { signal });
+
+  // AÇÃO: APAGAR
+  document.querySelectorAll('.delete-post').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const postId = btn.dataset.postId;
+      if(confirm('Tem certeza que deseja apagar este post permanentemente?')) {
+        try {
+          const { deletePost } = await import('./posts.js');
+          await deletePost(postId);
+          document.querySelector(`.post-card[data-post-id="${postId}"]`).remove();
+          showNotification('Post apagado 🗑️');
+        } catch(err) {
+          showNotification('Erro ao apagar post.');
+        }
+      }
+    });
+  });
+
+  // AÇÃO: EDITAR
+  document.querySelectorAll('.edit-post').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const postId = btn.dataset.postId;
+      const postCard = document.querySelector(`.post-card[data-post-id="${postId}"]`);
+      const currentText = postCard.querySelector('.post-text').textContent;
+      
+      const newContent = prompt('Edite seu post:', currentText);
+      if (newContent && newContent.trim() !== currentText) {
+        try {
+          const { updatePost } = await import('./posts.js');
+          await updatePost(postId, newContent.trim());
+          postCard.querySelector('.post-text').textContent = newContent.trim();
+          showNotification('Post atualizado! ✏️');
+        } catch(err) {
+          showNotification('Erro ao editar.');
+        }
+      }
+      document.getElementById(`menu-${postId}`).classList.remove('active');
+    });
+  });
+
+  // AÇÃO: ARQUIVAR
+  document.querySelectorAll('.archive-post').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const postId = btn.dataset.postId;
+      const isArchived = btn.dataset.archived === 'true';
+      try {
+        const { setPostArchive } = await import('./posts.js');
+        await setPostArchive(postId, !isArchived);
+        btn.dataset.archived = !isArchived;
+        btn.innerHTML = !isArchived ? '📤 Desarquivar' : '📥 Arquivar';
+        showNotification(!isArchived ? 'Post arquivado 📥' : 'Post desarquivado 📤');
+        document.querySelector(`.post-card[data-post-id="${postId}"]`).style.opacity = !isArchived ? '0.5' : '1';
+      } catch(err) {
+        showNotification('Erro ao arquivar.');
+      }
+    });
+  });
+
+  // AÇÃO: PRIVACIDADE
+  document.querySelectorAll('.privacy-post').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const postId = btn.dataset.postId;
+      const isPrivate = btn.dataset.private === 'true';
+      try {
+        const { setPostPrivacy } = await import('./posts.js');
+        await setPostPrivacy(postId, !isPrivate);
+        btn.dataset.private = !isPrivate;
+        btn.innerHTML = !isPrivate ? '🔓 Tornar Público' : '🔒 Somente Seguidores';
+        showNotification(!isPrivate ? 'Post agora é Privado 🔒' : 'Post agora é Público 🔓');
+      } catch(err) {
+        showNotification('Erro ao mudar privacidade.');
+      }
+    });
+  });
+
   // LIKE
- document.querySelectorAll('.like-action').forEach(btn => {
+  document.querySelectorAll('.like-action').forEach(btn => {
     const handleLikeClick = async (e) => {
       e.stopPropagation();
       
@@ -347,10 +465,7 @@ function attachPostEventListeners() {
       const newLiked = !wasLiked;
       const newCount = Math.max(0, currentCount + (newLiked ? 1 : -1));
 
-      // ==========================================
-      // A MÁGICA DA SINCRONIZAÇÃO ACONTECE AQUI
       // Atualiza TODOS os likes desse post de uma vez (Modal e Feed)
-      // ==========================================
       const allLikeButtonsForThisPost = document.querySelectorAll(`.like-action[data-post-id="${postId}"]`);
       
       allLikeButtonsForThisPost.forEach(targetBtn => {
@@ -384,13 +499,12 @@ function attachPostEventListeners() {
           targetBtn.dataset.liked = wasLiked;
           targetBtn.classList.toggle('liked', wasLiked);
           const targetCountEl = targetBtn.querySelector('.like-count');
-          if (targetCountEl) targetCountEl.textContent = currentCount; // Volta o número antigo
+          if (targetCountEl) targetCountEl.textContent = currentCount; 
         });
 
         if (wasLiked) likedPostIds.add(postId);
         else likedPostIds.delete(postId);
         
-        // Só avisa de erro se não for o famoso erro 409 (Duplicata)
         if (err?.status !== 409) {
             showNotification('Erro ao curtir. Tente novamente.');
         }
@@ -437,7 +551,7 @@ function attachPostEventListeners() {
   document.querySelectorAll('.post-card').forEach(card => {
     const handleCardClick = (e) => {
       // Impede que clicar em botões abra o modal
-      const isAction = e.target.closest('.post-action') || e.target.closest('.clickable-avatar');
+      const isAction = e.target.closest('.post-action') || e.target.closest('.clickable-avatar') || e.target.closest('.post-options-wrapper');
       if (isAction) return;
 
       const postId = card.dataset.postId;
