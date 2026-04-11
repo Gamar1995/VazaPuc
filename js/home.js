@@ -1,5 +1,5 @@
 // ============================================================
-// js/home.js — Versão CORRIGIDA FINAL com fix de listeners e GAVETA
+// js/home.js — Versão CORRIGIDA: listeners separados por contexto
 // ============================================================
 
 import { supabase, getCurrentUser } from './supabase.js';
@@ -44,11 +44,10 @@ let unsubscribeCurrentChat = null;
 let unsubscribeNotifs = null;
 let viewingProfile = null;
 
-// FIX: controllers para remover listeners dos botões de perfil
+// FIX: controllers separados para feed e perfil — nunca interferem
+let feedListenersController = null;
+let profileListenersController = null;
 let profileBtnControllers = [];
-
-// FIX: AbortController para limpar listeners de posts
-let postListenersController = null;
 
 // ============================================================
 // INICIALIZAÇÃO IMEDIATA
@@ -219,8 +218,8 @@ async function loadFeed() {
   const container = document.getElementById('postsContainer');
   if (!container) return;
 
-  // Limpa listeners antigos
-  cleanupPostListeners();
+  // Cancela só os listeners do feed, nunca do perfil
+  abortFeedListeners();
 
   container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-secondary)">Carregando...</div>';
 
@@ -232,28 +231,32 @@ async function loadFeed() {
       likedPostIds = await getLikedPostIds(ids);
     }
 
-    renderPosts(posts, container);
+    renderPosts(posts, container, 'feed');
   } catch (err) {
     console.error('Erro ao carregar feed:', err);
     container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--danger)">Erro ao carregar posts.</div>';
   }
 }
 
-// FIX: Função para limpar todos os listeners de posts
-function cleanupPostListeners() {
-  if (postListenersController) {
-    postListenersController.abort();
-  }
-  postListenersController = new AbortController();
+// FIX: funções separadas para abort de cada contexto
+function abortFeedListeners() {
+  if (feedListenersController) feedListenersController.abort();
+  feedListenersController = new AbortController();
 }
 
-function renderPosts(posts, containerElement) {
+function abortProfileListeners() {
+  if (profileListenersController) profileListenersController.abort();
+  profileListenersController = new AbortController();
+}
+
+// FIX: renderPosts recebe o contexto ('feed' ou 'profile') para usar o controller correto
+function renderPosts(posts, containerElement, context = 'feed') {
   if (posts.length === 0) {
     containerElement.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-secondary)">Nenhum post ainda. Seja o primeiro! 🚀</div>';
     return;
   }
   containerElement.innerHTML = posts.map(post => createPostHTML(post)).join('');
-  attachPostEventListeners();
+  attachPostEventListeners(containerElement, context);
 }
 
 function createPostHTML(post) {
@@ -264,22 +267,17 @@ function createPostHTML(post) {
   const authorAvatar = post.author?.avatar_url
     || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author?.handle}`;
 
-  // Verifica se o post é do usuário logado para mostrar a gaveta
   const isMyPost = currentProfile && currentProfile.id === post.author?.id;
-  
+
+  // FIX GAVETA: menu renderizado no <body> via JS para escapar de overflow:hidden
   const optionsMenu = isMyPost ? `
-    <div class="post-options-wrapper">
-      <button class="post-options-btn" data-post-id="${post.id}">⋮</button>
-      <div class="post-options-menu" id="menu-${post.id}">
-        <button class="post-option-item edit-post" data-post-id="${post.id}">✏️ Editar</button>
-        <button class="post-option-item privacy-post" data-post-id="${post.id}" data-private="${post.is_private || false}">
-          ${post.is_private ? '🔓 Tornar Público' : '🔒 Somente Seguidores'}
-        </button>
-        <button class="post-option-item archive-post" data-post-id="${post.id}" data-archived="${post.is_archived || false}">
-          ${post.is_archived ? '📤 Desarquivar' : '📥 Arquivar'}
-        </button>
-        <button class="post-option-item danger delete-post" data-post-id="${post.id}">🗑️ Apagar</button>
-      </div>
+    <div class="post-options-wrapper" style="margin-left:auto;">
+      <button class="post-options-btn" data-post-id="${post.id}" style="
+        background:none;border:none;cursor:pointer;
+        color:var(--text-secondary);font-size:20px;
+        padding:2px 8px;border-radius:6px;line-height:1;
+        transition:background 0.2s;
+      ">⋮</button>
     </div>
   ` : '';
 
@@ -288,7 +286,7 @@ function createPostHTML(post) {
       <div class="post-main" style="display:flex;gap:16px;width:100%;">
         <img src="${authorAvatar}" class="avatar clickable-avatar" data-handle="${post.author?.handle}" style="cursor:pointer;">
         <div class="post-content" style="flex:1;min-width:0;">
-          <div class="post-header">
+          <div class="post-header" style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;">
             <span class="post-author clickable-avatar" data-handle="${post.author?.handle}" style="cursor:pointer;">
               ${escapeHtml(post.author?.name ?? 'Usuário')}
             </span>
@@ -298,19 +296,20 @@ function createPostHTML(post) {
           </div>
           <p class="post-text post-clickable-body" data-post-id="${post.id}">${escapeHtml(post.content)}</p>
           <div class="post-actions">
-            <div class="post-action reply-action" title="Responder" data-post-id="${post.id}">
+            <button class="post-action reply-action" title="Responder" data-post-id="${post.id}" style="background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:4px;color:inherit;font-size:inherit;padding:4px 8px;">
               💬 <span class="reply-count">${post.replies_count ?? 0}</span>
-            </div>
-            <div class="post-action like-action ${isLiked ? 'liked' : ''}"
+            </button>
+            <button class="post-action like-action ${isLiked ? 'liked' : ''}"
                  title="Curtir"
                  data-post-id="${post.id}"
                  data-author-id="${post.author?.id ?? ''}"
-                 data-liked="${isLiked}">
+                 data-liked="${isLiked}"
+                 style="background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:4px;color:inherit;font-size:inherit;padding:4px 8px;">
               ❤️ <span class="like-count">${post.likes_count ?? 0}</span>
-            </div>
-            <div class="post-action repost-action" title="Republicar" data-post-id="${post.id}">
+            </button>
+            <button class="post-action repost-action" title="Republicar" data-post-id="${post.id}" style="background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:4px;color:inherit;font-size:inherit;padding:4px 8px;">
               🔁 <span class="repost-count">${post.reposts_count ?? 0}</span>
-            </div>
+            </button>
           </div>
         </div>
       </div>
@@ -339,113 +338,143 @@ function createPostHTML(post) {
 
 // ============================================================
 // EVENT LISTENERS DOS POSTS — FIX COMPLETO
+// FIX: recebe o container e o contexto para usar o AbortController correto
 // ============================================================
-function attachPostEventListeners() {
-  const signal = postListenersController.signal;
+function attachPostEventListeners(container = document, context = 'feed') {
+  // FIX: cada contexto usa seu próprio controller — feed e perfil nunca se afetam
+  const signal = context === 'feed'
+    ? feedListenersController.signal
+    : profileListenersController.signal;
 
-  // MENU DE OPÇÕES (Gaveta)
-  document.querySelectorAll('.post-options-btn').forEach(btn => {
+  // ── GAVETA (post-options-btn) ─────────────────────────────
+  // FIX: menu criado no <body> com position:fixed para escapar de overflow:hidden dos cards
+  container.querySelectorAll('.post-options-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
+
+      // Remove qualquer menu flutuante já aberto
+      document.getElementById('floatingPostMenu')?.remove();
+
       const postId = btn.dataset.postId;
-      const menu = document.getElementById(`menu-${postId}`);
-      
-      // Fecha outros menus abertos
-      document.querySelectorAll('.post-options-menu').forEach(m => {
-        if (m.id !== `menu-${postId}`) m.classList.remove('active');
+
+      // Descobre dados do post a partir do card
+      const card = btn.closest('.post-card');
+      const isArchived = card?.style.opacity === '0.5';
+      const postText = card?.querySelector('.post-text')?.textContent ?? '';
+
+      // Posiciona o menu na tela usando as coordenadas do botão
+      const rect = btn.getBoundingClientRect();
+
+      const menu = document.createElement('div');
+      menu.id = 'floatingPostMenu';
+      menu.dataset.postId = postId;
+      menu.style.cssText = `
+        position:fixed;
+        top:${rect.bottom + 4}px;
+        left:${Math.min(rect.right - 190, window.innerWidth - 198)}px;
+        z-index:9999;
+        background:var(--dark-bg-secondary);
+        border:1px solid var(--border);
+        border-radius:10px;
+        min-width:190px;
+        box-shadow:0 4px 20px rgba(0,0,0,0.4);
+        overflow:hidden;
+      `;
+
+      // Lê estado atual do post para os itens do menu
+      const privacyBtn = card?.querySelector('.privacy-post');
+      const isPrivate = privacyBtn?.dataset?.private === 'true';
+      const archiveBtn2 = card?.querySelector('.archive-post');
+      const isArchivedVal = archiveBtn2?.dataset?.archived === 'true';
+
+      menu.innerHTML = `
+        <button class="post-option-item fm-edit" data-post-id="${postId}" style="display:block;width:100%;text-align:left;padding:11px 16px;background:none;border:none;cursor:pointer;color:var(--text-primary);font-size:14px;">✏️ Editar</button>
+        <button class="post-option-item fm-privacy" data-post-id="${postId}" data-private="${isPrivate}" style="display:block;width:100%;text-align:left;padding:11px 16px;background:none;border:none;cursor:pointer;color:var(--text-primary);font-size:14px;">${isPrivate ? '🔓 Tornar Público' : '🔒 Somente Seguidores'}</button>
+        <button class="post-option-item fm-archive" data-post-id="${postId}" data-archived="${isArchivedVal}" style="display:block;width:100%;text-align:left;padding:11px 16px;background:none;border:none;cursor:pointer;color:var(--text-primary);font-size:14px;">${isArchivedVal ? '📤 Desarquivar' : '📥 Arquivar'}</button>
+        <button class="post-option-item fm-delete" data-post-id="${postId}" style="display:block;width:100%;text-align:left;padding:11px 16px;background:none;border:none;cursor:pointer;color:var(--danger,#e0245e);font-size:14px;">🗑️ Apagar</button>
+      `;
+
+      document.body.appendChild(menu);
+
+      // Hover visual nos itens
+      menu.querySelectorAll('button').forEach(b => {
+        b.addEventListener('mouseenter', () => b.style.background = 'var(--border)');
+        b.addEventListener('mouseleave', () => b.style.background = 'none');
       });
-      menu.classList.toggle('active');
-    });
+
+      // EDITAR
+      menu.querySelector('.fm-edit')?.addEventListener('click', async (ev) => {
+        ev.stopPropagation();
+        menu.remove();
+        const postCard = document.querySelector(`.post-card[data-post-id="${postId}"]`);
+        const currentText = postCard?.querySelector('.post-text')?.textContent ?? '';
+        const newContent = prompt('Edite seu post:', currentText);
+        if (newContent && newContent.trim() !== currentText) {
+          try {
+            const { updatePost } = await import('./posts.js');
+            await updatePost(postId, newContent.trim());
+            postCard.querySelector('.post-text').textContent = newContent.trim();
+            showNotification('Post atualizado! ✏️');
+          } catch (err) { showNotification('Erro ao editar.'); }
+        }
+      });
+
+      // PRIVACIDADE
+      menu.querySelector('.fm-privacy')?.addEventListener('click', async (ev) => {
+        ev.stopPropagation();
+        const isPrivNow = menu.querySelector('.fm-privacy').dataset.private === 'true';
+        menu.remove();
+        try {
+          const { setPostPrivacy } = await import('./posts.js');
+          await setPostPrivacy(postId, !isPrivNow);
+          showNotification(!isPrivNow ? 'Post agora é Privado 🔒' : 'Post agora é Público 🔓');
+        } catch (err) { showNotification('Erro ao mudar privacidade.'); }
+      });
+
+      // ARQUIVAR
+      menu.querySelector('.fm-archive')?.addEventListener('click', async (ev) => {
+        ev.stopPropagation();
+        const isArchNow = menu.querySelector('.fm-archive').dataset.archived === 'true';
+        menu.remove();
+        try {
+          const { setPostArchive } = await import('./posts.js');
+          await setPostArchive(postId, !isArchNow);
+          showNotification(!isArchNow ? 'Post arquivado 📥' : 'Post desarquivado 📤');
+          const postCard = document.querySelector(`.post-card[data-post-id="${postId}"]`);
+          if (postCard) postCard.style.opacity = !isArchNow ? '0.5' : '1';
+        } catch (err) { showNotification('Erro ao arquivar.'); }
+      });
+
+      // APAGAR
+      menu.querySelector('.fm-delete')?.addEventListener('click', async (ev) => {
+        ev.stopPropagation();
+        menu.remove();
+        if (confirm('Tem certeza que deseja apagar este post permanentemente?')) {
+          try {
+            const { deletePost } = await import('./posts.js');
+            await deletePost(postId);
+            document.querySelector(`.post-card[data-post-id="${postId}"]`)?.remove();
+            showNotification('Post apagado 🗑️');
+          } catch (err) { showNotification('Erro ao apagar post.'); }
+        }
+      });
+
+    }, { signal });
   });
 
-  // Fecha o menu ao clicar em qualquer outro lugar da tela
+  // Fecha o menu flutuante ao clicar fora
   document.addEventListener('click', () => {
-    document.querySelectorAll('.post-options-menu').forEach(m => m.classList.remove('active'));
+    document.getElementById('floatingPostMenu')?.remove();
   }, { signal });
 
-  // AÇÃO: APAGAR
-  document.querySelectorAll('.delete-post').forEach(btn => {
+
+
+  // ── LIKE ─────────────────────────────────────────────────
+  // FIX: sincroniza TODOS os botões do mesmo post (feed + perfil) de uma vez
+  container.querySelectorAll('.like-action').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
-      const postId = btn.dataset.postId;
-      if(confirm('Tem certeza que deseja apagar este post permanentemente?')) {
-        try {
-          const { deletePost } = await import('./posts.js');
-          await deletePost(postId);
-          document.querySelector(`.post-card[data-post-id="${postId}"]`).remove();
-          showNotification('Post apagado 🗑️');
-        } catch(err) {
-          showNotification('Erro ao apagar post.');
-        }
-      }
-    });
-  });
 
-  // AÇÃO: EDITAR
-  document.querySelectorAll('.edit-post').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      const postId = btn.dataset.postId;
-      const postCard = document.querySelector(`.post-card[data-post-id="${postId}"]`);
-      const currentText = postCard.querySelector('.post-text').textContent;
-      
-      const newContent = prompt('Edite seu post:', currentText);
-      if (newContent && newContent.trim() !== currentText) {
-        try {
-          const { updatePost } = await import('./posts.js');
-          await updatePost(postId, newContent.trim());
-          postCard.querySelector('.post-text').textContent = newContent.trim();
-          showNotification('Post atualizado! ✏️');
-        } catch(err) {
-          showNotification('Erro ao editar.');
-        }
-      }
-      document.getElementById(`menu-${postId}`).classList.remove('active');
-    });
-  });
-
-  // AÇÃO: ARQUIVAR
-  document.querySelectorAll('.archive-post').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      const postId = btn.dataset.postId;
-      const isArchived = btn.dataset.archived === 'true';
-      try {
-        const { setPostArchive } = await import('./posts.js');
-        await setPostArchive(postId, !isArchived);
-        btn.dataset.archived = !isArchived;
-        btn.innerHTML = !isArchived ? '📤 Desarquivar' : '📥 Arquivar';
-        showNotification(!isArchived ? 'Post arquivado 📥' : 'Post desarquivado 📤');
-        document.querySelector(`.post-card[data-post-id="${postId}"]`).style.opacity = !isArchived ? '0.5' : '1';
-      } catch(err) {
-        showNotification('Erro ao arquivar.');
-      }
-    });
-  });
-
-  // AÇÃO: PRIVACIDADE
-  document.querySelectorAll('.privacy-post').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      const postId = btn.dataset.postId;
-      const isPrivate = btn.dataset.private === 'true';
-      try {
-        const { setPostPrivacy } = await import('./posts.js');
-        await setPostPrivacy(postId, !isPrivate);
-        btn.dataset.private = !isPrivate;
-        btn.innerHTML = !isPrivate ? '🔓 Tornar Público' : '🔒 Somente Seguidores';
-        showNotification(!isPrivate ? 'Post agora é Privado 🔒' : 'Post agora é Público 🔓');
-      } catch(err) {
-        showNotification('Erro ao mudar privacidade.');
-      }
-    });
-  });
-
-  // LIKE
-  document.querySelectorAll('.like-action').forEach(btn => {
-    const handleLikeClick = async (e) => {
-      e.stopPropagation();
-      
       if (!currentProfile) {
         showNotification('Faça login para curtir! 🔐');
         return;
@@ -454,31 +483,27 @@ function attachPostEventListeners() {
       const postId = btn.dataset.postId;
       const authorId = btn.dataset.authorId;
       const wasLiked = btn.dataset.liked === 'true';
-      
+
+      // Pega contagem atual de qualquer botão desse post
       const countEl = btn.querySelector('.like-count');
-      const currentCount = parseInt(countEl.textContent) || 0;
+      const currentCount = parseInt(countEl?.textContent) || 0;
 
-      // Trava o botão atual para não dar duplo clique rápido
-      btn.style.pointerEvents = 'none';
-
-      // Define os novos valores
       const newLiked = !wasLiked;
       const newCount = Math.max(0, currentCount + (newLiked ? 1 : -1));
 
-      // Atualiza TODOS os likes desse post de uma vez (Modal e Feed)
-      const allLikeButtonsForThisPost = document.querySelectorAll(`.like-action[data-post-id="${postId}"]`);
-      
-      allLikeButtonsForThisPost.forEach(targetBtn => {
-        targetBtn.dataset.liked = newLiked;
-        targetBtn.classList.toggle('liked', newLiked);
-        const targetCountEl = targetBtn.querySelector('.like-count');
-        if (targetCountEl) targetCountEl.textContent = newCount;
+      // FIX: atualiza TODOS os botões desse postId na página inteira (feed e perfil)
+      const allBtns = document.querySelectorAll(`.like-action[data-post-id="${postId}"]`);
+      allBtns.forEach(b => {
+        b.dataset.liked = String(newLiked);
+        b.classList.toggle('liked', newLiked);
+        b.style.pointerEvents = 'none';
+        const c = b.querySelector('.like-count');
+        if (c) c.textContent = newCount;
       });
 
       if (newLiked) likedPostIds.add(postId);
       else likedPostIds.delete(postId);
 
-      // Comunicação com o Supabase
       try {
         if (newLiked) {
           await likePost(postId);
@@ -494,47 +519,40 @@ function attachPostEventListeners() {
           await unlikePost(postId);
         }
       } catch (err) {
-        // Se der erro no banco, reverte a animação em TODOS os botões
-        allLikeButtonsForThisPost.forEach(targetBtn => {
-          targetBtn.dataset.liked = wasLiked;
-          targetBtn.classList.toggle('liked', wasLiked);
-          const targetCountEl = targetBtn.querySelector('.like-count');
-          if (targetCountEl) targetCountEl.textContent = currentCount; 
+        // Reverte todos os botões em caso de erro
+        allBtns.forEach(b => {
+          b.dataset.liked = String(wasLiked);
+          b.classList.toggle('liked', wasLiked);
+          const c = b.querySelector('.like-count');
+          if (c) c.textContent = currentCount;
         });
-
         if (wasLiked) likedPostIds.add(postId);
         else likedPostIds.delete(postId);
-        
+
         if (err?.status !== 409) {
-            showNotification('Erro ao curtir. Tente novamente.');
+          showNotification('Erro ao curtir. Tente novamente.');
         }
       } finally {
-        btn.style.pointerEvents = '';
+        allBtns.forEach(b => { b.style.pointerEvents = ''; });
       }
-    };
-
-    btn.addEventListener('click', handleLikeClick, { signal });
+    }, { signal });
   });
 
-  // REPOST
-  document.querySelectorAll('.repost-action').forEach(btn => {
-    const handleRepostClick = async (e) => {
+  // ── REPOST ───────────────────────────────────────────────
+  container.querySelectorAll('.repost-action').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
       e.stopPropagation();
       if (!currentProfile) {
         showNotification('Faça login para republicar! 🚀');
         return;
       }
-      const postId = btn.dataset.postId;
-      console.log('Repost para:', postId);
       showNotification('Post republicado com sucesso! 🔁');
-    };
-
-    btn.addEventListener('click', handleRepostClick, { signal });
+    }, { signal });
   });
 
-  // CLIQUE NO AVATAR / NOME
-  document.querySelectorAll('.clickable-avatar').forEach(el => {
-    const handleAvatarClick = (e) => {
+  // ── AVATAR / NOME (ir para perfil) ───────────────────────
+  container.querySelectorAll('.clickable-avatar').forEach(el => {
+    el.addEventListener('click', (e) => {
       e.stopPropagation();
       const handle = el.dataset.handle;
       if (!handle) return;
@@ -542,32 +560,33 @@ function attachPostEventListeners() {
       document.querySelectorAll('.page-container').forEach(p => p.classList.remove('active'));
       document.getElementById('profile-page').classList.add('active');
       loadProfileByHandle(handle);
-    };
-
-    el.addEventListener('click', handleAvatarClick, { signal });
+    }, { signal });
   });
 
-  // CLIQUE NO POST INTEIRO
-  document.querySelectorAll('.post-card').forEach(card => {
-    const handleCardClick = (e) => {
-      // Impede que clicar em botões abra o modal
-      const isAction = e.target.closest('.post-action') || e.target.closest('.clickable-avatar') || e.target.closest('.post-options-wrapper');
-      if (isAction) return;
+  // ── CLIQUE NO CARD (abre modal de detalhe) ────────────────
+  // FIX: usa mousedown para registrar qual elemento foi clicado, evitando conflito com reply-action
+  container.querySelectorAll('.post-card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      // Se o clique veio de dentro de qualquer área de ação, não abre o modal
+      if (
+        e.target.closest('.post-actions') ||
+        e.target.closest('.clickable-avatar') ||
+        e.target.closest('.post-options-wrapper') ||
+        e.target.closest('.post-replies-section')
+      ) return;
 
       const postId = card.dataset.postId;
-      if (postId) {
-        openPostDetailModal(postId);
-      }
-    };
-    card.addEventListener('click', handleCardClick, { signal });
+      if (postId) openPostDetailModal(postId);
+    }, { signal });
   });
 
-  // ABRIR SEÇÃO DE COMENTÁRIOS
-  document.querySelectorAll('.reply-action').forEach(btn => {
-    const handleReplyClick = async (e) => {
+  // ── ABRIR SEÇÃO DE COMENTÁRIOS ───────────────────────────
+  container.querySelectorAll('.reply-action').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
       e.stopPropagation();
       const postId = btn.dataset.postId;
       const repliesSection = document.getElementById(`replies-${postId}`);
+      if (!repliesSection) return;
 
       if (repliesSection.style.display === 'none') {
         repliesSection.style.display = 'block';
@@ -576,14 +595,12 @@ function attachPostEventListeners() {
       } else {
         repliesSection.style.display = 'none';
       }
-    };
-
-    btn.addEventListener('click', handleReplyClick, { signal });
+    }, { signal });
   });
 
-  // ENVIAR COMENTÁRIO
-  document.querySelectorAll('.reply-submit-btn').forEach(btn => {
-    const handleReplySubmit = async (e) => {
+  // ── ENVIAR COMENTÁRIO ────────────────────────────────────
+  container.querySelectorAll('.reply-submit-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
       e.stopPropagation();
 
       if (!currentProfile) {
@@ -595,8 +612,8 @@ function attachPostEventListeners() {
       const authorId = btn.dataset.authorId;
       const input = document.getElementById(`reply-input-${postId}`);
       const privacyCheckbox = document.getElementById(`reply-privacy-${postId}`);
-      const content = input.value.trim();
-      const isPrivate = privacyCheckbox.checked;
+      const content = input?.value.trim();
+      const isPrivate = privacyCheckbox?.checked ?? false;
 
       if (!content) return;
 
@@ -607,13 +624,13 @@ function attachPostEventListeners() {
         await addReply(postId, content, isPrivate);
 
         const repliesList = document.getElementById(`replies-list-${postId}`);
-        const emptyMsg = repliesList.querySelector('p');
+        const emptyMsg = repliesList?.querySelector('p');
         if (emptyMsg) emptyMsg.remove();
 
         const userAvatar = currentProfile.avatar_url
           || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentProfile.handle}`;
 
-        repliesList.insertAdjacentHTML('afterbegin', `
+        repliesList?.insertAdjacentHTML('afterbegin', `
           <div class="reply-item" style="animation:slideDown 0.3s ease;">
             <img src="${userAvatar}" class="reply-avatar" style="width:30px;height:30px;">
             <div class="reply-bubble">
@@ -630,12 +647,10 @@ function attachPostEventListeners() {
         `);
 
         const replyCountSpan = document.querySelector(`.reply-action[data-post-id="${postId}"] .reply-count`);
-        if (replyCountSpan) {
-          replyCountSpan.textContent = parseInt(replyCountSpan.textContent) + 1;
-        }
+        if (replyCountSpan) replyCountSpan.textContent = parseInt(replyCountSpan.textContent) + 1;
 
-        input.value = '';
-        privacyCheckbox.checked = false;
+        if (input) input.value = '';
+        if (privacyCheckbox) privacyCheckbox.checked = false;
         showNotification(isPrivate ? 'Comentário enviado em modo privado! 🤫' : 'Comentário enviado! 💬');
 
         if (authorId && authorId !== currentProfile.id) {
@@ -653,9 +668,7 @@ function attachPostEventListeners() {
         btn.disabled = false;
         btn.textContent = 'Responder';
       }
-    };
-
-    btn.addEventListener('click', handleReplySubmit, { signal });
+    }, { signal });
   });
 }
 
@@ -736,16 +749,19 @@ async function openPostDetailModal(postId) {
   content.innerHTML = '<p style="text-align:center;padding:40px;color:var(--text-secondary);">Carregando...</p>';
 
   try {
+    // FIX: lê o estado atual dos botões de QUALQUER contexto (feed ou perfil)
     const postCard = document.querySelector(`.post-card[data-post-id="${postId}"]`);
     const authorName = postCard?.querySelector('.post-author')?.textContent?.trim() ?? 'Usuário';
     const authorHandle = postCard?.querySelector('.post-handle')?.textContent?.trim() ?? '';
     const postText = postCard?.querySelector('.post-text')?.textContent?.trim() ?? '';
     const postTime = postCard?.querySelector('.post-time')?.textContent?.trim() ?? '';
     const authorAvatar = postCard?.querySelector('.avatar')?.src ?? '';
-    const likeCount = postCard?.querySelector('.like-count')?.textContent ?? '0';
+    const likeBtn = postCard?.querySelector('.like-action');
+    const likeCount = likeBtn?.querySelector('.like-count')?.textContent ?? '0';
     const replyCount = postCard?.querySelector('.reply-count')?.textContent ?? '0';
-    const isLiked = postCard?.querySelector('.like-action')?.dataset?.liked === 'true';
-    const authorId = postCard?.dataset?.authorId ?? '';
+    // FIX: lê o estado de liked do Set global — fonte de verdade única
+    const isLiked = likedPostIds.has(postId);
+    const authorId = postCard?.dataset?.authorId ?? likeBtn?.dataset?.authorId ?? '';
 
     const userAvatar = currentProfile?.avatar_url
       || `https://api.dicebear.com/7.x/avataaars/svg?seed=anon`;
@@ -753,7 +769,7 @@ async function openPostDetailModal(postId) {
 
     content.innerHTML = `
       <div style="display:flex;gap:14px;margin-bottom:20px;">
-        <img src="${authorAvatar}" 
+        <img src="${authorAvatar}"
              class="detail-clickable-avatar"
              data-handle="${handle}"
              style="width:48px;height:48px;border-radius:50%;object-fit:cover;cursor:pointer;flex-shrink:0;">
@@ -785,7 +801,7 @@ async function openPostDetailModal(postId) {
           <strong style="color:var(--text-primary);">${replyCount}</strong> Respostas
         </span>
         <span style="color:var(--text-secondary);font-size:14px;">
-          <strong style="color:var(--text-primary);">${likeCount}</strong> Curtidas
+          <strong id="detailLikeCountStat">${likeCount}</strong>&nbsp;Curtidas
         </span>
       </div>
 
@@ -795,15 +811,20 @@ async function openPostDetailModal(postId) {
         border-bottom:1px solid var(--border);
         margin-bottom:16px;
       ">
-        <button id="detailLikeBtn" data-post-id="${postId}" data-author-id="${authorId}" data-liked="${isLiked}"
+        <button id="detailLikeBtn"
+          data-post-id="${postId}"
+          data-author-id="${authorId}"
+          data-liked="${isLiked}"
+          class="like-action ${isLiked ? 'liked' : ''}"
           style="
             background:none;border:none;cursor:pointer;
             display:flex;align-items:center;gap:6px;
             color:${isLiked ? 'var(--danger, #e0245e)' : 'var(--text-secondary)'};
             font-size:15px;font-weight:600;
             transition:color 0.2s;
+            padding:0;
           ">
-          ${isLiked ? '❤️' : '🤍'} <span id="detailLikeCount">${likeCount}</span>
+          ${isLiked ? '❤️' : '🤍'} <span class="like-count">${likeCount}</span>
         </button>
         <button id="detailReplyToggle"
           style="
@@ -850,7 +871,7 @@ async function openPostDetailModal(postId) {
       </div>
     `;
 
-    // Listeners do modal
+    // Navegação para perfil dentro do modal
     content.querySelectorAll('.detail-clickable-avatar').forEach(el => {
       el.addEventListener('click', () => {
         const h = el.dataset.handle;
@@ -862,30 +883,39 @@ async function openPostDetailModal(postId) {
       });
     });
 
-    // Like no modal
+    // FIX LIKE NO MODAL: usa o mesmo handler que o feed para manter sincronia
+    // O botão já tem classe "like-action" e data-post-id, então funciona igual ao feed.
+    // Mas o signal aqui é do modal (sem controller), então registramos manualmente:
     const detailLikeBtn = document.getElementById('detailLikeBtn');
-    detailLikeBtn?.addEventListener('click', async () => {
+    detailLikeBtn?.addEventListener('click', async (e) => {
+      e.stopPropagation();
       if (!currentProfile) { showNotification('Faça login para curtir! 🔐'); return; }
+
       const pid = detailLikeBtn.dataset.postId;
       const aid = detailLikeBtn.dataset.authorId;
       const wasLiked = detailLikeBtn.dataset.liked === 'true';
-      const countEl = document.getElementById('detailLikeCount');
-      const currentCount = parseInt(countEl.textContent) || 0;
-
-      detailLikeBtn.style.pointerEvents = 'none';
+      const currentCount = parseInt(detailLikeBtn.querySelector('.like-count')?.textContent) || 0;
       const newLiked = !wasLiked;
-      detailLikeBtn.dataset.liked = newLiked;
-      detailLikeBtn.textContent = '';
-      detailLikeBtn.innerHTML = `${newLiked ? '❤️' : '🤍'} <span id="detailLikeCount">${Math.max(0, currentCount + (newLiked ? 1 : -1))}</span>`;
+      const newCount = Math.max(0, currentCount + (newLiked ? 1 : -1));
+
+      // FIX: atualiza TODOS os botões desse post no DOM (feed, perfil E modal)
+      const allBtns = document.querySelectorAll(`.like-action[data-post-id="${pid}"]`);
+      allBtns.forEach(b => {
+        b.dataset.liked = String(newLiked);
+        b.classList.toggle('liked', newLiked);
+        b.style.pointerEvents = 'none';
+        const c = b.querySelector('.like-count');
+        if (c) c.textContent = newCount;
+      });
+      // Atualiza o contador da seção de stats do modal
+      const statEl = document.getElementById('detailLikeCountStat');
+      if (statEl) statEl.textContent = newCount;
+
+      // Ícone do botão do modal
+      const iconSpan = detailLikeBtn.childNodes[0];
+      if (iconSpan) iconSpan.textContent = newLiked ? '❤️' : '🤍';
       detailLikeBtn.style.color = newLiked ? 'var(--danger, #e0245e)' : 'var(--text-secondary)';
 
-      const feedLikeBtn = document.querySelector(`.like-action[data-post-id="${pid}"]`);
-      if (feedLikeBtn) {
-        feedLikeBtn.dataset.liked = newLiked;
-        feedLikeBtn.classList.toggle('liked', newLiked);
-        const feedCount = feedLikeBtn.querySelector('.like-count');
-        if (feedCount) feedCount.textContent = Math.max(0, currentCount + (newLiked ? 1 : -1));
-      }
       if (newLiked) likedPostIds.add(pid);
       else likedPostIds.delete(pid);
 
@@ -899,14 +929,29 @@ async function openPostDetailModal(postId) {
           await unlikePost(pid);
         }
       } catch (err) {
-        showNotification('Erro ao curtir.');
+        // Reverte tudo
+        allBtns.forEach(b => {
+          b.dataset.liked = String(wasLiked);
+          b.classList.toggle('liked', wasLiked);
+          const c = b.querySelector('.like-count');
+          if (c) c.textContent = currentCount;
+        });
+        if (statEl) statEl.textContent = currentCount;
+        const iconSpanRev = detailLikeBtn.childNodes[0];
+        if (iconSpanRev) iconSpanRev.textContent = wasLiked ? '❤️' : '🤍';
+        detailLikeBtn.style.color = wasLiked ? 'var(--danger, #e0245e)' : 'var(--text-secondary)';
+
+        if (wasLiked) likedPostIds.add(pid);
+        else likedPostIds.delete(pid);
+        if (err?.status !== 409) showNotification('Erro ao curtir.');
       } finally {
-        detailLikeBtn.style.pointerEvents = '';
+        allBtns.forEach(b => { b.style.pointerEvents = ''; });
       }
     });
 
     document.getElementById('detailReplyToggle')?.addEventListener('click', () => {
       const composer = document.getElementById('detailReplyComposer');
+      if (!composer) return;
       if (composer.style.display === 'none') {
         composer.style.display = 'block';
         document.getElementById('detailReplyInput')?.focus();
@@ -922,21 +967,23 @@ async function openPostDetailModal(postId) {
       const aid = btn.dataset.authorId;
       const input = document.getElementById('detailReplyInput');
       const privacy = document.getElementById('detailReplyPrivacy');
-      const text = input.value.trim();
+      const text = input?.value.trim();
       if (!text) return;
 
       btn.disabled = true;
       btn.textContent = '...';
 
       try {
-        await addReply(pid, text, privacy.checked);
-        input.value = '';
-        privacy.checked = false;
+        await addReply(pid, text, privacy?.checked ?? false);
+        if (input) input.value = '';
+        if (privacy) privacy.checked = false;
         document.getElementById('detailReplyComposer').style.display = 'none';
-        showNotification(privacy.checked ? 'Resposta privada enviada! 🤫' : 'Resposta enviada! 💬');
+        showNotification(privacy?.checked ? 'Resposta privada enviada! 🤫' : 'Resposta enviada! 💬');
 
-        const replyCountEl = document.querySelector(`.reply-action[data-post-id="${pid}"] .reply-count`);
-        if (replyCountEl) replyCountEl.textContent = parseInt(replyCountEl.textContent) + 1;
+        // Atualiza contador de replies no feed/perfil
+        document.querySelectorAll(`.reply-action[data-post-id="${pid}"] .reply-count`).forEach(el => {
+          el.textContent = parseInt(el.textContent || '0') + 1;
+        });
 
         if (aid && aid !== currentProfile.id) {
           await createNotification({ toUserId: aid, actorId: currentProfile.id, type: NOTIF_TYPES.REPLY, postId: pid });
@@ -983,7 +1030,7 @@ async function loadDetailReplies(postId) {
           padding:14px 0;
           border-bottom:1px solid var(--border);
         ">
-          <img src="${avatar}" 
+          <img src="${avatar}"
                class="detail-reply-avatar"
                data-handle="${r.author?.handle ?? ''}"
                style="width:38px;height:38px;border-radius:50%;object-fit:cover;cursor:pointer;flex-shrink:0;">
@@ -1076,7 +1123,8 @@ function prependPost(post) {
   const postEl = div.firstElementChild;
   postEl.style.animation = 'slideDown 0.3s ease';
   container.prepend(postEl);
-  attachPostEventListeners();
+  // FIX: passa o container e o contexto correto
+  attachPostEventListeners(container, 'feed');
 }
 
 function setupPostComposer() {
@@ -1141,7 +1189,7 @@ function startRealtimeFeed() {
 }
 
 // ============================================================
-// PERFIL — VERSÃO CORRIGIDA
+// PERFIL
 // ============================================================
 function setupProfileTabs() {
   const tabs = document.querySelectorAll('.profile-tab-btn');
@@ -1158,8 +1206,9 @@ async function loadProfileTabContent(tabType) {
   const contentEl = document.getElementById('profileContent');
   if (!contentEl) return;
 
-  // Limpa listeners antigos
-  cleanupPostListeners();
+  // FIX: cancela listeners antigos do perfil e cria controller FRESCO antes de qualquer await
+  abortProfileListeners();
+  // O novo controller já está pronto em profileListenersController após o abort acima
 
   const profileToLoad = viewingProfile || currentProfile;
 
@@ -1197,7 +1246,8 @@ async function loadProfileTabContent(tabType) {
       return;
     }
 
-    renderPosts(postsToRender, contentEl);
+    // FIX: passa contexto 'profile' para usar o controller correto
+    renderPosts(postsToRender, contentEl, 'profile');
   } catch (err) {
     console.error(err);
     contentEl.innerHTML = '<p style="color:var(--danger);text-align:center;">Erro ao carregar conteúdo.</p>';
@@ -1205,10 +1255,10 @@ async function loadProfileTabContent(tabType) {
 }
 
 async function loadProfilePage() {
-  // Limpa listeners antigos
+  // FIX: cancela só controllers de botões de perfil, nunca o feedListenersController
+  // Não chama abortProfileListeners() aqui — loadProfileTabContent já faz isso
   profileBtnControllers.forEach(ctrl => ctrl.abort());
   profileBtnControllers = [];
-  cleanupPostListeners();
 
   const editBtn = document.getElementById('editProfileBtn');
   const profile = viewingProfile || currentProfile;
@@ -1273,7 +1323,6 @@ async function loadProfilePage() {
       profileBtnControllers.push(controller);
       const signal = controller.signal;
 
-      // Botão Mensagem
       const msgBtn = document.createElement('button');
       msgBtn.id = 'msgProfileBtn';
       msgBtn.className = 'edit-profile-btn';
@@ -1292,7 +1341,6 @@ async function loadProfilePage() {
       }, { signal });
       profileInfo.appendChild(msgBtn);
 
-      // Botão Seguir
       const followBtn = document.createElement('button');
       followBtn.id = 'followProfileBtn';
       followBtn.className = 'edit-profile-btn';
