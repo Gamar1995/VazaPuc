@@ -288,3 +288,7 @@ CREATE OR REPLACE FUNCTION decrement_likes(post_id UUID)
 
   ALTER TABLE public.posts ADD COLUMN IF NOT EXISTS is_private BOOLEAN DEFAULT FALSE;
 ALTER TABLE public.posts ADD COLUMN IF NOT EXISTS is_archived BOOLEAN DEFAULT FALSE;
+
+ALTER TABLE posts ADD COLUMN is_archived boolean DEFAULT false;
+ALTER TABLE posts ADD COLUMN is_private boolean DEFAULT false;
+ALTER TABLE posts ADD COLUMN reposts_count integer DEFAULT 0;

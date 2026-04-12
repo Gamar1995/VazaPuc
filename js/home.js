@@ -33,6 +33,7 @@ import {
 
 import { updateProfile, getProfileByHandle, isFollowing, followUser, unfollowUser } from './profile.js';
 import { getConversations, getMessages, sendMessage, subscribeToMessages, getOrCreateConversation } from './messages.js';
+import { getFollowingFeed, getFollowingIds, subscribeToFollowingFeed, followUserAndSync, unfollowUserAndSync, syncProfileCounts } from './seguindo.js';
 
 // ============================================================
 // ESTADO LOCAL
@@ -40,13 +41,16 @@ import { getConversations, getMessages, sendMessage, subscribeToMessages, getOrC
 let currentProfile = null;
 let likedPostIds = new Set();
 let unsubscribePosts = null;
+let unsubscribeFollowingFeed = null;
 let unsubscribeCurrentChat = null;
 let unsubscribeNotifs = null;
 let viewingProfile = null;
+let activeFeedTab = 'para-voce'; // 'para-voce' | 'seguindo'
 
 // FIX: controllers separados para feed e perfil — nunca interferem
-let feedListenersController = null;
-let profileListenersController = null;
+// Inicializa já com um controller válido para evitar null pointer na primeira chamada
+let feedListenersController = new AbortController();
+let profileListenersController = new AbortController();
 let profileBtnControllers = [];
 
 // ============================================================
@@ -55,6 +59,7 @@ let profileBtnControllers = [];
 try {
   setupNotifications();
   setupNavigation();
+  setupFeedTabs();
   setupPostComposer();
   setupPostModal();
   setupPostDetailModal();
@@ -212,13 +217,34 @@ function setupNavigation() {
 }
 
 // ============================================================
-// FEED
+// ABAS DO FEED — "Para você" e "Seguindo"
+// ============================================================
+function setupFeedTabs() {
+  const tabBtns = document.querySelectorAll('.tab-btn');
+  if (!tabBtns.length) return;
+
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      tabBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeFeedTab = btn.getAttribute('data-tab');
+
+      if (activeFeedTab === 'seguindo') {
+        loadFollowingFeed();
+      } else {
+        loadFeed();
+      }
+    });
+  });
+}
+
+// ============================================================
+// FEED — "Para você" (todos os posts)
 // ============================================================
 async function loadFeed() {
   const container = document.getElementById('postsContainer');
   if (!container) return;
 
-  // Cancela só os listeners do feed, nunca do perfil
   abortFeedListeners();
 
   container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-secondary)">Carregando...</div>';
@@ -238,14 +264,76 @@ async function loadFeed() {
   }
 }
 
+// ============================================================
+// FEED — "Seguindo" (só posts de quem você segue)
+// ============================================================
+async function loadFollowingFeed() {
+  const container = document.getElementById('postsContainer');
+  if (!container) return;
+
+  abortFeedListeners();
+
+  // Para realtime anterior
+  if (unsubscribeFollowingFeed) {
+    unsubscribeFollowingFeed();
+    unsubscribeFollowingFeed = null;
+  }
+
+  if (!currentProfile) {
+    container.innerHTML = `
+      <div style="padding:40px;text-align:center;color:var(--text-secondary)">
+        <p style="font-size:18px;margin-bottom:8px;">🔐 Faça login para ver o feed de seguidos</p>
+        <p style="font-size:14px;">Entre na sua conta para seguir pessoas e ver os posts delas aqui.</p>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-secondary)">Carregando...</div>';
+
+  try {
+    const posts = await getFollowingFeed(currentProfile.id, 20);
+
+    if (currentProfile) {
+      const ids = posts.map(p => p.id);
+      if (ids.length > 0) likedPostIds = await getLikedPostIds(ids);
+    }
+
+    if (posts.length === 0) {
+      container.innerHTML = `
+        <div style="padding:40px;text-align:center;color:var(--text-secondary)">
+          <p style="font-size:18px;margin-bottom:8px;">👥 Nada por aqui ainda</p>
+          <p style="font-size:14px;">Siga pessoas para ver os posts delas aqui!</p>
+        </div>`;
+      return;
+    }
+
+    renderPosts(posts, container, 'feed');
+
+    // Realtime para o feed de seguindo
+    const followingIds = await getFollowingIds(currentProfile.id);
+    unsubscribeFollowingFeed = subscribeToFollowingFeed(followingIds, (newPost) => {
+      const exists = document.querySelector(`[data-post-id="${newPost.id}"]`);
+      if (!exists && activeFeedTab === 'seguindo') prependPost(newPost);
+    });
+
+  } catch (err) {
+    console.error('[seguindo] Erro ao carregar feed de seguidos:', err);
+    container.innerHTML = `<div style="padding:20px;text-align:center;color:var(--danger)">
+      Erro ao carregar. Tente novamente.<br>
+      <small style="color:var(--text-secondary);font-size:11px;">${err?.message ?? ''}</small>
+    </div>`;
+  }
+}
+
 // FIX: funções separadas para abort de cada contexto
+// Sempre garante que o controller é válido APÓS o abort
 function abortFeedListeners() {
-  if (feedListenersController) feedListenersController.abort();
+  feedListenersController?.abort();
   feedListenersController = new AbortController();
 }
 
 function abortProfileListeners() {
-  if (profileListenersController) profileListenersController.abort();
+  profileListenersController?.abort();
   profileListenersController = new AbortController();
 }
 
@@ -255,6 +343,8 @@ function renderPosts(posts, containerElement, context = 'feed') {
     containerElement.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-secondary)">Nenhum post ainda. Seja o primeiro! 🚀</div>';
     return;
   }
+  // FIX: se for perfil, garante que o controller está fresco antes de renderizar
+  if (context === 'profile') abortProfileListeners();
   containerElement.innerHTML = posts.map(post => createPostHTML(post)).join('');
   attachPostEventListeners(containerElement, context);
 }
@@ -282,7 +372,7 @@ function createPostHTML(post) {
   ` : '';
 
   return `
-    <div class="post-card" data-post-id="${post.id}" data-author-id="${post.author?.id ?? ''}" style="flex-direction:column;cursor:pointer; opacity: ${post.is_archived ? '0.5' : '1'};">
+    <div class="post-card" data-post-id="${post.id}" data-author-id="${post.author?.id ?? ''}" style="flex-direction:column;cursor:pointer;">
       <div class="post-main" style="display:flex;gap:16px;width:100%;">
         <img src="${authorAvatar}" class="avatar clickable-avatar" data-handle="${post.author?.handle}" style="cursor:pointer;">
         <div class="post-content" style="flex:1;min-width:0;">
@@ -320,10 +410,6 @@ function createPostHTML(post) {
           <div class="reply-input-wrapper">
             <textarea class="reply-input" id="reply-input-${post.id}" placeholder="Postar sua resposta..." rows="1"></textarea>
             <div class="reply-toolbar">
-              <label class="privacy-toggle">
-                <input type="checkbox" id="reply-privacy-${post.id}">
-                <span class="privacy-label">🔒 Apenas o autor pode ver</span>
-              </label>
               <button class="reply-submit-btn" data-post-id="${post.id}" data-author-id="${post.author?.id ?? ''}">Responder</button>
             </div>
           </div>
@@ -382,15 +468,9 @@ function attachPostEventListeners(container = document, context = 'feed') {
       `;
 
       // Lê estado atual do post para os itens do menu
-      const privacyBtn = card?.querySelector('.privacy-post');
-      const isPrivate = privacyBtn?.dataset?.private === 'true';
-      const archiveBtn2 = card?.querySelector('.archive-post');
-      const isArchivedVal = archiveBtn2?.dataset?.archived === 'true';
 
       menu.innerHTML = `
         <button class="post-option-item fm-edit" data-post-id="${postId}" style="display:block;width:100%;text-align:left;padding:11px 16px;background:none;border:none;cursor:pointer;color:var(--text-primary);font-size:14px;">✏️ Editar</button>
-        <button class="post-option-item fm-privacy" data-post-id="${postId}" data-private="${isPrivate}" style="display:block;width:100%;text-align:left;padding:11px 16px;background:none;border:none;cursor:pointer;color:var(--text-primary);font-size:14px;">${isPrivate ? '🔓 Tornar Público' : '🔒 Somente Seguidores'}</button>
-        <button class="post-option-item fm-archive" data-post-id="${postId}" data-archived="${isArchivedVal}" style="display:block;width:100%;text-align:left;padding:11px 16px;background:none;border:none;cursor:pointer;color:var(--text-primary);font-size:14px;">${isArchivedVal ? '📤 Desarquivar' : '📥 Arquivar'}</button>
         <button class="post-option-item fm-delete" data-post-id="${postId}" style="display:block;width:100%;text-align:left;padding:11px 16px;background:none;border:none;cursor:pointer;color:var(--danger,#e0245e);font-size:14px;">🗑️ Apagar</button>
       `;
 
@@ -417,32 +497,6 @@ function attachPostEventListeners(container = document, context = 'feed') {
             showNotification('Post atualizado! ✏️');
           } catch (err) { showNotification('Erro ao editar.'); }
         }
-      });
-
-      // PRIVACIDADE
-      menu.querySelector('.fm-privacy')?.addEventListener('click', async (ev) => {
-        ev.stopPropagation();
-        const isPrivNow = menu.querySelector('.fm-privacy').dataset.private === 'true';
-        menu.remove();
-        try {
-          const { setPostPrivacy } = await import('./posts.js');
-          await setPostPrivacy(postId, !isPrivNow);
-          showNotification(!isPrivNow ? 'Post agora é Privado 🔒' : 'Post agora é Público 🔓');
-        } catch (err) { showNotification('Erro ao mudar privacidade.'); }
-      });
-
-      // ARQUIVAR
-      menu.querySelector('.fm-archive')?.addEventListener('click', async (ev) => {
-        ev.stopPropagation();
-        const isArchNow = menu.querySelector('.fm-archive').dataset.archived === 'true';
-        menu.remove();
-        try {
-          const { setPostArchive } = await import('./posts.js');
-          await setPostArchive(postId, !isArchNow);
-          showNotification(!isArchNow ? 'Post arquivado 📥' : 'Post desarquivado 📤');
-          const postCard = document.querySelector(`.post-card[data-post-id="${postId}"]`);
-          if (postCard) postCard.style.opacity = !isArchNow ? '0.5' : '1';
-        } catch (err) { showNotification('Erro ao arquivar.'); }
       });
 
       // APAGAR
@@ -611,9 +665,7 @@ function attachPostEventListeners(container = document, context = 'feed') {
       const postId = btn.dataset.postId;
       const authorId = btn.dataset.authorId;
       const input = document.getElementById(`reply-input-${postId}`);
-      const privacyCheckbox = document.getElementById(`reply-privacy-${postId}`);
       const content = input?.value.trim();
-      const isPrivate = privacyCheckbox?.checked ?? false;
 
       if (!content) return;
 
@@ -621,7 +673,7 @@ function attachPostEventListeners(container = document, context = 'feed') {
       btn.textContent = '...';
 
       try {
-        await addReply(postId, content, isPrivate);
+        await addReply(postId, content);
 
         const repliesList = document.getElementById(`replies-list-${postId}`);
         const emptyMsg = repliesList?.querySelector('p');
@@ -639,7 +691,6 @@ function attachPostEventListeners(container = document, context = 'feed') {
                   <span class="reply-author">${escapeHtml(currentProfile.name)}</span>
                   <span class="reply-handle">@${escapeHtml(currentProfile.handle)}</span>
                 </div>
-                ${isPrivate ? '<span class="reply-private-badge">🔒 Privado</span>' : ''}
               </div>
               <p style="font-size:13.5px;color:var(--text-primary);line-height:1.4;">${escapeHtml(content)}</p>
             </div>
@@ -650,8 +701,7 @@ function attachPostEventListeners(container = document, context = 'feed') {
         if (replyCountSpan) replyCountSpan.textContent = parseInt(replyCountSpan.textContent) + 1;
 
         if (input) input.value = '';
-        if (privacyCheckbox) privacyCheckbox.checked = false;
-        showNotification(isPrivate ? 'Comentário enviado em modo privado! 🤫' : 'Comentário enviado! 💬');
+        showNotification('Comentário enviado! 💬');
 
         if (authorId && authorId !== currentProfile.id) {
           await createNotification({
@@ -1042,7 +1092,7 @@ async function loadDetailReplies(postId) {
               </span>
               <span style="color:var(--text-secondary);font-size:13px;">@${escapeHtml(r.author?.handle ?? '')}</span>
               <span style="color:var(--text-secondary);font-size:11px;">· ${timeAgo}</span>
-              ${r.is_private ? '<span style="background:rgba(255,150,0,0.15);color:#f90;border-radius:10px;padding:1px 8px;font-size:11px;">🔒 Privado</span>' : ''}
+              
             </div>
             <p style="font-size:14px;color:var(--text-primary);line-height:1.5;word-break:break-word;">${escapeHtml(r.content)}</p>
           </div>
@@ -1098,7 +1148,7 @@ async function loadRepliesForPost(postId) {
                 <span class="reply-handle">@${escapeHtml(r.author?.handle)}</span>
                 <span style="color:var(--text-secondary);font-size:11px;margin-left:6px;">${timeAgo}</span>
               </div>
-              ${r.is_private ? '<span class="reply-private-badge">🔒 Privado</span>' : ''}
+              
             </div>
             <p style="font-size:13.5px;color:var(--text-primary);line-height:1.4;">${escapeHtml(r.content)}</p>
           </div>
@@ -1183,6 +1233,8 @@ async function handleSubmitPost(content) {
 function startRealtimeFeed() {
   if (unsubscribePosts) unsubscribePosts();
   unsubscribePosts = subscribeToNewPosts((newPost) => {
+    // Só adiciona no feed "Para você" — o seguindo tem seu próprio realtime
+    if (activeFeedTab !== 'para-voce') return;
     const exists = document.querySelector(`[data-post-id="${newPost.id}"]`);
     if (!exists) prependPost(newPost);
   });
@@ -1205,10 +1257,6 @@ function setupProfileTabs() {
 async function loadProfileTabContent(tabType) {
   const contentEl = document.getElementById('profileContent');
   if (!contentEl) return;
-
-  // FIX: cancela listeners antigos do perfil e cria controller FRESCO antes de qualquer await
-  abortProfileListeners();
-  // O novo controller já está pronto em profileListenersController após o abort acima
 
   const profileToLoad = viewingProfile || currentProfile;
 
@@ -1303,6 +1351,16 @@ async function loadProfilePage() {
     statValues[1].textContent = profile.followers_count || 0;
   }
 
+  // Sincroniza contadores com o banco em background (corrige qualquer inconsistência)
+  syncProfileCounts(profile.id).then(counts => {
+    if (!counts) return;
+    const vals = document.querySelectorAll('.stat-value');
+    if (vals.length >= 2) {
+      vals[0].textContent = counts.following_count;
+      vals[1].textContent = counts.followers_count;
+    }
+  });
+
   document.getElementById('msgProfileBtn')?.remove();
   document.getElementById('followProfileBtn')?.remove();
 
@@ -1363,11 +1421,23 @@ async function loadProfilePage() {
         try {
           const currentlyFollowing = followBtn.textContent.includes('Seguindo');
           if (currentlyFollowing) {
-            await unfollowUser(profile.id);
+            await unfollowUserAndSync(currentProfile.id, profile.id);
             setFollowState(false);
+            // Atualiza contador na UI imediatamente
+            const statVals = document.querySelectorAll('.stat-value');
+            if (statVals.length >= 2) {
+              const cur = parseInt(statVals[1].textContent) || 0;
+              statVals[1].textContent = Math.max(0, cur - 1);
+            }
           } else {
-            await followUser(profile.id);
+            await followUserAndSync(currentProfile.id, profile.id);
             setFollowState(true);
+            // Atualiza contador na UI imediatamente
+            const statVals = document.querySelectorAll('.stat-value');
+            if (statVals.length >= 2) {
+              const cur = parseInt(statVals[1].textContent) || 0;
+              statVals[1].textContent = cur + 1;
+            }
             await createNotification({
               toUserId: profile.id,
               actorId: currentProfile.id,
