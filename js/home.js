@@ -639,13 +639,20 @@ function attachPostEventListeners(container = document, context = 'feed') {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
       const postId = btn.dataset.postId;
-      const repliesSection = document.getElementById(`replies-${postId}`);
+      
+      // FIX: Procura a seção de comentários DENTRO do post em que você clicou
+      const postCard = btn.closest('.post-card');
+      const repliesSection = postCard.querySelector('.post-replies-section');
+      
       if (!repliesSection) return;
 
       if (repliesSection.style.display === 'none') {
         repliesSection.style.display = 'block';
-        document.getElementById(`reply-input-${postId}`)?.focus();
-        await loadRepliesForPost(postId);
+        postCard.querySelector('.reply-input')?.focus();
+        
+        // Passamos a lista específica deste card para a função carregar os dados
+        const repliesList = postCard.querySelector('.replies-list');
+        await loadRepliesForPost(postId, repliesList);
       } else {
         repliesSection.style.display = 'none';
       }
@@ -653,7 +660,7 @@ function attachPostEventListeners(container = document, context = 'feed') {
   });
 
   // ── ENVIAR COMENTÁRIO ────────────────────────────────────
-  container.querySelectorAll('.reply-submit-btn').forEach(btn => {
+ container.querySelectorAll('.reply-submit-btn').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
 
@@ -664,7 +671,10 @@ function attachPostEventListeners(container = document, context = 'feed') {
 
       const postId = btn.dataset.postId;
       const authorId = btn.dataset.authorId;
-      const input = document.getElementById(`reply-input-${postId}`);
+      
+      // FIX: Pega o texto do input do card exato onde você clicou
+      const postCard = btn.closest('.post-card');
+      const input = postCard.querySelector('.reply-input');
       const content = input?.value.trim();
 
       if (!content) return;
@@ -675,14 +685,10 @@ function attachPostEventListeners(container = document, context = 'feed') {
       try {
         await addReply(postId, content);
 
-        const repliesList = document.getElementById(`replies-list-${postId}`);
-        const emptyMsg = repliesList?.querySelector('p');
-        if (emptyMsg) emptyMsg.remove();
-
         const userAvatar = currentProfile.avatar_url
           || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentProfile.handle}`;
 
-        repliesList?.insertAdjacentHTML('afterbegin', `
+        const newReplyHTML = `
           <div class="reply-item" style="animation:slideDown 0.3s ease;">
             <img src="${userAvatar}" class="reply-avatar" style="width:30px;height:30px;">
             <div class="reply-bubble">
@@ -695,12 +701,24 @@ function attachPostEventListeners(container = document, context = 'feed') {
               <p style="font-size:13.5px;color:var(--text-primary);line-height:1.4;">${escapeHtml(content)}</p>
             </div>
           </div>
-        `);
+        `;
 
-        const replyCountSpan = document.querySelector(`.reply-action[data-post-id="${postId}"] .reply-count`);
-        if (replyCountSpan) replyCountSpan.textContent = parseInt(replyCountSpan.textContent) + 1;
+        // FIX: Injeta o comentário novo em TODAS as listas desse post (Feed e Perfil)
+        const allRepliesLists = document.querySelectorAll(`[id="replies-list-${postId}"]`);
+        allRepliesLists.forEach(list => {
+          const emptyMsg = list.querySelector('p');
+          if (emptyMsg) emptyMsg.remove();
+          list.insertAdjacentHTML('afterbegin', newReplyHTML);
+        });
 
-        if (input) input.value = '';
+        // Sincroniza todos os botões de contagem desse post na página
+        document.querySelectorAll(`.reply-action[data-post-id="${postId}"] .reply-count`).forEach(el => {
+          el.textContent = parseInt(el.textContent) + 1;
+        });
+
+        // Limpa os inputs
+        document.querySelectorAll(`[id="reply-input-${postId}"]`).forEach(inp => inp.value = '');
+        
         showNotification('Comentário enviado! 💬');
 
         if (authorId && authorId !== currentProfile.id) {
@@ -1119,8 +1137,9 @@ async function loadDetailReplies(postId) {
 // ============================================================
 // CARREGA REPLIES INLINE
 // ============================================================
-async function loadRepliesForPost(postId) {
-  const repliesList = document.getElementById(`replies-list-${postId}`);
+async function loadRepliesForPost(postId, listElement = null) {
+  // Tenta usar a lista que veio do clique, senão cai pro GetElementById (fallback)
+  const repliesList = listElement || document.getElementById(`replies-list-${postId}`);
   if (!repliesList) return;
 
   repliesList.innerHTML = '<p style="padding:12px;text-align:center;color:var(--text-secondary);font-size:13px;">Carregando...</p>';
@@ -1133,6 +1152,7 @@ async function loadRepliesForPost(postId) {
       return;
     }
 
+    // O resto da sua função continua igual daqui pra baixo...
     repliesList.innerHTML = replies.map(r => {
       const avatar = r.author?.avatar_url
         || `https://api.dicebear.com/7.x/avataaars/svg?seed=${r.author?.handle}`;
