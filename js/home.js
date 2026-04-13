@@ -1,9 +1,29 @@
 // ============================================================
-// js/home.js — Versão CORRIGIDA: listeners separados por contexto
+// js/home.js — Versão COMPLETA com Mídia e Reposts integrados
 // ============================================================
 
 import { supabase, getCurrentUser } from './supabase.js';
 import { getCurrentProfile, onAuthChange, signOut } from './supabase.js';
+
+import {
+  uploadPostMedia,
+  createPostWithMedia,
+  setupMediaComposer,
+  createMediaGridHTML,
+  attachMediaListeners,
+  renderProfileMediaGrid,
+  getMediaPostsByUser,
+} from './Midia.js';
+
+import {
+  repostPost,
+  undoRepost,
+  quotePost,
+  getRepostedPostIds,
+  createQuoteCardHTML,
+  getOriginalPost,
+  attachRepostListeners,
+} from './Reposts.js';
 
 import {
   createNotification,
@@ -40,15 +60,15 @@ import { getFollowingFeed, getFollowingIds, subscribeToFollowingFeed, followUser
 // ============================================================
 let currentProfile = null;
 let likedPostIds = new Set();
+let repostedPostIds = new Set();
+let mediaComposer = null;
 let unsubscribePosts = null;
 let unsubscribeFollowingFeed = null;
 let unsubscribeCurrentChat = null;
 let unsubscribeNotifs = null;
 let viewingProfile = null;
-let activeFeedTab = 'para-voce'; // 'para-voce' | 'seguindo'
+let activeFeedTab = 'para-voce';
 
-// FIX: controllers separados para feed e perfil — nunca interferem
-// Inicializa já com um controller válido para evitar null pointer na primeira chamada
 let feedListenersController = new AbortController();
 let profileListenersController = new AbortController();
 let profileBtnControllers = [];
@@ -68,6 +88,7 @@ try {
   setupUserMini();
   setupProfileTabs();
   setupTrendingWidget();
+  setupMediaInModal();
 } catch (erroInterface) {
   console.error('Erro ao carregar interface:', erroInterface);
 }
@@ -88,6 +109,36 @@ try {
   });
 } catch (erroBanco) {
   console.error('Erro ao conectar com banco:', erroBanco);
+}
+
+// ============================================================
+// SETUP DE MÍDIA NO MODAL DE POST
+// ============================================================
+function setupMediaInModal() {
+  const modalBody = document.querySelector('#postModal .modal-body');
+  if (!modalBody) return;
+  if (!modalBody.id) modalBody.id = 'modalComposerBody';
+
+  mediaComposer = setupMediaComposer({
+    composerContainerId: 'modalComposerBody',
+    onMediaChange: (files) => {
+      const btn = document.querySelector('#postModal .toolbar-btn[data-type="media"]');
+      if (btn) btn.style.color = files.length > 0 ? 'var(--primary)' : '';
+    },
+  });
+
+  // Redireciona o botão de imagem existente no modal para o file picker
+  const toolbar = document.querySelector('#postModal .toolbar-icons');
+  if (toolbar) {
+    const imgBtn = toolbar.querySelector('.toolbar-btn');
+    if (imgBtn) {
+      imgBtn.setAttribute('data-type', 'media');
+      imgBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        mediaComposer.openFilePicker();
+      });
+    }
+  }
 }
 
 // ============================================================
@@ -217,7 +268,7 @@ function setupNavigation() {
 }
 
 // ============================================================
-// ABAS DO FEED — "Para você" e "Seguindo"
+// ABAS DO FEED
 // ============================================================
 function setupFeedTabs() {
   const tabBtns = document.querySelectorAll('.tab-btn');
@@ -239,7 +290,7 @@ function setupFeedTabs() {
 }
 
 // ============================================================
-// FEED — "Para você" (todos os posts)
+// FEED — "Para você"
 // ============================================================
 async function loadFeed() {
   const container = document.getElementById('postsContainer');
@@ -255,9 +306,11 @@ async function loadFeed() {
     if (currentProfile) {
       const ids = posts.map(p => p.id);
       likedPostIds = await getLikedPostIds(ids);
+      repostedPostIds = await getRepostedPostIds(ids);
     }
 
     renderPosts(posts, container, 'feed');
+    await loadQuoteCards(container);
   } catch (err) {
     console.error('Erro ao carregar feed:', err);
     container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--danger)">Erro ao carregar posts.</div>';
@@ -265,7 +318,7 @@ async function loadFeed() {
 }
 
 // ============================================================
-// FEED — "Seguindo" (só posts de quem você segue)
+// FEED — "Seguindo"
 // ============================================================
 async function loadFollowingFeed() {
   const container = document.getElementById('postsContainer');
@@ -273,7 +326,6 @@ async function loadFollowingFeed() {
 
   abortFeedListeners();
 
-  // Para realtime anterior
   if (unsubscribeFollowingFeed) {
     unsubscribeFollowingFeed();
     unsubscribeFollowingFeed = null;
@@ -295,7 +347,10 @@ async function loadFollowingFeed() {
 
     if (currentProfile) {
       const ids = posts.map(p => p.id);
-      if (ids.length > 0) likedPostIds = await getLikedPostIds(ids);
+      if (ids.length > 0) {
+        likedPostIds = await getLikedPostIds(ids);
+        repostedPostIds = await getRepostedPostIds(ids);
+      }
     }
 
     if (posts.length === 0) {
@@ -308,8 +363,8 @@ async function loadFollowingFeed() {
     }
 
     renderPosts(posts, container, 'feed');
+    await loadQuoteCards(container);
 
-    // Realtime para o feed de seguindo
     const followingIds = await getFollowingIds(currentProfile.id);
     unsubscribeFollowingFeed = subscribeToFollowingFeed(followingIds, (newPost) => {
       const exists = document.querySelector(`[data-post-id="${newPost.id}"]`);
@@ -325,8 +380,27 @@ async function loadFollowingFeed() {
   }
 }
 
-// FIX: funções separadas para abort de cada contexto
-// Sempre garante que o controller é válido APÓS o abort
+// ============================================================
+// CARREGA QUOTE CARDS (posts citados)
+// ============================================================
+async function loadQuoteCards(container) {
+  const placeholders = container.querySelectorAll('.quote-placeholder[data-quoted-id]');
+  for (const placeholder of placeholders) {
+    const quotedId = placeholder.dataset.quotedId;
+    try {
+      const originalPost = await getOriginalPost(quotedId);
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = createQuoteCardHTML(originalPost);
+      placeholder.replaceWith(tempDiv.firstElementChild);
+    } catch (_) {
+      placeholder.remove();
+    }
+  }
+}
+
+// ============================================================
+// ABORT CONTROLLERS
+// ============================================================
 function abortFeedListeners() {
   feedListenersController?.abort();
   feedListenersController = new AbortController();
@@ -337,20 +411,25 @@ function abortProfileListeners() {
   profileListenersController = new AbortController();
 }
 
-// FIX: renderPosts recebe o contexto ('feed' ou 'profile') para usar o controller correto
+// ============================================================
+// RENDER POSTS
+// ============================================================
 function renderPosts(posts, containerElement, context = 'feed') {
   if (posts.length === 0) {
     containerElement.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-secondary)">Nenhum post ainda. Seja o primeiro! 🚀</div>';
     return;
   }
-  // FIX: se for perfil, garante que o controller está fresco antes de renderizar
   if (context === 'profile') abortProfileListeners();
   containerElement.innerHTML = posts.map(post => createPostHTML(post)).join('');
   attachPostEventListeners(containerElement, context);
 }
 
+// ============================================================
+// CRIA HTML DO POST (com suporte a mídia e quote)
+// ============================================================
 function createPostHTML(post) {
   const isLiked = likedPostIds.has(post.id);
+  const isReposted = repostedPostIds.has(post.id);
   const timeAgo = formatTimeAgo(post.created_at);
   const userAvatar = currentProfile?.avatar_url
     || `https://api.dicebear.com/7.x/avataaars/svg?seed=anon`;
@@ -359,7 +438,6 @@ function createPostHTML(post) {
 
   const isMyPost = currentProfile && currentProfile.id === post.author?.id;
 
-  // FIX GAVETA: menu renderizado no <body> via JS para escapar de overflow:hidden
   const optionsMenu = isMyPost ? `
     <div class="post-options-wrapper" style="margin-left:auto;">
       <button class="post-options-btn" data-post-id="${post.id}" style="
@@ -371,8 +449,37 @@ function createPostHTML(post) {
     </div>
   ` : '';
 
+  // Indicador de repost (se for um repost de alguém)
+  const repostIndicator = post.reposted_by ? `
+    <div style="
+      display:flex;align-items:center;gap:6px;
+      color:var(--text-secondary);font-size:12px;
+      padding:0 0 6px 52px;
+    ">
+      🔁 <span>${escapeHtml(post.reposted_by_name ?? '')} repostou</span>
+    </div>
+  ` : '';
+
+  // Grade de mídia
+  const mediaGrid = post.media_urls?.length
+    ? createMediaGridHTML(post.media_urls, post.id)
+    : '';
+
+  // Quote card (post citado)
+  const quoteCard = post.is_quote && post.quoted_post_id
+    ? `<div class="quote-placeholder" data-quoted-id="${post.quoted_post_id}">
+        <div style="
+          margin-top:10px;border:1px solid var(--border);
+          border-radius:12px;padding:10px 14px;
+          background:var(--dark-bg);
+          color:var(--text-secondary);font-size:13px;
+        ">Carregando post citado...</div>
+       </div>`
+    : '';
+
   return `
     <div class="post-card" data-post-id="${post.id}" data-author-id="${post.author?.id ?? ''}" style="flex-direction:column;cursor:pointer;">
+      ${repostIndicator}
       <div class="post-main" style="display:flex;gap:16px;width:100%;">
         <img src="${authorAvatar}" class="avatar clickable-avatar" data-handle="${post.author?.handle}" style="cursor:pointer;">
         <div class="post-content" style="flex:1;min-width:0;">
@@ -385,6 +492,10 @@ function createPostHTML(post) {
             ${optionsMenu}
           </div>
           <p class="post-text post-clickable-body" data-post-id="${post.id}">${escapeHtml(post.content)}</p>
+
+          ${mediaGrid}
+          ${quoteCard}
+
           <div class="post-actions">
             <button class="post-action reply-action" title="Responder" data-post-id="${post.id}" style="background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:4px;color:inherit;font-size:inherit;padding:4px 8px;">
               💬 <span class="reply-count">${post.replies_count ?? 0}</span>
@@ -397,7 +508,14 @@ function createPostHTML(post) {
                  style="background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:4px;color:inherit;font-size:inherit;padding:4px 8px;">
               ❤️ <span class="like-count">${post.likes_count ?? 0}</span>
             </button>
-            <button class="post-action repost-action" title="Republicar" data-post-id="${post.id}" style="background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:4px;color:inherit;font-size:inherit;padding:4px 8px;">
+            <button class="post-action repost-action ${isReposted ? 'reposted' : ''}"
+                 title="Republicar"
+                 data-post-id="${post.id}"
+                 data-author-id="${post.author?.id ?? ''}"
+                 data-reposted="${isReposted}"
+                 style="background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:4px;
+                        color:${isReposted ? 'var(--success, #17bf63)' : 'inherit'};
+                        font-size:inherit;padding:4px 8px;transition:color 0.2s;">
               🔁 <span class="repost-count">${post.reposts_count ?? 0}</span>
             </button>
           </div>
@@ -423,32 +541,20 @@ function createPostHTML(post) {
 }
 
 // ============================================================
-// EVENT LISTENERS DOS POSTS — FIX COMPLETO
-// FIX: recebe o container e o contexto para usar o AbortController correto
+// EVENT LISTENERS DOS POSTS
 // ============================================================
 function attachPostEventListeners(container = document, context = 'feed') {
-  // FIX: cada contexto usa seu próprio controller — feed e perfil nunca se afetam
   const signal = context === 'feed'
     ? feedListenersController.signal
     : profileListenersController.signal;
 
   // ── GAVETA (post-options-btn) ─────────────────────────────
-  // FIX: menu criado no <body> com position:fixed para escapar de overflow:hidden dos cards
   container.querySelectorAll('.post-options-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-
-      // Remove qualquer menu flutuante já aberto
       document.getElementById('floatingPostMenu')?.remove();
 
       const postId = btn.dataset.postId;
-
-      // Descobre dados do post a partir do card
-      const card = btn.closest('.post-card');
-      const isArchived = card?.style.opacity === '0.5';
-      const postText = card?.querySelector('.post-text')?.textContent ?? '';
-
-      // Posiciona o menu na tela usando as coordenadas do botão
       const rect = btn.getBoundingClientRect();
 
       const menu = document.createElement('div');
@@ -467,8 +573,6 @@ function attachPostEventListeners(container = document, context = 'feed') {
         overflow:hidden;
       `;
 
-      // Lê estado atual do post para os itens do menu
-
       menu.innerHTML = `
         <button class="post-option-item fm-edit" data-post-id="${postId}" style="display:block;width:100%;text-align:left;padding:11px 16px;background:none;border:none;cursor:pointer;color:var(--text-primary);font-size:14px;">✏️ Editar</button>
         <button class="post-option-item fm-delete" data-post-id="${postId}" style="display:block;width:100%;text-align:left;padding:11px 16px;background:none;border:none;cursor:pointer;color:var(--danger,#e0245e);font-size:14px;">🗑️ Apagar</button>
@@ -476,13 +580,11 @@ function attachPostEventListeners(container = document, context = 'feed') {
 
       document.body.appendChild(menu);
 
-      // Hover visual nos itens
       menu.querySelectorAll('button').forEach(b => {
         b.addEventListener('mouseenter', () => b.style.background = 'var(--border)');
         b.addEventListener('mouseleave', () => b.style.background = 'none');
       });
 
-      // EDITAR
       menu.querySelector('.fm-edit')?.addEventListener('click', async (ev) => {
         ev.stopPropagation();
         menu.remove();
@@ -499,7 +601,6 @@ function attachPostEventListeners(container = document, context = 'feed') {
         }
       });
 
-      // APAGAR
       menu.querySelector('.fm-delete')?.addEventListener('click', async (ev) => {
         ev.stopPropagation();
         menu.remove();
@@ -516,15 +617,11 @@ function attachPostEventListeners(container = document, context = 'feed') {
     }, { signal });
   });
 
-  // Fecha o menu flutuante ao clicar fora
   document.addEventListener('click', () => {
     document.getElementById('floatingPostMenu')?.remove();
   }, { signal });
 
-
-
   // ── LIKE ─────────────────────────────────────────────────
-  // FIX: sincroniza TODOS os botões do mesmo post (feed + perfil) de uma vez
   container.querySelectorAll('.like-action').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
@@ -537,15 +634,11 @@ function attachPostEventListeners(container = document, context = 'feed') {
       const postId = btn.dataset.postId;
       const authorId = btn.dataset.authorId;
       const wasLiked = btn.dataset.liked === 'true';
-
-      // Pega contagem atual de qualquer botão desse post
       const countEl = btn.querySelector('.like-count');
       const currentCount = parseInt(countEl?.textContent) || 0;
-
       const newLiked = !wasLiked;
       const newCount = Math.max(0, currentCount + (newLiked ? 1 : -1));
 
-      // FIX: atualiza TODOS os botões desse postId na página inteira (feed e perfil)
       const allBtns = document.querySelectorAll(`.like-action[data-post-id="${postId}"]`);
       allBtns.forEach(b => {
         b.dataset.liked = String(newLiked);
@@ -573,7 +666,6 @@ function attachPostEventListeners(container = document, context = 'feed') {
           await unlikePost(postId);
         }
       } catch (err) {
-        // Reverte todos os botões em caso de erro
         allBtns.forEach(b => {
           b.dataset.liked = String(wasLiked);
           b.classList.toggle('liked', wasLiked);
@@ -592,15 +684,28 @@ function attachPostEventListeners(container = document, context = 'feed') {
     }, { signal });
   });
 
-  // ── REPOST ───────────────────────────────────────────────
-  container.querySelectorAll('.repost-action').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
+  // ── REPOST (via Reposts.js) ───────────────────────────────
+  attachRepostListeners(container, currentProfile, signal, {
+    showNotification,
+    createNotification: async (payload) => {
+      try { await createNotification(payload); } catch (_) {}
+    },
+    prependPost: () => {
+      // Recarrega o feed para mostrar o novo quote post
+      if (activeFeedTab === 'para-voce') loadFeed();
+      else loadFollowingFeed();
+    },
+  });
+
+  // ── MÍDIA (lightbox via Midia.js) ─────────────────────────
+  attachMediaListeners(container, signal);
+
+  // ── QUOTE CARD (clicável) ─────────────────────────────────
+  container.querySelectorAll('.quote-card').forEach(card => {
+    card.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (!currentProfile) {
-        showNotification('Faça login para republicar! 🚀');
-        return;
-      }
-      showNotification('Post republicado com sucesso! 🔁');
+      const quotedId = card.dataset.quotedPostId;
+      if (quotedId) openPostDetailModal(quotedId);
     }, { signal });
   });
 
@@ -618,15 +723,15 @@ function attachPostEventListeners(container = document, context = 'feed') {
   });
 
   // ── CLIQUE NO CARD (abre modal de detalhe) ────────────────
-  // FIX: usa mousedown para registrar qual elemento foi clicado, evitando conflito com reply-action
   container.querySelectorAll('.post-card').forEach(card => {
     card.addEventListener('click', (e) => {
-      // Se o clique veio de dentro de qualquer área de ação, não abre o modal
       if (
         e.target.closest('.post-actions') ||
         e.target.closest('.clickable-avatar') ||
         e.target.closest('.post-options-wrapper') ||
-        e.target.closest('.post-replies-section')
+        e.target.closest('.post-replies-section') ||
+        e.target.closest('.media-grid') ||
+        e.target.closest('.quote-card')
       ) return;
 
       const postId = card.dataset.postId;
@@ -639,18 +744,14 @@ function attachPostEventListeners(container = document, context = 'feed') {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
       const postId = btn.dataset.postId;
-      
-      // FIX: Procura a seção de comentários DENTRO do post em que você clicou
       const postCard = btn.closest('.post-card');
       const repliesSection = postCard.querySelector('.post-replies-section');
-      
+
       if (!repliesSection) return;
 
       if (repliesSection.style.display === 'none') {
         repliesSection.style.display = 'block';
         postCard.querySelector('.reply-input')?.focus();
-        
-        // Passamos a lista específica deste card para a função carregar os dados
         const repliesList = postCard.querySelector('.replies-list');
         await loadRepliesForPost(postId, repliesList);
       } else {
@@ -660,7 +761,7 @@ function attachPostEventListeners(container = document, context = 'feed') {
   });
 
   // ── ENVIAR COMENTÁRIO ────────────────────────────────────
- container.querySelectorAll('.reply-submit-btn').forEach(btn => {
+  container.querySelectorAll('.reply-submit-btn').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
 
@@ -671,8 +772,6 @@ function attachPostEventListeners(container = document, context = 'feed') {
 
       const postId = btn.dataset.postId;
       const authorId = btn.dataset.authorId;
-      
-      // FIX: Pega o texto do input do card exato onde você clicou
       const postCard = btn.closest('.post-card');
       const input = postCard.querySelector('.reply-input');
       const content = input?.value.trim();
@@ -703,7 +802,6 @@ function attachPostEventListeners(container = document, context = 'feed') {
           </div>
         `;
 
-        // FIX: Injeta o comentário novo em TODAS as listas desse post (Feed e Perfil)
         const allRepliesLists = document.querySelectorAll(`[id="replies-list-${postId}"]`);
         allRepliesLists.forEach(list => {
           const emptyMsg = list.querySelector('p');
@@ -711,14 +809,12 @@ function attachPostEventListeners(container = document, context = 'feed') {
           list.insertAdjacentHTML('afterbegin', newReplyHTML);
         });
 
-        // Sincroniza todos os botões de contagem desse post na página
         document.querySelectorAll(`.reply-action[data-post-id="${postId}"] .reply-count`).forEach(el => {
           el.textContent = parseInt(el.textContent) + 1;
         });
 
-        // Limpa os inputs
         document.querySelectorAll(`[id="reply-input-${postId}"]`).forEach(inp => inp.value = '');
-        
+
         showNotification('Comentário enviado! 💬');
 
         if (authorId && authorId !== currentProfile.id) {
@@ -817,7 +913,6 @@ async function openPostDetailModal(postId) {
   content.innerHTML = '<p style="text-align:center;padding:40px;color:var(--text-secondary);">Carregando...</p>';
 
   try {
-    // FIX: lê o estado atual dos botões de QUALQUER contexto (feed ou perfil)
     const postCard = document.querySelector(`.post-card[data-post-id="${postId}"]`);
     const authorName = postCard?.querySelector('.post-author')?.textContent?.trim() ?? 'Usuário';
     const authorHandle = postCard?.querySelector('.post-handle')?.textContent?.trim() ?? '';
@@ -827,9 +922,12 @@ async function openPostDetailModal(postId) {
     const likeBtn = postCard?.querySelector('.like-action');
     const likeCount = likeBtn?.querySelector('.like-count')?.textContent ?? '0';
     const replyCount = postCard?.querySelector('.reply-count')?.textContent ?? '0';
-    // FIX: lê o estado de liked do Set global — fonte de verdade única
     const isLiked = likedPostIds.has(postId);
     const authorId = postCard?.dataset?.authorId ?? likeBtn?.dataset?.authorId ?? '';
+
+    // Mídia do post
+    const mediaGrid = postCard?.querySelector('.media-grid');
+    const mediaHtml = mediaGrid ? mediaGrid.outerHTML : '';
 
     const userAvatar = currentProfile?.avatar_url
       || `https://api.dicebear.com/7.x/avataaars/svg?seed=anon`;
@@ -854,6 +952,7 @@ async function openPostDetailModal(postId) {
             line-height:1.5;margin-top:12px;
             word-break:break-word;white-space:pre-wrap;
           ">${escapeHtml(postText)}</p>
+          ${mediaHtml}
           <p style="color:var(--text-secondary);font-size:13px;margin-top:12px;">${postTime}</p>
         </div>
       </div>
@@ -939,7 +1038,15 @@ async function openPostDetailModal(postId) {
       </div>
     `;
 
-    // Navegação para perfil dentro do modal
+    // Lightbox para mídia dentro do modal
+    if (mediaHtml) {
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = mediaHtml;
+      const { attachMediaListeners: attachMedia } = await import('./Midia.js');
+      const modalContent = document.getElementById('postDetailContent');
+      if (modalContent) attachMedia(modalContent, new AbortController().signal);
+    }
+
     content.querySelectorAll('.detail-clickable-avatar').forEach(el => {
       el.addEventListener('click', () => {
         const h = el.dataset.handle;
@@ -951,9 +1058,6 @@ async function openPostDetailModal(postId) {
       });
     });
 
-    // FIX LIKE NO MODAL: usa o mesmo handler que o feed para manter sincronia
-    // O botão já tem classe "like-action" e data-post-id, então funciona igual ao feed.
-    // Mas o signal aqui é do modal (sem controller), então registramos manualmente:
     const detailLikeBtn = document.getElementById('detailLikeBtn');
     detailLikeBtn?.addEventListener('click', async (e) => {
       e.stopPropagation();
@@ -966,7 +1070,6 @@ async function openPostDetailModal(postId) {
       const newLiked = !wasLiked;
       const newCount = Math.max(0, currentCount + (newLiked ? 1 : -1));
 
-      // FIX: atualiza TODOS os botões desse post no DOM (feed, perfil E modal)
       const allBtns = document.querySelectorAll(`.like-action[data-post-id="${pid}"]`);
       allBtns.forEach(b => {
         b.dataset.liked = String(newLiked);
@@ -975,11 +1078,9 @@ async function openPostDetailModal(postId) {
         const c = b.querySelector('.like-count');
         if (c) c.textContent = newCount;
       });
-      // Atualiza o contador da seção de stats do modal
       const statEl = document.getElementById('detailLikeCountStat');
       if (statEl) statEl.textContent = newCount;
 
-      // Ícone do botão do modal
       const iconSpan = detailLikeBtn.childNodes[0];
       if (iconSpan) iconSpan.textContent = newLiked ? '❤️' : '🤍';
       detailLikeBtn.style.color = newLiked ? 'var(--danger, #e0245e)' : 'var(--text-secondary)';
@@ -997,7 +1098,6 @@ async function openPostDetailModal(postId) {
           await unlikePost(pid);
         }
       } catch (err) {
-        // Reverte tudo
         allBtns.forEach(b => {
           b.dataset.liked = String(wasLiked);
           b.classList.toggle('liked', wasLiked);
@@ -1048,7 +1148,6 @@ async function openPostDetailModal(postId) {
         document.getElementById('detailReplyComposer').style.display = 'none';
         showNotification(privacy?.checked ? 'Resposta privada enviada! 🤫' : 'Resposta enviada! 💬');
 
-        // Atualiza contador de replies no feed/perfil
         document.querySelectorAll(`.reply-action[data-post-id="${pid}"] .reply-count`).forEach(el => {
           el.textContent = parseInt(el.textContent || '0') + 1;
         });
@@ -1110,7 +1209,6 @@ async function loadDetailReplies(postId) {
               </span>
               <span style="color:var(--text-secondary);font-size:13px;">@${escapeHtml(r.author?.handle ?? '')}</span>
               <span style="color:var(--text-secondary);font-size:11px;">· ${timeAgo}</span>
-              
             </div>
             <p style="font-size:14px;color:var(--text-primary);line-height:1.5;word-break:break-word;">${escapeHtml(r.content)}</p>
           </div>
@@ -1138,7 +1236,6 @@ async function loadDetailReplies(postId) {
 // CARREGA REPLIES INLINE
 // ============================================================
 async function loadRepliesForPost(postId, listElement = null) {
-  // Tenta usar a lista que veio do clique, senão cai pro GetElementById (fallback)
   const repliesList = listElement || document.getElementById(`replies-list-${postId}`);
   if (!repliesList) return;
 
@@ -1152,7 +1249,6 @@ async function loadRepliesForPost(postId, listElement = null) {
       return;
     }
 
-    // O resto da sua função continua igual daqui pra baixo...
     repliesList.innerHTML = replies.map(r => {
       const avatar = r.author?.avatar_url
         || `https://api.dicebear.com/7.x/avataaars/svg?seed=${r.author?.handle}`;
@@ -1168,7 +1264,6 @@ async function loadRepliesForPost(postId, listElement = null) {
                 <span class="reply-handle">@${escapeHtml(r.author?.handle)}</span>
                 <span style="color:var(--text-secondary);font-size:11px;margin-left:6px;">${timeAgo}</span>
               </div>
-              
             </div>
             <p style="font-size:13.5px;color:var(--text-primary);line-height:1.4;">${escapeHtml(r.content)}</p>
           </div>
@@ -1193,10 +1288,17 @@ function prependPost(post) {
   const postEl = div.firstElementChild;
   postEl.style.animation = 'slideDown 0.3s ease';
   container.prepend(postEl);
-  // FIX: passa o container e o contexto correto
   attachPostEventListeners(container, 'feed');
+
+  // Carrega quote card se necessário
+  if (post.is_quote && post.quoted_post_id) {
+    loadQuoteCards(container);
+  }
 }
 
+// ============================================================
+// POST COMPOSER
+// ============================================================
 function setupPostComposer() {
   const postInput = document.getElementById('postInput');
   const postSubmitBtn = document.getElementById('postSubmitBtn');
@@ -1224,16 +1326,25 @@ function setupPostModal() {
 
   openBtn?.addEventListener('click', () => { modal.classList.add('active'); modalInput?.focus(); });
 
-  const closeModal = () => { modal.classList.remove('active'); if (modalInput) modalInput.value = ''; };
+  const closeModal = () => {
+    modal.classList.remove('active');
+    if (modalInput) modalInput.value = '';
+    mediaComposer?.clearFiles();
+  };
   closeBtn?.addEventListener('click', closeModal);
   cancelBtn?.addEventListener('click', closeModal);
   modal?.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
-  submitBtn?.addEventListener('click', async () => { await handleSubmitPost(modalInput?.value ?? ''); closeModal(); });
+  submitBtn?.addEventListener('click', async () => {
+    await handleSubmitPost(modalInput?.value ?? '');
+    closeModal();
+  });
 }
 
 async function handleSubmitPost(content) {
   content = content?.trim();
-  if (!content) return;
+  const hasMedia = mediaComposer?.hasFiles();
+
+  if (!content && !hasMedia) return;
   if (!currentProfile) { showNotification('Faça login para postar! 🔐'); return; }
 
   const postInput = document.getElementById('postInput');
@@ -1242,18 +1353,30 @@ async function handleSubmitPost(content) {
   if (modalInput) modalInput.value = '';
 
   try {
-    await createPost(content);
+    let mediaUrls = [];
+
+    if (hasMedia) {
+      showNotification('Enviando fotos... 📸');
+      mediaUrls = await uploadPostMedia(mediaComposer.getFiles());
+      mediaComposer.clearFiles();
+    }
+
+    if (mediaUrls.length > 0) {
+      await createPostWithMedia(content || '', mediaUrls);
+    } else {
+      await createPost(content);
+    }
+
     showNotification('Post criado! ✨');
   } catch (err) {
     console.error('Erro ao criar post:', err);
-    showNotification('Erro ao criar post. Tente novamente.');
+    showNotification(`Erro: ${err.message || 'Tente novamente.'}`);
   }
 }
 
 function startRealtimeFeed() {
   if (unsubscribePosts) unsubscribePosts();
   unsubscribePosts = subscribeToNewPosts((newPost) => {
-    // Só adiciona no feed "Para você" — o seguindo tem seu próprio realtime
     if (activeFeedTab !== 'para-voce') return;
     const exists = document.querySelector(`[data-post-id="${newPost.id}"]`);
     if (!exists) prependPost(newPost);
@@ -1288,6 +1411,13 @@ async function loadProfileTabContent(tabType) {
   contentEl.innerHTML = '<p style="padding:20px;text-align:center;">Carregando...</p>';
 
   try {
+    // ABA MÍDIA — usa grade de fotos do Midia.js
+    if (tabType === 'midia') {
+      const mediaPosts = await getMediaPostsByUser(profileToLoad.id);
+      renderProfileMediaGrid(mediaPosts, contentEl);
+      return;
+    }
+
     let postsToRender = [];
 
     if (tabType === 'posts') {
@@ -1299,23 +1429,20 @@ async function loadProfileTabContent(tabType) {
         contentEl.innerHTML = '<p style="padding:40px;text-align:center;color:var(--text-secondary);">Esta informação é privada. 🔒</p>';
         return;
       }
-    } else if (tabType === 'midia') {
-      const allPosts = await getPostsByUser(profileToLoad.id);
-      postsToRender = allPosts.filter(p => p.content && p.content.includes('http'));
     }
 
     postsToRender = postsToRender.filter(p => p != null);
 
     if (postsToRender.length === 0) {
-      const msg = tabType === 'curtidos' ? 'Nenhum post curtido ainda. ❤️'
-        : tabType === 'midia' ? 'Nenhum post com mídia. 📷'
+      const msg = tabType === 'curtidos'
+        ? 'Nenhum post curtido ainda. ❤️'
         : 'Nenhum post encontrado. 🚀';
       contentEl.innerHTML = `<p style="padding:40px;text-align:center;color:var(--text-secondary)">${msg}</p>`;
       return;
     }
 
-    // FIX: passa contexto 'profile' para usar o controller correto
     renderPosts(postsToRender, contentEl, 'profile');
+    await loadQuoteCards(contentEl);
   } catch (err) {
     console.error(err);
     contentEl.innerHTML = '<p style="color:var(--danger);text-align:center;">Erro ao carregar conteúdo.</p>';
@@ -1323,8 +1450,6 @@ async function loadProfileTabContent(tabType) {
 }
 
 async function loadProfilePage() {
-  // FIX: cancela só controllers de botões de perfil, nunca o feedListenersController
-  // Não chama abortProfileListeners() aqui — loadProfileTabContent já faz isso
   profileBtnControllers.forEach(ctrl => ctrl.abort());
   profileBtnControllers = [];
 
@@ -1371,7 +1496,6 @@ async function loadProfilePage() {
     statValues[1].textContent = profile.followers_count || 0;
   }
 
-  // Sincroniza contadores com o banco em background (corrige qualquer inconsistência)
   syncProfileCounts(profile.id).then(counts => {
     if (!counts) return;
     const vals = document.querySelectorAll('.stat-value');
@@ -1443,7 +1567,6 @@ async function loadProfilePage() {
           if (currentlyFollowing) {
             await unfollowUserAndSync(currentProfile.id, profile.id);
             setFollowState(false);
-            // Atualiza contador na UI imediatamente
             const statVals = document.querySelectorAll('.stat-value');
             if (statVals.length >= 2) {
               const cur = parseInt(statVals[1].textContent) || 0;
@@ -1452,7 +1575,6 @@ async function loadProfilePage() {
           } else {
             await followUserAndSync(currentProfile.id, profile.id);
             setFollowState(true);
-            // Atualiza contador na UI imediatamente
             const statVals = document.querySelectorAll('.stat-value');
             if (statVals.length >= 2) {
               const cur = parseInt(statVals[1].textContent) || 0;
@@ -1823,6 +1945,10 @@ async function loadExplorePage() {
 
     const renderMiniPost = (post, contextLabel, contextIcon) => {
       const avatar = post.author?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author?.handle}`;
+      // Thumbnail de mídia para o card do explorar
+      const mediaThumb = post.media_urls?.length
+        ? `<img src="${post.media_urls[0]}" style="width:100%;height:100px;object-fit:cover;border-radius:8px;margin-top:6px;">`
+        : '';
       return `
         <div class="explore-post-card">
           ${contextLabel ? `<div class="explore-context"><span class="explore-context-icon">${contextIcon}</span> ${contextLabel}</div>` : ''}
@@ -1836,6 +1962,7 @@ async function loadExplorePage() {
           <div style="font-size:14px;color:var(--text-primary);line-height:1.5;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;">
             ${escapeHtml(post.content)}
           </div>
+          ${mediaThumb}
           <div style="color:var(--text-secondary);font-size:12px;display:flex;justify-content:space-between;margin-top:auto;padding-top:8px;">
             <span style="display:flex;gap:12px;"><span>❤️ ${post.likes_count || 0}</span><span>💬 ${post.replies_count || 0}</span></span>
             <span>📍 PUC</span>

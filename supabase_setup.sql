@@ -292,3 +292,67 @@ ALTER TABLE public.posts ADD COLUMN IF NOT EXISTS is_archived BOOLEAN DEFAULT FA
 ALTER TABLE posts ADD COLUMN is_archived boolean DEFAULT false;
 ALTER TABLE posts ADD COLUMN is_private boolean DEFAULT false;
 ALTER TABLE posts ADD COLUMN reposts_count integer DEFAULT 0;
+
+// ============================================================
+// SQL NECESSÁRIO (execute no Supabase SQL Editor)
+// ============================================================
+/*
+-- Colunas na tabela posts para mídia
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS media_urls TEXT[] DEFAULT '{}';
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS has_media BOOLEAN DEFAULT FALSE;
+
+-- Bucket no Supabase Storage
+-- Crie um bucket chamado "posts-media" com acesso público no dashboard do Supabase.
+-- Storage > New Bucket > Name: posts-media > Public: true
+
+-- Política de storage para upload autenticado
+CREATE POLICY "upload_media" ON storage.objects
+  FOR INSERT WITH CHECK (
+    bucket_id = 'posts-media' AND auth.uid() IS NOT NULL
+  );
+
+CREATE POLICY "read_media" ON storage.objects
+  FOR SELECT USING (bucket_id = 'posts-media');
+
+CREATE POLICY "delete_own_media" ON storage.objects
+  FOR DELETE USING (
+    bucket_id = 'posts-media' AND auth.uid()::text = (storage.foldername(name))[1]
+  );
+*/
+
+
+// ============================================================
+// SQL NECESSÁRIO (execute no Supabase SQL Editor)
+// ============================================================
+/*
+-- Tabela de reposts simples
+CREATE TABLE IF NOT EXISTS reposts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  original_post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, original_post_id)
+);
+
+-- Coluna para quote posts na tabela posts
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS quoted_post_id UUID REFERENCES posts(id) ON DELETE SET NULL;
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS is_quote BOOLEAN DEFAULT FALSE;
+
+-- Função para incrementar reposts_count
+CREATE OR REPLACE FUNCTION increment_reposts_count(post_id UUID)
+RETURNS VOID AS $$
+  UPDATE posts SET reposts_count = COALESCE(reposts_count, 0) + 1 WHERE id = post_id;
+$$ LANGUAGE SQL;
+
+-- Função para decrementar reposts_count
+CREATE OR REPLACE FUNCTION decrement_reposts_count(post_id UUID)
+RETURNS VOID AS $$
+  UPDATE posts SET reposts_count = GREATEST(COALESCE(reposts_count, 0) - 1, 0) WHERE id = post_id;
+$$ LANGUAGE SQL;
+
+-- RLS
+ALTER TABLE reposts ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "reposts_select" ON reposts FOR SELECT USING (true);
+CREATE POLICY "reposts_insert" ON reposts FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "reposts_delete" ON reposts FOR DELETE USING (auth.uid() = user_id);
+*/
