@@ -68,6 +68,7 @@ let unsubscribeCurrentChat = null;
 let unsubscribeNotifs = null;
 let viewingProfile = null;
 let activeFeedTab = 'para-voce';
+let currentEditingPostId = null;
 
 let feedListenersController = new AbortController();
 let profileListenersController = new AbortController();
@@ -87,6 +88,7 @@ try {
   setupEmojis();
   setupUserMini();
   setupProfileTabs();
+  setupEditPostModal();
   setupTrendingWidget();
   setupMediaInModal();
 } catch (erroInterface) {
@@ -438,8 +440,8 @@ function createPostHTML(post) {
 
   const isMyPost = currentProfile && currentProfile.id === post.author?.id;
 
-  const optionsMenu = isMyPost ? `
-    <div class="post-options-wrapper" style="margin-left:auto;">
+const optionsMenu = isMyPost ? `
+    <div class="post-options-wrapper">
       <button class="post-options-btn" data-post-id="${post.id}" style="
         background:none;border:none;cursor:pointer;
         color:var(--text-secondary);font-size:20px;
@@ -483,13 +485,16 @@ function createPostHTML(post) {
       <div class="post-main" style="display:flex;gap:16px;width:100%;">
         <img src="${authorAvatar}" class="avatar clickable-avatar" data-handle="${post.author?.handle}" style="cursor:pointer;">
         <div class="post-content" style="flex:1;min-width:0;">
-          <div class="post-header" style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;">
+         <div class="post-header" style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;width:100%;">
             <span class="post-author clickable-avatar" data-handle="${post.author?.handle}" style="cursor:pointer;">
               ${escapeHtml(post.author?.name ?? 'Usuário')}
             </span>
             <span class="post-handle">@${escapeHtml(post.author?.handle ?? '')}</span>
-            <span class="post-time">${timeAgo}</span>
-            ${optionsMenu}
+            
+            <div style="margin-left:auto; display:flex; align-items:center; gap:8px;">
+              <span class="post-time" style="margin-left:0;">${timeAgo}</span>
+              ${optionsMenu}
+            </div>
           </div>
           <p class="post-text post-clickable-body" data-post-id="${post.id}">${escapeHtml(post.content)}</p>
 
@@ -585,19 +590,22 @@ function attachPostEventListeners(container = document, context = 'feed') {
         b.addEventListener('mouseleave', () => b.style.background = 'none');
       });
 
-      menu.querySelector('.fm-edit')?.addEventListener('click', async (ev) => {
+menu.querySelector('.fm-edit')?.addEventListener('click', async (ev) => {
         ev.stopPropagation();
         menu.remove();
+        
         const postCard = document.querySelector(`.post-card[data-post-id="${postId}"]`);
         const currentText = postCard?.querySelector('.post-text')?.textContent ?? '';
-        const newContent = prompt('Edite seu post:', currentText);
-        if (newContent && newContent.trim() !== currentText) {
-          try {
-            const { updatePost } = await import('./posts.js');
-            await updatePost(postId, newContent.trim());
-            postCard.querySelector('.post-text').textContent = newContent.trim();
-            showNotification('Post atualizado! ✏️');
-          } catch (err) { showNotification('Erro ao editar.'); }
+        
+        // Em vez de usar prompt(), usamos o novo modal animado
+        const editModal = document.getElementById('editPostModal');
+        const editInput = document.getElementById('editPostInput');
+        
+        if (editModal && editInput) {
+          currentEditingPostId = postId;
+          editInput.value = currentText;
+          editModal.classList.add('active'); // O CSS ativa a animação `@keyframes modalIn`
+          editInput.focus();
         }
       });
 
@@ -1440,6 +1448,7 @@ async function loadProfileTabContent(tabType) {
       contentEl.innerHTML = `<p style="padding:40px;text-align:center;color:var(--text-secondary)">${msg}</p>`;
       return;
     }
+    
 
     renderPosts(postsToRender, contentEl, 'profile');
     await loadQuoteCards(contentEl);
@@ -2091,4 +2100,56 @@ function showNotification(message) {
     notification.style.opacity = '0';
     setTimeout(() => notification.remove(), 300);
   }, 3000);
+}
+
+// ============================================================
+// MODAL DE EDITAR POST
+// ============================================================
+function setupEditPostModal() {
+  const modal = document.getElementById('editPostModal');
+  const closeBtn = document.getElementById('closeEditPostModal');
+  const cancelBtn = document.getElementById('cancelEditPostBtn');
+  const saveBtn = document.getElementById('saveEditPostBtn');
+  const input = document.getElementById('editPostInput');
+
+  const closeModal = () => {
+    modal.classList.remove('active');
+    currentEditingPostId = null;
+    if (input) input.value = '';
+  };
+
+  closeBtn?.addEventListener('click', closeModal);
+  cancelBtn?.addEventListener('click', closeModal);
+  modal?.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+  saveBtn?.addEventListener('click', async () => {
+    if (!currentEditingPostId) return;
+    
+    const newContent = input?.value.trim();
+    if (!newContent) return;
+
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Salvando...';
+
+    try {
+      const { updatePost } = await import('./posts.js');
+      await updatePost(currentEditingPostId, newContent);
+
+      // Atualiza o texto na interface diretamente
+      const postCard = document.querySelector(`.post-card[data-post-id="${currentEditingPostId}"]`);
+      if (postCard) {
+        const textEl = postCard.querySelector('.post-text');
+        if (textEl) textEl.textContent = newContent;
+      }
+
+      showNotification('Post atualizado! ✏️');
+      closeModal();
+    } catch (err) {
+      console.error(err);
+      showNotification('Erro ao editar post. Tente novamente.');
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Salvar Alterações';
+    }
+  });
 }

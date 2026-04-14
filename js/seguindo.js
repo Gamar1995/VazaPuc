@@ -138,9 +138,9 @@ export async function getFollowingFeed(userId, limit = 20) {
   const followingIds = await getFollowingIds(userId);
   if (followingIds.length === 0) return [];
 
-  const { data: posts, error: postsError } = await supabase
+const { data: posts, error: postsError } = await supabase
     .from('posts')
-    .select('id, content, created_at, likes_count, replies_count, author_id')
+    .select('*')
     .in('author_id', followingIds)
     .order('created_at', { ascending: false })
     .limit(limit);
@@ -162,11 +162,8 @@ export async function getFollowingFeed(userId, limit = 20) {
   );
 
   // Retorna no mesmo formato que getPosts() do posts.js
-  return posts.map(post => ({
+return posts.map(post => ({
     ...post,
-    reposts_count: 0,
-    is_private: false,
-    is_archived: false,
     author: authorMap[post.author_id] ?? null,
   }));
 }

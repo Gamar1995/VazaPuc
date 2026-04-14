@@ -56,7 +56,7 @@ export async function createPostWithMedia(content, mediaUrls = []) {
   const { data, error } = await supabase
     .from('posts')
     .insert({
-      user_id: user.id,
+      author_id: user.id,
       content: content?.trim() || '',
       media_urls: mediaUrls,
       has_media: mediaUrls.length > 0,
@@ -78,7 +78,7 @@ export async function getMediaPostsByUser(userId, limit = 30) {
       id, content, created_at, media_urls, likes_count, replies_count, reposts_count,
       author:profiles!posts_user_id_fkey(id, name, handle, avatar_url)
     `)
-    .eq('user_id', userId)
+    .eq('author_id', userId)
     .eq('has_media', true)
     .order('created_at', { ascending: false })
     .limit(limit);

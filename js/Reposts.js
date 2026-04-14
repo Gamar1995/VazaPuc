@@ -65,7 +65,7 @@ export async function quotePost(originalPostId, quoteContent) {
   const { data, error } = await supabase
     .from('posts')
     .insert({
-      user_id: user.id,
+      author_id: user.id,
       content: quoteContent.trim(),
       quoted_post_id: originalPostId,
       is_quote: true,
@@ -122,7 +122,7 @@ export async function getOriginalPost(postId) {
     .select(`
       id, content, created_at, likes_count, replies_count, reposts_count,
       media_urls,
-      author:profiles!posts_user_id_fkey(id, name, handle, avatar_url)
+     author:profiles(id, name, handle, avatar_url) // ✅ CORRIGIDO
     `)
     .eq('id', postId)
     .single();
