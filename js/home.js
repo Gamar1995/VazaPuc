@@ -13,6 +13,7 @@ import {
   attachMediaListeners,
   renderProfileMediaGrid,
   getMediaPostsByUser,
+  
 } from './Midia.js';
 
 import {
@@ -23,6 +24,7 @@ import {
   createQuoteCardHTML,
   getOriginalPost,
   attachRepostListeners,
+    getRepostedPosts,   
 } from './Reposts.js';
 
 import {
@@ -694,16 +696,21 @@ menu.querySelector('.fm-edit')?.addEventListener('click', async (ev) => {
 
   // ── REPOST (via Reposts.js) ───────────────────────────────
   attachRepostListeners(container, currentProfile, signal, {
-    showNotification,
-    createNotification: async (payload) => {
-      try { await createNotification(payload); } catch (_) {}
-    },
-    prependPost: () => {
-      // Recarrega o feed para mostrar o novo quote post
-      if (activeFeedTab === 'para-voce') loadFeed();
-      else loadFollowingFeed();
-    },
-  });
+  showNotification,
+  createNotification: async (payload) => {
+    try { await createNotification(payload); } catch (_) {}
+  },
+  onRepostSuccess: (postId) => {        // ← ADICIONE ISSO
+    repostedPostIds.add(postId);
+  },
+  onUndoRepostSuccess: (postId) => {    // ← E ISSO
+    repostedPostIds.delete(postId);
+  },
+  prependPost: () => {
+    if (activeFeedTab === 'para-voce') loadFeed();
+    else loadFollowingFeed();
+  },
+});
 
   // ── MÍDIA (lightbox via Midia.js) ─────────────────────────
   attachMediaListeners(container, signal);
@@ -1429,8 +1436,17 @@ async function loadProfileTabContent(tabType) {
     let postsToRender = [];
 
     if (tabType === 'posts') {
-      postsToRender = await getPostsByUser(profileToLoad.id);
-    } else if (tabType === 'curtidos') {
+  const [myPosts, myReposts] = await Promise.all([
+    getPostsByUser(profileToLoad.id),
+    getRepostedPosts(profileToLoad.id),
+  ]);
+
+  // Junta e ordena por data
+  postsToRender = [...myPosts, ...myReposts].sort(
+    (a, b) => new Date(b.created_at) - new Date(a.created_at)
+  );
+}
+else if (tabType === 'curtidos') {
       if (currentProfile && profileToLoad.id === currentProfile.id) {
         postsToRender = await getLikedPosts(profileToLoad.id);
       } else {

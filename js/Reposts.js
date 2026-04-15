@@ -117,15 +117,15 @@ export async function getRepostedPostIds(postIds) {
 // BUSCA O POST ORIGINAL PARA RENDERIZAR O QUOTE CARD
 // ============================================================
 export async function getOriginalPost(postId) {
-  const { data, error } = await supabase
-    .from('posts')
-    .select(`
-      id, content, created_at, likes_count, replies_count, reposts_count,
-      media_urls,
-     author:profiles(id, name, handle, avatar_url) // ✅ CORRIGIDO
-    `)
-    .eq('id', postId)
-    .single();
+ const { data, error } = await supabase
+  .from('posts')
+  .select(`
+    id, content, created_at, likes_count, replies_count, reposts_count,
+    media_urls,
+    author:profiles(id, name, handle, avatar_url)
+  `)
+  .eq('id', postId)
+  .single();
 
   if (error) throw error;
   return data;
@@ -402,6 +402,7 @@ function showRepostMenu(triggerBtn, postId, authorId, wasReposted, currentProfil
     try {
       await repostPost(postId);
       callbacks.showNotification?.('Post republicado! 🔁');
+       callbacks.onRepostSuccess?.(postId);
 
       if (authorId && authorId !== currentProfile.id) {
         callbacks.createNotification?.({
@@ -443,6 +444,7 @@ function showRepostMenu(triggerBtn, postId, authorId, wasReposted, currentProfil
     try {
       await undoRepost(postId);
       callbacks.showNotification?.('Repost desfeito.');
+        callbacks.onUndoRepostSuccess?.(postId);
     } catch (err) {
       // Reverte
       allBtns.forEach(b => {
@@ -490,7 +492,32 @@ function showRepostMenu(triggerBtn, postId, authorId, wasReposted, currentProfil
   });
 }
 
+export async function getRepostedPosts(userId) {
+  const { data, error } = await supabase
+    .from('reposts')
+    .select(`
+      id,
+      created_at,
+      original_post_id,
+      post:posts!original_post_id(
+        id, content, created_at, likes_count, replies_count, reposts_count,
+        media_urls, is_quote, quoted_post_id,
+        author:profiles(id, name, handle, avatar_url)
+      )
+    `)
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
 
+  if (error) throw error;
+
+  return (data || [])
+    .filter(r => r.post)
+    .map(r => ({
+      ...r.post,
+      reposted_by: userId,
+      reposted_by_name: 'você',
+    }));
+}
 
 // Utilitário interno
 function escapeHtml(text) {

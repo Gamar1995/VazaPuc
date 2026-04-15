@@ -356,3 +356,14 @@ CREATE POLICY "reposts_select" ON reposts FOR SELECT USING (true);
 CREATE POLICY "reposts_insert" ON reposts FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "reposts_delete" ON reposts FOR DELETE USING (auth.uid() = user_id);
 */
+-- Incrementa contador de reposts
+CREATE OR REPLACE FUNCTION increment_reposts_count(post_id uuid)
+RETURNS void AS $$
+  UPDATE posts SET reposts_count = COALESCE(reposts_count, 0) + 1 WHERE id = post_id;
+$$ LANGUAGE sql SECURITY DEFINER;
+
+-- Decrementa contador de reposts
+CREATE OR REPLACE FUNCTION decrement_reposts_count(post_id uuid)
+RETURNS void AS $$
+  UPDATE posts SET reposts_count = GREATEST(COALESCE(reposts_count, 0) - 1, 0) WHERE id = post_id;
+$$ LANGUAGE sql SECURITY DEFINER;
