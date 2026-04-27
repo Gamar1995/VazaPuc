@@ -3,6 +3,7 @@
 // ============================================================
 
 import { supabase, getCurrentUser } from './supabase.js';
+import { syncFollowCounts } from './seguindo.js';
 
 // ============================================================
 // BUSCAR PERFIS
@@ -93,9 +94,8 @@ export async function followUser(targetUserId) {
 
   if (error) throw error;
 
-  // Atualiza contadores (idealmente isso seria um trigger no banco)
-  await supabase.from('profiles').update({ following_count: supabase.rpc('increment') }).eq('id', user.id);
-  await supabase.from('profiles').update({ followers_count: supabase.rpc('increment') }).eq('id', targetUserId);
+  // Usa a função robusta para atualizar os contadores de ambos os perfis
+  await syncFollowCounts(user.id, targetUserId);
 }
 
 // Deixa de seguir um usuário
@@ -110,6 +110,9 @@ export async function unfollowUser(targetUserId) {
     .eq('following_id', targetUserId);
 
   if (error) throw error;
+
+  // Atualiza os contadores de ambos os perfis
+  await syncFollowCounts(user.id, targetUserId);
 }
 
 // Busca quem o usuário segue
