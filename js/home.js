@@ -1690,8 +1690,16 @@ function setupProfileModal() {
 }
 
 // ============================================================
-// MENSAGENS E CHAT
+// MENSAx'GENS E CHAT
 // ============================================================
+// ============================================================
+// SUBSTITUA estas funções no seu home.js
+// (loadMessagesPage, openChat, renderMessagesList, appendMessageToUI)
+// ============================================================
+
+// IDs de mensagens já renderizadas no chat atual (evita duplicatas realtime)
+const renderedMessageIds = new Set();
+
 async function loadMessagesPage() {
   const listEl = document.getElementById('conversationsList');
   if (!listEl) return;
@@ -1699,32 +1707,44 @@ async function loadMessagesPage() {
 
   try {
     const convs = await getConversations();
+
     if (convs.length === 0) {
-      listEl.innerHTML = '<p style="padding:20px;text-align:center;color:var(--text-secondary)">Sem conversas.</p>';
+      listEl.innerHTML = '<p style="padding:20px;text-align:center;color:var(--text-secondary)">Sem conversas ainda.</p>';
       return;
     }
 
     listEl.innerHTML = convs.map(c => {
       const avatar = c.otherUser?.avatar_url
         || `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.otherUser?.handle}`;
+
+      // Preview da última mensagem
+      const preview = c.lastMessage
+        ? `<p class="conversation-preview" style="
+            font-size:12px;color:var(--text-secondary);
+            white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;
+          ">${escapeHtml(c.lastMessage.content)}</p>`
+        : `<p class="conversation-preview" style="font-size:12px;color:var(--text-secondary);font-style:italic;">Sem mensagens</p>`;
+
       return `
-        <div class="conversation-item" data-id="${c.id}">
+        <div class="conversation-item" data-id="${c.id}" style="cursor:pointer;">
           <img src="${avatar}" alt="Avatar" class="conversation-avatar">
-          <div class="conversation-info">
+          <div class="conversation-info" style="flex:1;min-width:0;">
             <p class="conversation-name">${escapeHtml(c.otherUser?.name)}</p>
-            <p class="conversation-preview">@${escapeHtml(c.otherUser?.handle)}</p>
+            ${preview}
           </div>
         </div>
       `;
     }).join('');
 
+    // Salva convs em closure para uso no click
     document.querySelectorAll('.conversation-item').forEach(item => {
       item.addEventListener('click', () => {
         const convId = item.dataset.id;
-        const otherUser = convs.find(c => c.id === convId).otherUser;
-        openChat(convId, otherUser);
+        const conv = convs.find(c => c.id === convId);
+        if (conv) openChat(convId, conv.otherUser);
       });
     });
+
   } catch (err) {
     console.error(err);
     listEl.innerHTML = '<p style="color:var(--danger);padding:20px;">Erro ao carregar conversas.</p>';
@@ -1733,73 +1753,154 @@ async function loadMessagesPage() {
 
 async function openChat(convId, otherUser) {
   const chatArea = document.getElementById('chatArea');
+  if (!chatArea) return;
+
+  // Para subscription anterior
+  if (unsubscribeCurrentChat) {
+    unsubscribeCurrentChat();
+    unsubscribeCurrentChat = null;
+  }
+
+  // Limpa IDs de mensagens já renderizadas
+  renderedMessageIds.clear();
 
   chatArea.innerHTML = `
-    <div style="padding:16px;border-bottom:1px solid var(--border);background:var(--dark-bg-secondary);">
-      <strong style="font-size:16px;">${escapeHtml(otherUser.name)}</strong>
-      <span style="color:var(--text-secondary);font-size:13px;margin-left:8px;">@${escapeHtml(otherUser.handle)}</span>
+    <div style="
+      padding:16px;border-bottom:1px solid var(--border);
+      background:var(--dark-bg-secondary);
+      display:flex;align-items:center;gap:10px;
+    ">
+      <img src="${otherUser?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${otherUser?.handle}`}"
+           style="width:36px;height:36px;border-radius:50%;object-fit:cover;">
+      <div>
+        <strong style="font-size:15px;">${escapeHtml(otherUser?.name ?? '')}</strong>
+        <span style="color:var(--text-secondary);font-size:13px;margin-left:6px;">@${escapeHtml(otherUser?.handle ?? '')}</span>
+      </div>
     </div>
-    <div id="chatMessages" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;background:var(--dark-bg);">
+    <div id="chatMessages" style="
+      flex:1;overflow-y:auto;padding:16px;
+      display:flex;flex-direction:column;gap:10px;
+      background:var(--dark-bg);
+    ">
       <p style="text-align:center;color:var(--text-secondary);">Carregando histórico...</p>
     </div>
-    <div style="padding:16px;border-top:1px solid var(--border);display:flex;gap:10px;background:var(--dark-bg-secondary);">
+    <div style="
+      padding:16px;border-top:1px solid var(--border);
+      display:flex;gap:10px;background:var(--dark-bg-secondary);
+    ">
       <input type="text" id="msgInput" placeholder="Envie uma mensagem..."
-        style="flex:1;padding:12px 16px;border-radius:20px;border:1px solid var(--border);background:var(--dark-bg);color:var(--text-primary);outline:none;">
+        style="
+          flex:1;padding:12px 16px;border-radius:20px;
+          border:1px solid var(--border);
+          background:var(--dark-bg);color:var(--text-primary);
+          outline:none;font-size:14px;
+        ">
       <button id="sendMsgBtn" class="post-submit-btn" style="padding:0 24px;">Enviar</button>
     </div>
   `;
 
+  // 1. Carrega histórico PRIMEIRO e marca IDs como vistos
   try {
     const msgs = await getMessages(convId);
     renderMessagesList(msgs);
+    // Marca todos os IDs do histórico como já vistos
+    msgs.forEach(m => renderedMessageIds.add(m.id));
   } catch (err) {
-    document.getElementById('chatMessages').innerHTML = '<p style="color:var(--danger);">Erro ao carregar mensagens.</p>';
+    const chatMessages = document.getElementById('chatMessages');
+    if (chatMessages) chatMessages.innerHTML = '<p style="color:var(--danger);">Erro ao carregar mensagens.</p>';
   }
 
+  // 2. SÓ DEPOIS conecta o realtime — assim evita duplicata com o histórico
+  unsubscribeCurrentChat = subscribeToMessages(convId, (newMsg) => {
+    // Ignora se já foi renderizado via histórico ou realtime anterior
+    if (renderedMessageIds.has(newMsg.id)) return;
+    renderedMessageIds.add(newMsg.id);
+    appendMessageToUI(newMsg);
+
+    // Atualiza preview na lista de conversas
+    updateConversationPreview(convId, newMsg.content);
+  });
+
+  // 3. Configura envio de mensagem
   const input = document.getElementById('msgInput');
   const btn = document.getElementById('sendMsgBtn');
+
+  if (!input || !btn) return;
 
   const handleSend = async () => {
     const content = input.value.trim();
     if (!content) return;
     input.value = '';
-    await sendMessage(convId, content);
+    input.focus(); // mantém foco após enviar
+    try {
+      await sendMessage(convId, content);
+      // A mensagem virá pelo realtime automaticamente
+    } catch (err) {
+      console.error('Erro ao enviar mensagem:', err);
+      showNotification('Erro ao enviar mensagem.');
+    }
   };
 
   btn.addEventListener('click', handleSend);
-  input.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSend(); });
+  input.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') handleSend();
+  });
 
-  if (unsubscribeCurrentChat) unsubscribeCurrentChat();
-  unsubscribeCurrentChat = subscribeToMessages(convId, appendMessageToUI);
+  // Foca no input automaticamente
+  input.focus();
 }
 
 function renderMessagesList(msgs) {
   const container = document.getElementById('chatMessages');
+  if (!container) return;
+
   container.innerHTML = msgs.length === 0
-    ? '<p style="text-align:center;color:var(--text-secondary);">Diga olá! 👋</p>' : '';
-  msgs.forEach(appendMessageToUI);
+    ? '<p style="text-align:center;color:var(--text-secondary);">Diga olá! 👋</p>'
+    : '';
+
+  msgs.forEach(msg => appendMessageToUI(msg));
 }
 
 function appendMessageToUI(msg) {
   const container = document.getElementById('chatMessages');
   if (!container || !currentProfile) return;
 
-  const emptyText = container.querySelector('p');
-  if (emptyText?.textContent.includes('Diga olá')) emptyText.remove();
+  // Remove o placeholder "Diga olá"
+  const placeholder = container.querySelector('p');
+  if (placeholder?.textContent.includes('Diga olá') || placeholder?.textContent.includes('Carregando')) {
+    placeholder.remove();
+  }
 
   const isMe = msg.sender_id === currentProfile.id;
   const bubble = document.createElement('div');
   bubble.style.cssText = `
     max-width:75%;padding:10px 14px;border-radius:18px;
-    font-size:15px;line-height:1.4;word-break:break-word;
+    font-size:14px;line-height:1.5;word-break:break-word;
     ${isMe
       ? 'background:var(--primary);color:white;align-self:flex-end;border-bottom-right-radius:4px;'
-      : 'background:var(--dark-bg-tertiary);color:var(--text-primary);align-self:flex-start;border-bottom-left-radius:4px;'
+      : 'background:var(--dark-bg-secondary);color:var(--text-primary);align-self:flex-start;border-bottom-left-radius:4px;border:1px solid var(--border);'
     }
   `;
   bubble.textContent = msg.content;
   container.appendChild(bubble);
+
+  // Scroll automático para a última mensagem
   container.scrollTop = container.scrollHeight;
+}
+
+// Atualiza o preview da conversa na lista lateral sem recarregar tudo
+function updateConversationPreview(convId, content) {
+  const item = document.querySelector(`.conversation-item[data-id="${convId}"]`);
+  if (!item) return;
+
+  const preview = item.querySelector('.conversation-preview');
+  if (preview) preview.textContent = content;
+
+  // Move essa conversa para o topo da lista
+  const list = item.parentElement;
+  if (list && list.firstChild !== item) {
+    list.prepend(item);
+  }
 }
 
 // ============================================================
