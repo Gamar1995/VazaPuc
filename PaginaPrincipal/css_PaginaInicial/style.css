@@ -17,6 +17,47 @@
     --shadow: 0 8px 32px rgba(0, 0, 0, 0.4); /* Sombra levemente mais forte para dar profundidade aos cards */
 }
 
+/* ===== SISTEMA DE TEMAS ===== */
+/* Transição suave ao trocar de tema */
+* {
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* 1. TEMA AZUL ESCURO (Oceano/Tech) */
+[data-theme="azul"] {
+    --primary: #1f5aa3;         
+    --primary-dark: #143e75;    
+    --secondary: #5b92d4;       
+    --dark-bg: #070a16;         
+    --dark-bg-secondary: #0d1326; 
+    --dark-bg-tertiary: #151e38;  
+    --border: #1a274a;          
+}
+
+/* 2. TEMA PRETO/CINZA (Dark Mode Minimalista) */
+[data-theme="cinza"] {
+    --primary: #888888;         
+    --primary-dark: #555555;    
+    --secondary: #b3b3b3;       
+    --dark-bg: #0a0a0a;         
+    --dark-bg-secondary: #141414; 
+    --dark-bg-tertiary: #1f1f1f;  
+    --border: #2a2a2a;          
+    --text-primary: #ffffff;
+    --text-secondary: #a0a0a0;
+}
+
+/* 3. TEMA AMARELO ESCURO (Ouro/Prestígio) */
+[data-theme="amarelo"] {
+    --primary: #b8860b;         
+    --primary-dark: #8b6508;    
+    --secondary: #d4af37;       
+    --dark-bg: #121008;         
+    --dark-bg-secondary: #1f1c0d; 
+    --dark-bg-tertiary: #2e2913;  
+    --border: #3d3618;          
+}
+
 /* ===== RESET & BASE ===== */
 * {
     margin: 0;

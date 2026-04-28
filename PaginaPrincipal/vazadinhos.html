@@ -2,6 +2,13 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
+  <script>
+    const tema = localStorage.getItem('vazaPucTheme');
+    if (tema && tema !== 'padrao') {
+      document.documentElement.setAttribute('data-theme', tema);
+    }
+  </script>
+  
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Vaza PUC</title>
   <link rel="stylesheet" href="css_PaginaInicial/style.css">
@@ -34,32 +41,39 @@
           <span class="nav-icon">◎</span>
           <span class="nav-label">Perfil</span>
         </a>
-         <a href="#notifications" class="notif-bell-wrapper" id="notifBellBtn">
-    <span class="notif-bell-icon">🔔</span>
-    <span class="nav-label">Notificações</span>
-    <span class="notif-badge" id="notifBadge">0</span>
-  </a>
+        
+        <a href="#" class="notif-bell-wrapper" id="btnAbrirTemas">
+          <span class="notif-bell-icon">🎨</span>
+          <span class="nav-label">Temas</span>
+        </a>
+
+        <a href="#notifications" class="notif-bell-wrapper" id="notifBellBtn">
+          <span class="notif-bell-icon">🔔</span>
+          <span class="nav-label">Notificações</span>
+          <span class="notif-badge" id="notifBadge">0</span>
+        </a>
       </nav>
 
       <button class="post-btn" id="postBtnSidebar">
         <span>Novo Post</span>
       </button>
- <!-- Painel dropdown -->
-  <div class="notif-panel" id="notifPanel">
-    <div class="notif-panel-backdrop" id="notifBackdrop"></div>
-    <div class="notif-panel-box">
-      <div class="notif-panel-header">
-        <h3>Notificações</h3>
-        <button class="notif-mark-all-btn" id="notifMarkAllBtn">Marcar todas como lidas</button>
-      </div>
-      <div class="notif-list" id="notifList">
-        <div class="notif-empty">
-          <span class="notif-empty-icon">🔔</span>
-          Carregando...
+
+      <div class="notif-panel" id="notifPanel">
+        <div class="notif-panel-backdrop" id="notifBackdrop"></div>
+        <div class="notif-panel-box">
+          <div class="notif-panel-header">
+            <h3>Notificações</h3>
+            <button class="notif-mark-all-btn" id="notifMarkAllBtn">Marcar todas como lidas</button>
+          </div>
+          <div class="notif-list" id="notifList">
+            <div class="notif-empty">
+              <span class="notif-empty-icon">🔔</span>
+              Carregando...
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-  </div>
+
       <div class="sidebar-footer" style="position: relative;">
         <div class="user-login-popup" id="userLoginPopup">
           <p>Faça login para interagir, curtir fofocas e ter o seu próprio perfil na PUC!</p>
@@ -73,7 +87,6 @@
           <div class="user-info">
             <p class="user-name">Seu Usuário</p>
             <p class="user-handle">@seu_handle</p>
-            <button id="btnLogout" style="background:none; border:none; color:red; cursor:pointer; font-size: 0.8rem; padding:0;">Sair</button>
           </div>
         </div>
       </div>
@@ -118,14 +131,6 @@
         </div>
       </div>
 
- <div class="page-container" id="premium-page">
-        <div style="padding: 40px; text-align: center;">
-          <h2 style="font-family: 'Syne', sans-serif; color: #ffd700; font-size: 2.2rem; margin-bottom: 10px;">Vaza PUC Elite</h2>
-          <p style="color: var(--text-secondary); margin-bottom: 30px;">Domine o campus com recursos exclusivos.</p>
-          <iframe src="../premium.html" style="width: 100%; height: 80vh; border: none; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);"></iframe>
-        </div>
-      </div>
-
       <div class="page-container" id="profile-page">
         <div class="profile-container">
           <div class="profile-header">
@@ -155,10 +160,8 @@
     </main>
 
     <aside class="right-sidebar" id="rightSidebar">
-      
       <div class="trending-widget" id="trendingWidget">
         <h3>Explore por blocos:</h3>
-        
         <div class="trends-list-wrapper">
           <div class="trends-list">
             <div class="trend-item"><div class="trend-label">Amarelo</div><div class="trend-title">#Bloco 01</div><div class="trend-count">500 posts recentes</div></div>
@@ -166,21 +169,15 @@
             <div class="trend-item"><div class="trend-label">Verde</div><div class="trend-title">#Bloco 03</div><div class="trend-count">278 posts recentes</div></div>
             <div class="trend-item"><div class="trend-label">Laranja</div><div class="trend-title">#Bloco 04</div><div class="trend-count">394 posts recentes</div></div>
             <div class="trend-item"><div class="trend-label">Vermelho</div><div class="trend-title">#Bloco 05</div><div class="trend-count">97 posts recentes</div></div>
-            <div class="trend-item"><div class="trend-label">Politécnica</div><div class="trend-title">#Bloco 06</div><div class="trend-count">67 posts recentes</div></div>
-            <div class="trend-item"><div class="trend-label">Politécnica</div><div class="trend-title">#Bloco 07</div><div class="trend-count">328 posts recentes</div></div>
-            <div class="trend-item"><div class="trend-label">Politécnica</div><div class="trend-title">#Bloco 08</div><div class="trend-count">124 posts recentes</div></div>
-            <div class="trend-item"><div class="trend-label">Politécnica</div><div class="trend-title">#Bloco 09</div><div class="trend-count">273 posts recentes</div></div>
-            <div class="trend-item"><div class="trend-label">Politécnica</div><div class="trend-title">#Bloco 10</div><div class="trend-count">211 posts recentes</div></div>
           </div>
           <div class="trends-fade"></div>
         </div>
-
         <button class="toggle-blocks-btn" id="toggleBlocksBtn" title="Expandir/Recolher">︾</button>
       </div>
-<div class="official-notices-widget">
+
+      <div class="official-notices-widget">
         <h3>📌 Avisos Oficiais</h3>
         <div class="notices-list">
-          
           <div class="notice-item">
             <div class="notice-icon">🏛️</div>
             <div class="notice-content">
@@ -188,32 +185,32 @@
               <div class="notice-desc">Fique atento: as avaliações P1 começam no dia 15/04.</div>
             </div>
           </div>
-          
-          <div class="notice-item">
-            <div class="notice-icon">🎉</div>
-            <div class="notice-content">
-              <div class="notice-title">Calourada 2026</div>
-              <div class="notice-desc">Garanta seu ingresso para a festa oficial dos calouros.</div>
-            </div>
-          </div>
-          
-          <div class="notice-item">
-            <div class="notice-icon">⚠️</div>
-            <div class="notice-content">
-              <div class="notice-title">Manutenção do Sistema</div>
-              <div class="notice-desc">O portal do aluno ficará offline neste domingo de madrugada.</div>
-            </div>
-          </div>
-
         </div>
       </div>
-      <div class="suggestions-widget">
-        <h3>Quem Seguir</h3>
-        <div class="suggestions-list" id="suggestionsList"></div>
-      </div>
-
     </aside>
-  </div> <div class="modal" id="postModal">
+  </div>
+
+  <div class="modal" id="modalTemas">
+    <div class="modal-content" style="max-width: 400px; text-align: center;">
+      <div class="modal-header">
+        <h3>Personalizar Tema</h3>
+        <button class="modal-close" id="closeModalTemas">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 14px;">
+          Escolha a cor principal do seu Vaza PUC:
+        </p>
+        <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
+          <div class="theme-option" data-theme="padrao" style="background: #a31f4b; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; box-shadow: 0 4px 10px rgba(0,0,0,0.3);"></div>
+          <div class="theme-option" data-theme="azul" style="background: #1f5aa3; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; box-shadow: 0 4px 10px rgba(0,0,0,0.3);"></div>
+          <div class="theme-option" data-theme="cinza" style="background: #888888; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; box-shadow: 0 4px 10px rgba(0,0,0,0.3);"></div>
+          <div class="theme-option" data-theme="amarelo" style="background: #b8860b; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; box-shadow: 0 4px 10px rgba(0,0,0,0.3);"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="postModal">
     <div class="modal-content">
       <div class="modal-header">
         <h3>Compor Post</h3>
@@ -221,15 +218,6 @@
       </div>
       <div class="modal-body">
         <textarea id="modalPostInput" placeholder="O que está em sua mente?" rows="8"></textarea>
-        <div class="modal-toolbar">
-          <div class="toolbar-icons" style="position: relative;">
-            <button class="toolbar-btn">🖼</button>
-            <button class="toolbar-btn">🎬</button>
-            <button class="toolbar-btn" id="btnEmojiModal">😊</button>
-            <button class="toolbar-btn">📌</button>
-            <div class="emoji-picker" id="pickerEmojiModal"></div>
-          </div>
-        </div>
       </div>
       <div class="modal-footer">
         <button class="btn-secondary" id="cancelPostBtn">Cancelar</button>
@@ -237,6 +225,7 @@
       </div>
     </div>
   </div>
+
   <div class="modal" id="editPostModal">
     <div class="modal-content">
       <div class="modal-header">
@@ -260,15 +249,10 @@
         <button class="modal-close" id="closeEditModal">✕</button>
       </div>
       <div class="modal-body">
-       <div class="form-group">
-  <label>Foto de perfil</label>
-  
-  <img id="avatarPreview" 
-       src="https://api.dicebear.com/7.x/avataaars/svg?seed=preview"
-       style="width:60px;height:60px;border-radius:50%;display:block;margin-bottom:10px;">
-
-  <input type="file" id="avatarInput" accept="image/*">
-</div>
+        <div class="form-group">
+          <label>Foto de perfil</label>
+          <input type="file" id="avatarInput" accept="image/*">
+        </div>
         <div class="form-group">
           <label>Nome</label>
           <input type="text" id="editName" placeholder="Seu nome completo">

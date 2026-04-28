@@ -1,6 +1,14 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <head>
+  <meta charset="UTF-8" />
+  <script>
+    const tema = localStorage.getItem('vazaPucTheme');
+    if (tema && tema !== 'padrao') document.documentElement.setAttribute('data-theme', tema);
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  ...
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Vaza PUC — Criar Conta</title>

@@ -689,3 +689,17 @@ footer {
   box-shadow: 0 6px 20px rgba(255, 215, 0, 0.5);
   color: #1a0008 !important; /* Força manter a cor escura no hover */
 }
+
+/* Sincronização de Temas para a Landing Page / Login */
+[data-theme="azul"] {
+  --bg: #070a16; --surface: #0d1326; --border: #1a274a;
+  --accent: #1f5aa3; --accent2: #5b92d4;
+}
+[data-theme="cinza"] {
+  --bg: #0a0a0a; --surface: #141414; --border: #2a2a2a;
+  --accent: #888888; --accent2: #b3b3b3;
+}
+[data-theme="amarelo"] {
+  --bg: #121008; --surface: #1f1c0d; --border: #3d3618;
+  --accent: #b8860b; --accent2: #d4af37;
+}

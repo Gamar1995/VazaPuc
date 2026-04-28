@@ -13,7 +13,6 @@ import {
   attachMediaListeners,
   renderProfileMediaGrid,
   getMediaPostsByUser,
-  
 } from './Midia.js';
 
 import {
@@ -24,7 +23,7 @@ import {
   createQuoteCardHTML,
   getOriginalPost,
   attachRepostListeners,
-    getRepostedPosts,   
+  getRepostedPosts,   
 } from './Reposts.js';
 
 import {
@@ -93,6 +92,7 @@ try {
   setupEditPostModal();
   setupTrendingWidget();
   setupMediaInModal();
+  setupTemas(); // <--- CHAMADA DA FUNÇÃO AQUI
 } catch (erroInterface) {
   console.error('Erro ao carregar interface:', erroInterface);
 }
@@ -131,7 +131,6 @@ function setupMediaInModal() {
     },
   });
 
-  // Redireciona o botão de imagem existente no modal para o file picker
   const toolbar = document.querySelector('#postModal .toolbar-icons');
   if (toolbar) {
     const imgBtn = toolbar.querySelector('.toolbar-btn');
@@ -453,7 +452,6 @@ const optionsMenu = isMyPost ? `
     </div>
   ` : '';
 
-  // Indicador de repost (se for um repost de alguém)
   const repostIndicator = post.reposted_by ? `
     <div style="
       display:flex;align-items:center;gap:6px;
@@ -464,12 +462,10 @@ const optionsMenu = isMyPost ? `
     </div>
   ` : '';
 
-  // Grade de mídia
   const mediaGrid = post.media_urls?.length
     ? createMediaGridHTML(post.media_urls, post.id)
     : '';
 
-  // Quote card (post citado)
   const quoteCard = post.is_quote && post.quoted_post_id
     ? `<div class="quote-placeholder" data-quoted-id="${post.quoted_post_id}">
         <div style="
@@ -555,7 +551,6 @@ function attachPostEventListeners(container = document, context = 'feed') {
     ? feedListenersController.signal
     : profileListenersController.signal;
 
-  // ── GAVETA (post-options-btn) ─────────────────────────────
   container.querySelectorAll('.post-options-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -592,21 +587,20 @@ function attachPostEventListeners(container = document, context = 'feed') {
         b.addEventListener('mouseleave', () => b.style.background = 'none');
       });
 
-menu.querySelector('.fm-edit')?.addEventListener('click', async (ev) => {
+      menu.querySelector('.fm-edit')?.addEventListener('click', async (ev) => {
         ev.stopPropagation();
         menu.remove();
         
         const postCard = document.querySelector(`.post-card[data-post-id="${postId}"]`);
         const currentText = postCard?.querySelector('.post-text')?.textContent ?? '';
         
-        // Em vez de usar prompt(), usamos o novo modal animado
         const editModal = document.getElementById('editPostModal');
         const editInput = document.getElementById('editPostInput');
         
         if (editModal && editInput) {
           currentEditingPostId = postId;
           editInput.value = currentText;
-          editModal.classList.add('active'); // O CSS ativa a animação `@keyframes modalIn`
+          editModal.classList.add('active'); 
           editInput.focus();
         }
       });
@@ -631,7 +625,6 @@ menu.querySelector('.fm-edit')?.addEventListener('click', async (ev) => {
     document.getElementById('floatingPostMenu')?.remove();
   }, { signal });
 
-  // ── LIKE ─────────────────────────────────────────────────
   container.querySelectorAll('.like-action').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
@@ -694,28 +687,25 @@ menu.querySelector('.fm-edit')?.addEventListener('click', async (ev) => {
     }, { signal });
   });
 
-  // ── REPOST (via Reposts.js) ───────────────────────────────
   attachRepostListeners(container, currentProfile, signal, {
-  showNotification,
-  createNotification: async (payload) => {
-    try { await createNotification(payload); } catch (_) {}
-  },
-  onRepostSuccess: (postId) => {        // ← ADICIONE ISSO
-    repostedPostIds.add(postId);
-  },
-  onUndoRepostSuccess: (postId) => {    // ← E ISSO
-    repostedPostIds.delete(postId);
-  },
-  prependPost: () => {
-    if (activeFeedTab === 'para-voce') loadFeed();
-    else loadFollowingFeed();
-  },
-});
+    showNotification,
+    createNotification: async (payload) => {
+      try { await createNotification(payload); } catch (_) {}
+    },
+    onRepostSuccess: (postId) => {        
+      repostedPostIds.add(postId);
+    },
+    onUndoRepostSuccess: (postId) => {    
+      repostedPostIds.delete(postId);
+    },
+    prependPost: () => {
+      if (activeFeedTab === 'para-voce') loadFeed();
+      else loadFollowingFeed();
+    },
+  });
 
-  // ── MÍDIA (lightbox via Midia.js) ─────────────────────────
   attachMediaListeners(container, signal);
 
-  // ── QUOTE CARD (clicável) ─────────────────────────────────
   container.querySelectorAll('.quote-card').forEach(card => {
     card.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -724,7 +714,6 @@ menu.querySelector('.fm-edit')?.addEventListener('click', async (ev) => {
     }, { signal });
   });
 
-  // ── AVATAR / NOME (ir para perfil) ───────────────────────
   container.querySelectorAll('.clickable-avatar').forEach(el => {
     el.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -737,7 +726,6 @@ menu.querySelector('.fm-edit')?.addEventListener('click', async (ev) => {
     }, { signal });
   });
 
-  // ── CLIQUE NO CARD (abre modal de detalhe) ────────────────
   container.querySelectorAll('.post-card').forEach(card => {
     card.addEventListener('click', (e) => {
       if (
@@ -754,7 +742,6 @@ menu.querySelector('.fm-edit')?.addEventListener('click', async (ev) => {
     }, { signal });
   });
 
-  // ── ABRIR SEÇÃO DE COMENTÁRIOS ───────────────────────────
   container.querySelectorAll('.reply-action').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
@@ -775,7 +762,6 @@ menu.querySelector('.fm-edit')?.addEventListener('click', async (ev) => {
     }, { signal });
   });
 
-  // ── ENVIAR COMENTÁRIO ────────────────────────────────────
   container.querySelectorAll('.reply-submit-btn').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
@@ -940,7 +926,6 @@ async function openPostDetailModal(postId) {
     const isLiked = likedPostIds.has(postId);
     const authorId = postCard?.dataset?.authorId ?? likeBtn?.dataset?.authorId ?? '';
 
-    // Mídia do post
     const mediaGrid = postCard?.querySelector('.media-grid');
     const mediaHtml = mediaGrid ? mediaGrid.outerHTML : '';
 
@@ -1053,7 +1038,6 @@ async function openPostDetailModal(postId) {
       </div>
     `;
 
-    // Lightbox para mídia dentro do modal
     if (mediaHtml) {
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = mediaHtml;
@@ -1305,7 +1289,6 @@ function prependPost(post) {
   container.prepend(postEl);
   attachPostEventListeners(container, 'feed');
 
-  // Carrega quote card se necessário
   if (post.is_quote && post.quoted_post_id) {
     loadQuoteCards(container);
   }
@@ -1426,7 +1409,6 @@ async function loadProfileTabContent(tabType) {
   contentEl.innerHTML = '<p style="padding:20px;text-align:center;">Carregando...</p>';
 
   try {
-    // ABA MÍDIA — usa grade de fotos do Midia.js
     if (tabType === 'midia') {
       const mediaPosts = await getMediaPostsByUser(profileToLoad.id);
       renderProfileMediaGrid(mediaPosts, contentEl);
@@ -1441,7 +1423,6 @@ async function loadProfileTabContent(tabType) {
     getRepostedPosts(profileToLoad.id),
   ]);
 
-  // Junta e ordena por data
   postsToRender = [...myPosts, ...myReposts].sort(
     (a, b) => new Date(b.created_at) - new Date(a.created_at)
   );
@@ -1465,7 +1446,6 @@ else if (tabType === 'curtidos') {
       return;
     }
     
-
     renderPosts(postsToRender, contentEl, 'profile');
     await loadQuoteCards(contentEl);
   } catch (err) {
@@ -1690,14 +1670,8 @@ function setupProfileModal() {
 }
 
 // ============================================================
-// MENSAx'GENS E CHAT
+// MENSAGENS E CHAT
 // ============================================================
-// ============================================================
-// SUBSTITUA estas funções no seu home.js
-// (loadMessagesPage, openChat, renderMessagesList, appendMessageToUI)
-// ============================================================
-
-// IDs de mensagens já renderizadas no chat atual (evita duplicatas realtime)
 const renderedMessageIds = new Set();
 
 async function loadMessagesPage() {
@@ -1717,7 +1691,6 @@ async function loadMessagesPage() {
       const avatar = c.otherUser?.avatar_url
         || `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.otherUser?.handle}`;
 
-      // Preview da última mensagem
       const preview = c.lastMessage
         ? `<p class="conversation-preview" style="
             font-size:12px;color:var(--text-secondary);
@@ -1736,7 +1709,6 @@ async function loadMessagesPage() {
       `;
     }).join('');
 
-    // Salva convs em closure para uso no click
     document.querySelectorAll('.conversation-item').forEach(item => {
       item.addEventListener('click', () => {
         const convId = item.dataset.id;
@@ -1755,13 +1727,11 @@ async function openChat(convId, otherUser) {
   const chatArea = document.getElementById('chatArea');
   if (!chatArea) return;
 
-  // Para subscription anterior
   if (unsubscribeCurrentChat) {
     unsubscribeCurrentChat();
     unsubscribeCurrentChat = null;
   }
 
-  // Limpa IDs de mensagens já renderizadas
   renderedMessageIds.clear();
 
   chatArea.innerHTML = `
@@ -1799,29 +1769,22 @@ async function openChat(convId, otherUser) {
     </div>
   `;
 
-  // 1. Carrega histórico PRIMEIRO e marca IDs como vistos
   try {
     const msgs = await getMessages(convId);
     renderMessagesList(msgs);
-    // Marca todos os IDs do histórico como já vistos
     msgs.forEach(m => renderedMessageIds.add(m.id));
   } catch (err) {
     const chatMessages = document.getElementById('chatMessages');
     if (chatMessages) chatMessages.innerHTML = '<p style="color:var(--danger);">Erro ao carregar mensagens.</p>';
   }
 
-  // 2. SÓ DEPOIS conecta o realtime — assim evita duplicata com o histórico
   unsubscribeCurrentChat = subscribeToMessages(convId, (newMsg) => {
-    // Ignora se já foi renderizado via histórico ou realtime anterior
     if (renderedMessageIds.has(newMsg.id)) return;
     renderedMessageIds.add(newMsg.id);
     appendMessageToUI(newMsg);
-
-    // Atualiza preview na lista de conversas
     updateConversationPreview(convId, newMsg.content);
   });
 
-  // 3. Configura envio de mensagem
   const input = document.getElementById('msgInput');
   const btn = document.getElementById('sendMsgBtn');
 
@@ -1831,10 +1794,9 @@ async function openChat(convId, otherUser) {
     const content = input.value.trim();
     if (!content) return;
     input.value = '';
-    input.focus(); // mantém foco após enviar
+    input.focus(); 
     try {
       await sendMessage(convId, content);
-      // A mensagem virá pelo realtime automaticamente
     } catch (err) {
       console.error('Erro ao enviar mensagem:', err);
       showNotification('Erro ao enviar mensagem.');
@@ -1846,7 +1808,6 @@ async function openChat(convId, otherUser) {
     if (e.key === 'Enter') handleSend();
   });
 
-  // Foca no input automaticamente
   input.focus();
 }
 
@@ -1865,7 +1826,6 @@ function appendMessageToUI(msg) {
   const container = document.getElementById('chatMessages');
   if (!container || !currentProfile) return;
 
-  // Remove o placeholder "Diga olá"
   const placeholder = container.querySelector('p');
   if (placeholder?.textContent.includes('Diga olá') || placeholder?.textContent.includes('Carregando')) {
     placeholder.remove();
@@ -1884,11 +1844,9 @@ function appendMessageToUI(msg) {
   bubble.textContent = msg.content;
   container.appendChild(bubble);
 
-  // Scroll automático para a última mensagem
   container.scrollTop = container.scrollHeight;
 }
 
-// Atualiza o preview da conversa na lista lateral sem recarregar tudo
 function updateConversationPreview(convId, content) {
   const item = document.querySelector(`.conversation-item[data-id="${convId}"]`);
   if (!item) return;
@@ -1896,7 +1854,6 @@ function updateConversationPreview(convId, content) {
   const preview = item.querySelector('.conversation-preview');
   if (preview) preview.textContent = content;
 
-  // Move essa conversa para o topo da lista
   const list = item.parentElement;
   if (list && list.firstChild !== item) {
     list.prepend(item);
@@ -2071,7 +2028,6 @@ async function loadExplorePage() {
 
     const renderMiniPost = (post, contextLabel, contextIcon) => {
       const avatar = post.author?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author?.handle}`;
-      // Thumbnail de mídia para o card do explorar
       const mediaThumb = post.media_urls?.length
         ? `<img src="${post.media_urls[0]}" style="width:100%;height:100px;object-fit:cover;border-radius:8px;margin-top:6px;">`
         : '';
@@ -2252,7 +2208,6 @@ function setupEditPostModal() {
       const { updatePost } = await import('./posts.js');
       await updatePost(currentEditingPostId, newContent);
 
-      // Atualiza o texto na interface diretamente
       const postCard = document.querySelector(`.post-card[data-post-id="${currentEditingPostId}"]`);
       if (postCard) {
         const textEl = postCard.querySelector('.post-text');
@@ -2269,4 +2224,52 @@ function setupEditPostModal() {
       saveBtn.textContent = 'Salvar Alterações';
     }
   });
+}
+
+// ============================================================
+// SISTEMA DE TEMAS DE CORES
+// ============================================================
+function setupTemas() {
+  const btnAbrirTemas = document.getElementById('btnAbrirTemas');
+  const modalTemas = document.getElementById('modalTemas');
+  const closeModalTemas = document.getElementById('closeModalTemas');
+  const themeOptions = document.querySelectorAll('.theme-option');
+
+  if (!btnAbrirTemas || !modalTemas) return;
+
+  btnAbrirTemas.addEventListener('click', (e) => {
+    e.preventDefault();
+    modalTemas.classList.add('active');
+  });
+
+  closeModalTemas?.addEventListener('click', () => {
+    modalTemas.classList.remove('active');
+  });
+
+  modalTemas.addEventListener('click', (e) => {
+    if (e.target === modalTemas) modalTemas.classList.remove('active');
+  });
+
+  themeOptions.forEach(opcao => {
+    opcao.addEventListener('click', () => {
+      const temaEscolhido = opcao.getAttribute('data-theme');
+      
+      if (temaEscolhido === 'padrao') {
+        document.documentElement.removeAttribute('data-theme');
+      } else {
+        document.documentElement.setAttribute('data-theme', temaEscolhido);
+      }
+      
+      localStorage.setItem('vazaPucTheme', temaEscolhido);
+
+      themeOptions.forEach(opt => opt.style.borderColor = 'transparent');
+      opcao.style.borderColor = '#ffffff';
+    });
+  });
+
+  const temaAtual = localStorage.getItem('vazaPucTheme') || 'padrao';
+  const opcaoAtiva = document.querySelector(`.theme-option[data-theme="${temaAtual}"]`);
+  if (opcaoAtiva) {
+    opcaoAtiva.style.borderColor = '#ffffff';
+  }
 }
