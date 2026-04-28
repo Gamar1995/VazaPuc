@@ -1698,18 +1698,45 @@ function setupProfileModal() {
 // ============================================================
 
 // IDs de mensagens já renderizadas no chat atual (evita duplicatas realtime)
+// ============================================================
+// SUBSTITUA estas funções no home.js
+// ============================================================
+
+// IDs de mensagens já renderizadas no chat atual (evita duplicatas realtime)
 const renderedMessageIds = new Set();
+let currentOpenConvId = null;
 
 async function loadMessagesPage() {
   const listEl = document.getElementById('conversationsList');
+  const chatArea = document.getElementById('chatArea');
   if (!listEl) return;
+
+  // 1. Reseta o chat para o estado vazio (estilo Instagram)
+  if (chatArea) {
+    chatArea.innerHTML = `
+      <div style="
+        display:flex;flex-direction:column;align-items:center;justify-content:center;
+        height:100%;gap:12px;color:var(--text-secondary);
+      ">
+        <div style="font-size:48px;opacity:0.4;">💬</div>
+        <p style="font-size:16px;font-weight:600;color:var(--text-primary);margin:0;">Suas mensagens</p>
+        <p style="font-size:14px;margin:0;">Selecione uma conversa para começar</p>
+      </div>
+    `;
+  }
+
   listEl.innerHTML = '<p style="padding:20px;text-align:center;">Carregando...</p>';
 
   try {
     const convs = await getConversations();
 
     if (convs.length === 0) {
-      listEl.innerHTML = '<p style="padding:20px;text-align:center;color:var(--text-secondary)">Sem conversas ainda.</p>';
+      listEl.innerHTML = `
+        <div style="padding:40px 20px;text-align:center;color:var(--text-secondary);">
+          <div style="font-size:40px;margin-bottom:12px;">✉️</div>
+          <p style="font-size:15px;font-weight:600;color:var(--text-primary);margin:0 0 6px;">Nenhuma conversa ainda</p>
+          <p style="font-size:13px;margin:0;">Visite o perfil de alguém e clique em "✉ Mensagem"</p>
+        </div>`;
       return;
     }
 
@@ -1717,28 +1744,30 @@ async function loadMessagesPage() {
       const avatar = c.otherUser?.avatar_url
         || `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.otherUser?.handle}`;
 
-      // Preview da última mensagem
       const preview = c.lastMessage
         ? `<p class="conversation-preview" style="
             font-size:12px;color:var(--text-secondary);
-            white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;
+            white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;margin:2px 0 0;
           ">${escapeHtml(c.lastMessage.content)}</p>`
-        : `<p class="conversation-preview" style="font-size:12px;color:var(--text-secondary);font-style:italic;">Sem mensagens</p>`;
+        : `<p class="conversation-preview" style="font-size:12px;color:var(--text-secondary);font-style:italic;margin:2px 0 0;">Sem mensagens</p>`;
 
       return `
         <div class="conversation-item" data-id="${c.id}" style="cursor:pointer;">
           <img src="${avatar}" alt="Avatar" class="conversation-avatar">
           <div class="conversation-info" style="flex:1;min-width:0;">
-            <p class="conversation-name">${escapeHtml(c.otherUser?.name)}</p>
+            <p class="conversation-name" style="margin:0;">${escapeHtml(c.otherUser?.name ?? '')}</p>
             ${preview}
           </div>
         </div>
       `;
     }).join('');
 
-    // Salva convs em closure para uso no click
     document.querySelectorAll('.conversation-item').forEach(item => {
       item.addEventListener('click', () => {
+        // Destaca conversa selecionada
+        document.querySelectorAll('.conversation-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+
         const convId = item.dataset.id;
         const conv = convs.find(c => c.id === convId);
         if (conv) openChat(convId, conv.otherUser);
@@ -1761,14 +1790,16 @@ async function openChat(convId, otherUser) {
     unsubscribeCurrentChat = null;
   }
 
-  // Limpa IDs de mensagens já renderizadas
+  // Limpa IDs de mensagens já renderizadas e marca conversa atual
   renderedMessageIds.clear();
+  currentOpenConvId = convId;
 
   chatArea.innerHTML = `
     <div style="
       padding:16px;border-bottom:1px solid var(--border);
       background:var(--dark-bg-secondary);
       display:flex;align-items:center;gap:10px;
+      flex-shrink:0;
     ">
       <img src="${otherUser?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${otherUser?.handle}`}"
            style="width:36px;height:36px;border-radius:50%;object-fit:cover;">
@@ -1782,11 +1813,12 @@ async function openChat(convId, otherUser) {
       display:flex;flex-direction:column;gap:10px;
       background:var(--dark-bg);
     ">
-      <p style="text-align:center;color:var(--text-secondary);">Carregando histórico...</p>
+      <p id="chatLoadingMsg" style="text-align:center;color:var(--text-secondary);">Carregando histórico...</p>
     </div>
     <div style="
       padding:16px;border-top:1px solid var(--border);
       display:flex;gap:10px;background:var(--dark-bg-secondary);
+      flex-shrink:0;
     ">
       <input type="text" id="msgInput" placeholder="Envie uma mensagem..."
         style="
@@ -1799,42 +1831,68 @@ async function openChat(convId, otherUser) {
     </div>
   `;
 
-  // 1. Carrega histórico PRIMEIRO e marca IDs como vistos
-  try {
-    const msgs = await getMessages(convId);
-    renderMessagesList(msgs);
-    // Marca todos os IDs do histórico como já vistos
-    msgs.forEach(m => renderedMessageIds.add(m.id));
-  } catch (err) {
-    const chatMessages = document.getElementById('chatMessages');
-    if (chatMessages) chatMessages.innerHTML = '<p style="color:var(--danger);">Erro ao carregar mensagens.</p>';
-  }
+  // 1. Conecta o realtime ANTES de carregar o histórico
+  //    Assim não perdemos mensagens que chegam durante o carregamento
+  const seenIds = new Set();
 
-  // 2. SÓ DEPOIS conecta o realtime — assim evita duplicata com o histórico
   unsubscribeCurrentChat = subscribeToMessages(convId, (newMsg) => {
-    // Ignora se já foi renderizado via histórico ou realtime anterior
+    // Ignora se já foi renderizado (histórico ou duplicata realtime)
     if (renderedMessageIds.has(newMsg.id)) return;
     renderedMessageIds.add(newMsg.id);
+    seenIds.add(newMsg.id);
     appendMessageToUI(newMsg);
-
-    // Atualiza preview na lista de conversas
     updateConversationPreview(convId, newMsg.content);
   });
 
-  // 3. Configura envio de mensagem
+  // 2. Carrega histórico e marca IDs como já vistos
+  try {
+    const msgs = await getMessages(convId);
+
+    // Remove o placeholder de carregamento
+    document.getElementById('chatLoadingMsg')?.remove();
+
+    const container = document.getElementById('chatMessages');
+    if (container && msgs.length === 0) {
+      container.innerHTML = '<p style="text-align:center;color:var(--text-secondary);padding:20px;">Diga olá! 👋</p>';
+    } else {
+      msgs.forEach(msg => {
+        renderedMessageIds.add(msg.id);
+        appendMessageToUI(msg);
+      });
+    }
+  } catch (err) {
+    const chatMessages = document.getElementById('chatMessages');
+    if (chatMessages) chatMessages.innerHTML = '<p style="color:var(--danger);text-align:center;padding:20px;">Erro ao carregar mensagens.</p>';
+  }
+
+  // 3. Configura envio
   const input = document.getElementById('msgInput');
   const btn = document.getElementById('sendMsgBtn');
-
   if (!input || !btn) return;
 
   const handleSend = async () => {
     const content = input.value.trim();
-    if (!content) return;
+    if (!content || !currentProfile) return;
+
     input.value = '';
-    input.focus(); // mantém foco após enviar
+    input.focus();
+
+    // Otimismo: mostra a mensagem imediatamente na UI antes do servidor confirmar
+    const optimisticMsg = {
+      id: `optimistic-${Date.now()}`,
+      content,
+      sender_id: currentProfile.id,
+      conversation_id: convId,
+      created_at: new Date().toISOString(),
+    };
+    renderedMessageIds.add(optimisticMsg.id);
+    appendMessageToUI(optimisticMsg);
+    updateConversationPreview(convId, content);
+
     try {
-      await sendMessage(convId, content);
-      // A mensagem virá pelo realtime automaticamente
+      const saved = await sendMessage(convId, content);
+      // Marca o ID real como visto para o realtime não duplicar
+      renderedMessageIds.add(saved.id);
     } catch (err) {
       console.error('Erro ao enviar mensagem:', err);
       showNotification('Erro ao enviar mensagem.');
@@ -1843,10 +1901,9 @@ async function openChat(convId, otherUser) {
 
   btn.addEventListener('click', handleSend);
   input.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') handleSend();
+    if (e.key === 'Enter' && !e.shiftKey) handleSend();
   });
 
-  // Foca no input automaticamente
   input.focus();
 }
 
@@ -1854,9 +1911,10 @@ function renderMessagesList(msgs) {
   const container = document.getElementById('chatMessages');
   if (!container) return;
 
-  container.innerHTML = msgs.length === 0
-    ? '<p style="text-align:center;color:var(--text-secondary);">Diga olá! 👋</p>'
-    : '';
+  if (msgs.length === 0) {
+    container.innerHTML = '<p style="text-align:center;color:var(--text-secondary);padding:20px;">Diga olá! 👋</p>';
+    return;
+  }
 
   msgs.forEach(msg => appendMessageToUI(msg));
 }
@@ -1865,9 +1923,9 @@ function appendMessageToUI(msg) {
   const container = document.getElementById('chatMessages');
   if (!container || !currentProfile) return;
 
-  // Remove o placeholder "Diga olá"
+  // Remove placeholder
   const placeholder = container.querySelector('p');
-  if (placeholder?.textContent.includes('Diga olá') || placeholder?.textContent.includes('Carregando')) {
+  if (placeholder && (placeholder.textContent.includes('Diga olá') || placeholder.textContent.includes('Carregando'))) {
     placeholder.remove();
   }
 
@@ -1876,19 +1934,18 @@ function appendMessageToUI(msg) {
   bubble.style.cssText = `
     max-width:75%;padding:10px 14px;border-radius:18px;
     font-size:14px;line-height:1.5;word-break:break-word;
+    animation:slideDown 0.2s ease;
+    align-self:${isMe ? 'flex-end' : 'flex-start'};
     ${isMe
-      ? 'background:var(--primary);color:white;align-self:flex-end;border-bottom-right-radius:4px;'
-      : 'background:var(--dark-bg-secondary);color:var(--text-primary);align-self:flex-start;border-bottom-left-radius:4px;border:1px solid var(--border);'
+      ? 'background:var(--primary);color:white;border-bottom-right-radius:4px;'
+      : 'background:var(--dark-bg-secondary);color:var(--text-primary);border-bottom-left-radius:4px;border:1px solid var(--border);'
     }
   `;
   bubble.textContent = msg.content;
   container.appendChild(bubble);
-
-  // Scroll automático para a última mensagem
   container.scrollTop = container.scrollHeight;
 }
 
-// Atualiza o preview da conversa na lista lateral sem recarregar tudo
 function updateConversationPreview(convId, content) {
   const item = document.querySelector(`.conversation-item[data-id="${convId}"]`);
   if (!item) return;
@@ -1896,7 +1953,6 @@ function updateConversationPreview(convId, content) {
   const preview = item.querySelector('.conversation-preview');
   if (preview) preview.textContent = content;
 
-  // Move essa conversa para o topo da lista
   const list = item.parentElement;
   if (list && list.firstChild !== item) {
     list.prepend(item);

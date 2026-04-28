@@ -109,9 +109,6 @@ export async function sendMessage(conversationId, content) {
 // REALTIME — escuta novas mensagens com deduplicação
 // ============================================================
 export function subscribeToMessages(conversationId, callback) {
-  // Guarda IDs já processados para evitar duplicatas
-  const seenIds = new Set();
-
   const channel = supabase
     .channel(`messages-conv-${conversationId}-${Date.now()}`)
     .on(
@@ -122,21 +119,10 @@ export function subscribeToMessages(conversationId, callback) {
         table: 'messages',
         filter: `conversation_id=eq.${conversationId}`
       },
-      async (payload) => {
-        const msgId = payload.new.id;
-
-        // Ignora se já foi mostrado (evita duplicata com getMessages inicial)
-        if (seenIds.has(msgId)) return;
-        seenIds.add(msgId);
-
-        // Busca dados do remetente
-        const { data: sender } = await supabase
-          .from('profiles')
-          .select('id, name, handle, avatar_url')
-          .eq('id', payload.new.sender_id)
-          .single();
-
-        callback({ ...payload.new, sender });
+      (payload) => {
+        // Entrega imediatamente, sem fetch extra
+        // O home.js sabe quem é o currentProfile e filtra pelo sender_id
+        callback(payload.new);
       }
     )
     .subscribe((status) => {
@@ -144,9 +130,8 @@ export function subscribeToMessages(conversationId, callback) {
         console.log('[messages] Realtime conectado para conversa', conversationId);
       }
     });
-
+ 
   return () => {
-    console.log('[messages] Desconectando realtime da conversa', conversationId);
     supabase.removeChannel(channel);
   };
 }
