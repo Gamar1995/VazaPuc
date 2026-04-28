@@ -1,12 +1,31 @@
 :root {
-  --bg: #1a0008;        /* quase preto vinho — fundo profundo */
-  --surface: #2d0016;   /* vinho escuro — cards e superfícies */
-  --border: #5c0028;    /* vinho médio — bordas sutis */
-  --accent: #e8325a;    /* vermelho rosado vibrante — botões e destaques */
-  --accent2: #ff8fa3;   /* rosa clarinho — labels e secundário */
-  --text: #f5e6ea;      /* creme rosado — texto principal, fácil leitura */
-  --muted: #b87a8a;     /* rosê apagado — textos secundários */
+  --bg: #1a0008;        
+  --surface: #2d0016;   
+  --border: #5c0028;    
+  --accent: #e8325a;    
+  --accent-rgb: 232, 50, 90;    
+  --accent2: #ff8fa3;   
+  --accent2-rgb: 255, 143, 163; 
+  --text: #f5e6ea;      
+  --muted: #b87a8a;     
   --radius: 12px;
+}
+
+/* Sincronização de Temas */
+[data-theme="azul"] {
+  --bg: #070a16; --surface: #0d1326; --border: #1a274a;
+  --accent: #1f5aa3; --accent-rgb: 31, 90, 163;
+  --accent2: #5b92d4; --accent2-rgb: 91, 146, 212;
+}
+[data-theme="cinza"] {
+  --bg: #0a0a0a; --surface: #141414; --border: #2a2a2a;
+  --accent: #888888; --accent-rgb: 136, 136, 136;
+  --accent2: #b3b3b3; --accent2-rgb: 179, 179, 179;
+}
+[data-theme="amarelo"] {
+  --bg: #121008; --surface: #1f1c0d; --border: #3d3618;
+  --accent: #b8860b; --accent-rgb: 184, 134, 11;
+  --accent2: #d4af37; --accent2-rgb: 212, 175, 55;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -42,24 +61,28 @@ nav {
   justify-content: space-between;
   padding: 1.2rem 2.5rem;
   backdrop-filter: blur(8px);
-  border-bottom: 2px wheat var(--border);
-  background: rgba(26, 0, 8, 0.75); /* Ajustado para o fundo vinho */
+  border-bottom: 2px solid var(--border);
+  background: var(--bg);
 }
 
+/* ===== FIX ABSOLUTO PARA A LOGO E TÍTULOS ===== */
 .logo {
-  font-family: 'Syne', sans-serif;
-  font-weight: 800;
-  font-size: 1.2rem;
-  letter-spacing: -0.03em;
-  color: var(--accent);
-  text-decoration: none;
+  font-family: 'Syne', sans-serif !important;
+  font-weight: 800 !important;
+  font-size: 1.2rem !important;
+  letter-spacing: -0.03em !important;
+  color: var(--accent, #e8325a) !important;
+  -webkit-text-fill-color: var(--accent, #e8325a) !important; /* FORÇA A COR NO WEBKIT */
+  text-decoration: none !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: inline-block !important;
 }
 
 .nav-links { 
   display: flex; 
   gap: 2rem; 
   list-style: none; 
-  /* Centralização absoluta na tela */
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
@@ -81,16 +104,15 @@ nav {
   align-items: center; 
   text-align: center; 
   justify-content: center;
-  padding: 8rem 1rem 4rem 1rem; /* Adicionado padding-top para não sumir atrás do Nav */
+  padding: 8rem 1rem 4rem 1rem;
   position: relative;
 }
 
-/* Ajuste dos brilhos para a paleta Vinho/Rosa */
 .hero-glow {
   position: absolute;
   width: 600px; height: 600px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(232, 50, 90, 0.15) 0%, transparent 70%); /* var(--accent) */
+  background: radial-gradient(circle, rgba(var(--accent-rgb), 0.15) 0%, transparent 70%);
   top: -100px; right: -100px;
   pointer-events: none;
   animation: pulse 6s ease-in-out infinite;
@@ -99,7 +121,7 @@ nav {
   position: absolute;
   width: 400px; height: 400px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 143, 163, 0.1) 0%, transparent 70%); /* var(--accent2) */
+  background: radial-gradient(circle, rgba(var(--accent2-rgb), 0.1) 0%, transparent 70%);
   bottom: 50px; left: -80px;
   pointer-events: none;
   animation: pulse 8s ease-in-out infinite reverse;
@@ -132,9 +154,13 @@ h1 {
 }
 
 h1 em {
-  font-style: normal;
-  color: transparent;
-  -webkit-text-stroke: 1.5px var(--accent);
+  font-style: normal !important;
+  color: var(--accent, #e8325a) !important;
+  -webkit-text-fill-color: var(--accent, #e8325a) !important; /* FORÇA A COR NO WEBKIT */
+  -webkit-text-stroke: 0 !important; /* REMOVE O CONTORNO INVISÍVEL */
+  text-shadow: 0 4px 24px rgba(var(--accent-rgb, 232, 50, 90), 0.4) !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 .hero-sub {
@@ -176,25 +202,19 @@ h1 em {
 
 .btn-primary {
   background: var(--accent);
-  color: #fff; /* Ajustado para leitura no rosa */
+  color: #fff;
   font-weight: 700;
-  box-shadow: 0 0 24px rgba(232, 50, 90, 0.3); /* Sombra rosa */
+  box-shadow: 0 0 24px rgba(var(--accent-rgb), 0.3);
 }
-.btn-primary:hover { box-shadow: 0 0 36px rgba(232, 50, 90, 0.5); }
+.btn-primary:hover { box-shadow: 0 0 36px rgba(var(--accent-rgb), 0.5); }
 
 .btn-ghost {
   background: transparent;
   color: var(--text);
   border: 1px solid var(--border);
 }
-.btn-ghost:hover { border-color: var(--accent); } /* Hover atualizado */
+.btn-ghost:hover { border-color: var(--accent); } 
 
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(24px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* ── BOTÃO NAV (Custom Btn) ── */
 .ms-lg-3 { margin-left: 1rem; }
 
 .custom-btn {
@@ -204,7 +224,7 @@ h1 em {
   padding: 10px 18px;
   font-size: 14px;
   font-weight: 600;
-  color: var(--accent); /* Rosa em vez de azul */
+  color: var(--accent); 
   background-color: transparent;
   border-radius: 8px;
   text-decoration: none;
@@ -219,7 +239,7 @@ h1 em {
   background-color: var(--accent);
   color: #ffffff;
   transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(232, 50, 90, 0.3);
+  box-shadow: 0 4px 10px rgba(var(--accent-rgb), 0.3);
 }
 
 /* ── FEATURES ── */
@@ -256,22 +276,21 @@ h1 em {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 2rem;
-  transition: border-color .3s, transform .3s;
+  transition: border-color .3s, transform .3s, box-shadow .3s;
 }
 .card:hover {
   border-color: var(--accent);
   transform: translateY(-4px);
-  box-shadow: 0 10px 20px rgba(92, 0, 40, 0.3);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5); 
 }
 
-/* Ícones dos Cards harmonizados */
 .card-icon {
   width: 44px; height: 44px;
   border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
   font-size: 1.2rem;
   margin-bottom: 1.2rem;
-  background: rgba(232, 50, 90, 0.15); /* Fundo rosa translúcido */
+  background: rgba(var(--accent-rgb), 0.15); 
 }
 
 .card h3 {
@@ -288,9 +307,9 @@ h1 em {
     padding: 100px 10%;
     display: flex;
     align-items: center;
-    justify-content: space-between; /* Mudou de flex-start para space-between */
-    gap: 40px; /* Adiciona respiro entre o texto e as bolhas */
-    flex-wrap: wrap; /* Garante que em telas menores eles fiquem um abaixo do outro */
+    justify-content: space-between; 
+    gap: 40px; 
+    flex-wrap: wrap; 
     color: var(--text);
     position: relative;
     z-index: 1;
@@ -298,19 +317,21 @@ h1 em {
 
 .sobre-conteudo {
     max-width: 800px; 
-    text-align: left; /* Alinha os textos à esquerda */
-    margin: 0; /* Remove a margem automática que estava centralizando a caixa */
+    text-align: left; 
+    margin: 0; 
 }
 
 .titulo-destaque {
-    font-family: 'Syne', sans-serif;
-    font-size: clamp(2.5rem, 4vw, 3.5rem);
-    font-weight: 800;
-    margin-bottom: 25px;
-    background: linear-gradient(135deg, var(--accent2) 0%, var(--accent) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    letter-spacing: -1px;
+    font-family: 'Syne', sans-serif !important;
+    font-size: clamp(2.5rem, 4vw, 3.5rem) !important;
+    font-weight: 800 !important;
+    margin-bottom: 25px !important;
+    color: var(--accent, #e8325a) !important;
+    background: linear-gradient(135deg, var(--accent2, #ff8fa3) 0%, var(--accent, #e8325a) 100%) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    letter-spacing: -1px !important;
+    visibility: visible !important;
 }
 
 .sobre-conteudo p {
@@ -344,14 +365,14 @@ h1 em {
     text-transform: uppercase;
     letter-spacing: 1px;
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    box-shadow: 0 8px 25px rgba(232, 50, 90, 0.25);
+    box-shadow: 0 8px 25px rgba(var(--accent-rgb), 0.25);
     border: none;
     cursor: pointer;
 }
 
 .btn-cta:hover {
     transform: translateY(-5px) scale(1.02);
-    box-shadow: 0 12px 35px rgba(232, 50, 90, 0.5);
+    box-shadow: 0 12px 35px rgba(var(--accent-rgb), 0.5);
     background: linear-gradient(45deg, var(--accent), var(--border));
 }
 
@@ -373,12 +394,12 @@ h1 em {
 }
 
 .cascade-item {
-  width: calc(100% / 6 - 15px); /* Isso é o que deixa eles estreitos! */
+  width: calc(100% / 6 - 15px); 
   border-radius: var(--radius);
   background-color: var(--surface);
   overflow: hidden;
   position: relative;
-  box-shadow: 0 5px 15px rgba(92, 0, 40, 0.2);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
   transition: transform 0.3s ease;
   transform: translateY(-100vh);
   animation: fallCascade 1.5s ease-out forwards;
@@ -386,7 +407,7 @@ h1 em {
 
 .cascade-item:hover {
   transform: scale(1.05) translateY(0) !important;
-  box-shadow: 0 10px 25px rgba(232, 50, 90, 0.4);
+  box-shadow: 0 10px 25px rgba(var(--accent-rgb), 0.4);
 }
 
 @keyframes fallCascade {
@@ -395,7 +416,6 @@ h1 em {
   100% { transform: translateY(0); opacity: 1; }
 }
 
-/* Atrasos na animação para o efeito dominó */
 .cascade-item:nth-child(1) { animation-delay: 0.1s; }
 .cascade-item:nth-child(2) { animation-delay: 0.3s; }
 .cascade-item:nth-child(3) { animation-delay: 0.2s; }
@@ -414,8 +434,6 @@ h1 em {
   }
 }
 
-/* ── FORMATO DE POST VERTICAL INTERNO ── */
-
 .cascade-item.post-vertical {
   display: flex;
   flex-direction: column;
@@ -425,7 +443,7 @@ h1 em {
 .post-internal-border {
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 1.5rem 1rem; /* Padding interno adaptado para o formato estreito */
+  padding: 1.5rem 1rem; 
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -476,7 +494,7 @@ h1 em {
 }
 
 .post-content-vertical {
-  flex-grow: 1; /* Preenche o espaço vazio para empurrar os ícones de like para o rodapé */
+  flex-grow: 1; 
 }
 
 .post-content-vertical p {
@@ -485,13 +503,9 @@ h1 em {
   line-height: 1.5;
   font-weight: 300;
   text-align: left;
-  
-  /* 1. Impede que palavras longas vazem para fora da caixa */
   word-wrap: break-word;
   overflow-wrap: break-word;
   word-break: break-word;
-  
-  /* 2. Limita dinamicamente a 8 linhas para manter o design padrão (adiciona "..." no final se passar disso) */
   display: -webkit-box;
   -webkit-line-clamp: 8;
   -webkit-box-orient: vertical;
@@ -558,18 +572,16 @@ footer {
     justify-content: center;
 }
 
-/* O wrapper faz a animação constante de flutuar */
 .bolha-wrapper {
     position: absolute;
 }
 
-/* O interior faz a reação ao mouse (Física) */
 .bolha-emoji {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(232, 50, 90, 0.08); /* Fundo vinho/rosa bem transparente */
-    border: 1px solid rgba(255, 143, 163, 0.3); /* Borda brilhante sutil */
+    background: rgba(var(--accent-rgb), 0.08); 
+    border: 1px solid rgba(var(--accent2-rgb), 0.3);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     border-radius: 50%;
@@ -579,7 +591,6 @@ footer {
     user-select: none;
 }
 
-/* Tamanhos, posições e tempos de flutuação de cada bolha */
 .bolha-1 { top: 5%; left: 10%; font-size: 50px; width: 100px; height: 100px; animation: floatUp 4s ease-in-out infinite alternate; z-index: 2; }
 .bolha-2 { top: 40%; left: -5%; font-size: 70px; width: 130px; height: 130px; animation: floatDown 5s ease-in-out infinite alternate; z-index: 3; }
 .bolha-3 { bottom: 10%; left: 20%; font-size: 60px; width: 110px; height: 110px; animation: floatSide 6s ease-in-out infinite alternate; z-index: 1; }
@@ -587,7 +598,6 @@ footer {
 .bolha-5 { bottom: 20%; right: 5%; font-size: 40px; width: 80px; height: 80px; animation: floatUp 5.5s ease-in-out infinite alternate; z-index: 2; }
 .bolha-6 { top: 45%; right: 35%; font-size: 55px; width: 100px; height: 100px; animation: floatSide 4.2s ease-in-out infinite alternate; z-index: 5; }
 
-/* As animações de ficar subindo e descendo sozinhas */
 @keyframes floatUp { 0% { transform: translateY(0px) rotate(0deg); } 100% { transform: translateY(-25px) rotate(10deg); } }
 @keyframes floatDown { 0% { transform: translateY(0px) rotate(0deg); } 100% { transform: translateY(25px) rotate(-10deg); } }
 @keyframes floatSide { 0% { transform: translateX(0px) rotate(0deg); } 100% { transform: translateX(20px) rotate(15deg); } }
@@ -609,7 +619,6 @@ footer {
   flex-direction: column;
 }
 
-/* Empurra o botão sempre para o final (baixo) do card */
 .card-standard p, .card-premium p {
   flex-grow: 1; 
   margin-bottom: 1.5rem;
@@ -621,26 +630,24 @@ footer {
   text-align: center;
 }
 
-/* --- Card Padrão (Vinho) --- */
 .card-standard {
   border: 1px solid var(--border);
 }
 .card-standard .standard-icon {
-  background: rgba(232, 50, 90, 0.15); /* Fundo rosa/vinho translúcido */
+  background: rgba(var(--accent-rgb), 0.15); 
 }
 .card-standard:hover {
   border-color: var(--accent);
-  box-shadow: 0 10px 25px rgba(232, 50, 90, 0.2);
+  box-shadow: 0 10px 25px rgba(var(--accent-rgb), 0.2);
 }
 
-/* --- Card Premium (Aura Dourada) --- */
 .card-premium {
   position: relative;
   border: 1px solid #ffd700;
   box-shadow: 0 0 18px rgba(255, 215, 0, 0.15), inset 0 0 20px rgba(255, 215, 0, 0.05);
   background: linear-gradient(145deg, var(--surface) 50%, rgba(60, 45, 0, 0.7) 100%);
   overflow: hidden;
-  transform: scale(1.03); /* Levemente maior para chamar atenção */
+  transform: scale(1.03); 
   z-index: 2;
 }
 
@@ -687,19 +694,5 @@ footer {
 .btn-premium-action:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(255, 215, 0, 0.5);
-  color: #1a0008 !important; /* Força manter a cor escura no hover */
-}
-
-/* Sincronização de Temas para a Landing Page / Login */
-[data-theme="azul"] {
-  --bg: #070a16; --surface: #0d1326; --border: #1a274a;
-  --accent: #1f5aa3; --accent2: #5b92d4;
-}
-[data-theme="cinza"] {
-  --bg: #0a0a0a; --surface: #141414; --border: #2a2a2a;
-  --accent: #888888; --accent2: #b3b3b3;
-}
-[data-theme="amarelo"] {
-  --bg: #121008; --surface: #1f1c0d; --border: #3d3618;
-  --accent: #b8860b; --accent2: #d4af37;
+  color: #1a0008 !important;
 }

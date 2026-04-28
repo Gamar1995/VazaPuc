@@ -1,15 +1,17 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <head>
   <meta charset="UTF-8" />
+  
   <script>
     const tema = localStorage.getItem('vazaPucTheme');
-    if (tema && tema !== 'padrao') document.documentElement.setAttribute('data-theme', tema);
+    if (tema && tema !== 'padrao') {
+      document.documentElement.setAttribute('data-theme', tema);
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+    }
   </script>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  ...
-  <meta charset="UTF-8" />
+  
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Vazadinhos da PUC</title>
   
@@ -146,10 +148,8 @@
       container.innerHTML = '<p style="text-align: center; width: 100%; color: #bba3ab; padding: 20px;">Analisando os maiores babados... 🔥</p>';
 
       try {
-        // Busca os últimos 20 posts gerais do banco de dados
         const posts = await getPosts(20);
         
-        // Filtra os 6 com mais curtidas (Em Alta)
         const topPosts = [...posts]
           .sort((a, b) => (b.likes_count || 0) - (a.likes_count || 0))
           .slice(0, 6);
@@ -159,7 +159,6 @@
           return;
         }
 
-        // Função básica para evitar quebra de HTML no texto
         const escapeHtml = (text) => {
             if (!text) return '';
             const div = document.createElement('div');
@@ -167,7 +166,6 @@
             return div.innerHTML;
         };
 
-        // Renderiza os cartões dinamicamente
         container.innerHTML = topPosts.map(post => {
           const avatar = post.author?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author?.handle}`;
           
@@ -198,7 +196,6 @@
       }
     }
 
-    // Executa a busca assim que a página carregar
     document.addEventListener('DOMContentLoaded', carregarPostsDestaque);
   </script>
 

@@ -1,5 +1,5 @@
 // ============================================================
-// js/home.js — Versão COMPLETA (Mídia, Reposts, Temas e Chat Otimizado)
+// js/home.js — Versão COMPLETA (Feed, Chat, Mídia e Configurações)
 // ============================================================
 
 import { supabase, getCurrentUser } from './supabase.js';
@@ -92,7 +92,7 @@ try {
   setupEditPostModal();
   setupTrendingWidget();
   setupMediaInModal();
-  setupTemas(); // Tema integrado!
+  setupTemas(); // Inicializa as Configurações e Temas
 } catch (erroInterface) {
   console.error('Erro ao carregar interface:', erroInterface);
 }
@@ -452,7 +452,6 @@ const optionsMenu = isMyPost ? `
     </div>
   ` : '';
 
-  // Indicador de repost (se for um repost de alguém)
   const repostIndicator = post.reposted_by ? `
     <div style="
       display:flex;align-items:center;gap:6px;
@@ -463,12 +462,10 @@ const optionsMenu = isMyPost ? `
     </div>
   ` : '';
 
-  // Grade de mídia
   const mediaGrid = post.media_urls?.length
     ? createMediaGridHTML(post.media_urls, post.id)
     : '';
 
-  // Quote card (post citado)
   const quoteCard = post.is_quote && post.quoted_post_id
     ? `<div class="quote-placeholder" data-quoted-id="${post.quoted_post_id}">
         <div style="
@@ -2307,46 +2304,55 @@ function setupEditPostModal() {
 }
 
 // ============================================================
-// SISTEMA DE TEMAS DE CORES
+// CONFIGURAÇÕES GERAIS E SISTEMA DE TEMAS
 // ============================================================
 function setupTemas() {
-  const btnAbrirTemas = document.getElementById('btnAbrirTemas');
-  const modalTemas = document.getElementById('modalTemas');
-  const closeModalTemas = document.getElementById('closeModalTemas');
+  // 1. Lógica das Abas Internas da Página de Configurações
+  const settingsTabs = document.querySelectorAll('.settings-tab-btn');
+  const settingsSections = document.querySelectorAll('.settings-section');
+
+  settingsTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      // Remove o status de "ativo" de todas as abas e painéis
+      settingsTabs.forEach(t => t.classList.remove('active'));
+      settingsSections.forEach(s => s.classList.remove('active'));
+
+      // Adiciona o "ativo" no botão que o usuário acabou de clicar
+      tab.classList.add('active');
+      
+      // Descobre qual painel deve ser aberto e o ativa
+      const targetId = `settings-${tab.getAttribute('data-settings-tab')}`;
+      const targetSection = document.getElementById(targetId);
+      if (targetSection) {
+        targetSection.classList.add('active');
+      }
+    });
+  });
+
+  // 2. Lógica de Alteração do Tema de Cores
   const themeOptions = document.querySelectorAll('.theme-option');
-
-  if (!btnAbrirTemas || !modalTemas) return;
-
-  btnAbrirTemas.addEventListener('click', (e) => {
-    e.preventDefault();
-    modalTemas.classList.add('active');
-  });
-
-  closeModalTemas?.addEventListener('click', () => {
-    modalTemas.classList.remove('active');
-  });
-
-  modalTemas.addEventListener('click', (e) => {
-    if (e.target === modalTemas) modalTemas.classList.remove('active');
-  });
 
   themeOptions.forEach(opcao => {
     opcao.addEventListener('click', () => {
       const temaEscolhido = opcao.getAttribute('data-theme');
       
+      // Aplica a cor globalmente no site
       if (temaEscolhido === 'padrao') {
         document.documentElement.removeAttribute('data-theme');
       } else {
         document.documentElement.setAttribute('data-theme', temaEscolhido);
       }
       
+      // Salva no navegador para o usuário não perder o tema
       localStorage.setItem('vazaPucTheme', temaEscolhido);
 
+      // Dá feedback visual na bolinha de cor (borda branca)
       themeOptions.forEach(opt => opt.style.borderColor = 'transparent');
       opcao.style.borderColor = '#ffffff';
     });
   });
 
+  // 3. Mantém a bolinha correta marcada quando recarrega a página
   const temaAtual = localStorage.getItem('vazaPucTheme') || 'padrao';
   const opcaoAtiva = document.querySelector(`.theme-option[data-theme="${temaAtual}"]`);
   if (opcaoAtiva) {

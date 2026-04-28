@@ -42,9 +42,9 @@
           <span class="nav-label">Perfil</span>
         </a>
         
-        <a href="#" class="notif-bell-wrapper" id="btnAbrirTemas">
-          <span class="notif-bell-icon">🎨</span>
-          <span class="nav-label">Temas</span>
+        <a href="#settings" class="nav-item" data-page="settings">
+          <span class="nav-icon">⚙️</span>
+          <span class="nav-label">Configurações</span>
         </a>
 
         <a href="#notifications" class="notif-bell-wrapper" id="notifBellBtn">
@@ -157,6 +157,62 @@
           <div class="profile-content" id="profileContent"></div>
         </div>
       </div>
+
+      <div class="page-container" id="settings-page">
+        <header class="feed-header">
+          <h2>Configurações</h2>
+        </header>
+        
+        <div class="settings-container">
+          <div class="settings-sidebar">
+            <button class="settings-tab-btn active" data-settings-tab="conta">👤 Sua Conta</button>
+            <button class="settings-tab-btn" data-settings-tab="privacidade">🔒 Privacidade</button>
+            <button class="settings-tab-btn" data-settings-tab="notificacoes">🔔 Notificações</button>
+            <button class="settings-tab-btn" data-settings-tab="customizacao">🎨 Customização</button>
+          </div>
+
+          <div class="settings-content">
+            
+            <div class="settings-section active" id="settings-conta">
+              <h3>Informações da Conta</h3>
+              <p style="color: var(--text-secondary); margin-bottom: 20px;">Gerencie os detalhes da sua conta do Vaza PUC.</p>
+              <div class="settings-placeholder-box">
+                <p>Em breve: Alterar e-mail, senha e exclusão de conta.</p>
+              </div>
+            </div>
+
+            <div class="settings-section" id="settings-privacidade">
+              <h3>Privacidade e Segurança</h3>
+              <p style="color: var(--text-secondary); margin-bottom: 20px;">Controle quem pode ver seus posts e interagir com você.</p>
+              <div class="settings-placeholder-box">
+                <p>Em breve: Conta privada, bloqueios e silenciados.</p>
+              </div>
+            </div>
+
+            <div class="settings-section" id="settings-notificacoes">
+              <h3>Notificações Push</h3>
+              <p style="color: var(--text-secondary); margin-bottom: 20px;">Escolha o que você quer receber no seu feed e e-mail.</p>
+              <div class="settings-placeholder-box">
+                <p>Em breve: Alertas de menções, curtidas e novos seguidores.</p>
+              </div>
+            </div>
+
+            <div class="settings-section" id="settings-customizacao">
+              <h3>Aparência e Tema</h3>
+              <p style="color: var(--text-secondary); margin-bottom: 24px;">Personalize a cor de destaque do site. Isso será salvo apenas no seu dispositivo.</p>
+              
+              <div class="theme-options-grid">
+                <div class="theme-option" data-theme="padrao" style="background: #a31f4b;"></div>
+                <div class="theme-option" data-theme="azul" style="background: #1f5aa3;"></div>
+                <div class="theme-option" data-theme="cinza" style="background: #888888;"></div>
+                <div class="theme-option" data-theme="amarelo" style="background: #b8860b;"></div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
     </main>
 
     <aside class="right-sidebar" id="rightSidebar">
@@ -188,26 +244,6 @@
         </div>
       </div>
     </aside>
-  </div>
-
-  <div class="modal" id="modalTemas">
-    <div class="modal-content" style="max-width: 400px; text-align: center;">
-      <div class="modal-header">
-        <h3>Personalizar Tema</h3>
-        <button class="modal-close" id="closeModalTemas">✕</button>
-      </div>
-      <div class="modal-body">
-        <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 14px;">
-          Escolha a cor principal do seu Vaza PUC:
-        </p>
-        <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
-          <div class="theme-option" data-theme="padrao" style="background: #a31f4b; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; box-shadow: 0 4px 10px rgba(0,0,0,0.3);"></div>
-          <div class="theme-option" data-theme="azul" style="background: #1f5aa3; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; box-shadow: 0 4px 10px rgba(0,0,0,0.3);"></div>
-          <div class="theme-option" data-theme="cinza" style="background: #888888; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; box-shadow: 0 4px 10px rgba(0,0,0,0.3);"></div>
-          <div class="theme-option" data-theme="amarelo" style="background: #b8860b; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; box-shadow: 0 4px 10px rgba(0,0,0,0.3);"></div>
-        </div>
-      </div>
-    </div>
   </div>
 
   <div class="modal" id="postModal">
