@@ -1,5 +1,5 @@
 // ============================================================
-// js/home.js — Versão COMPLETA com Mídia e Reposts integrados
+// js/home.js — Versão COMPLETA (Mídia, Reposts, Temas e Chat Otimizado)
 // ============================================================
 
 import { supabase, getCurrentUser } from './supabase.js';
@@ -92,7 +92,7 @@ try {
   setupEditPostModal();
   setupTrendingWidget();
   setupMediaInModal();
-  setupTemas(); // <--- CHAMADA DA FUNÇÃO AQUI
+  setupTemas(); // Tema integrado!
 } catch (erroInterface) {
   console.error('Erro ao carregar interface:', erroInterface);
 }
@@ -452,6 +452,7 @@ const optionsMenu = isMyPost ? `
     </div>
   ` : '';
 
+  // Indicador de repost (se for um repost de alguém)
   const repostIndicator = post.reposted_by ? `
     <div style="
       display:flex;align-items:center;gap:6px;
@@ -462,10 +463,12 @@ const optionsMenu = isMyPost ? `
     </div>
   ` : '';
 
+  // Grade de mídia
   const mediaGrid = post.media_urls?.length
     ? createMediaGridHTML(post.media_urls, post.id)
     : '';
 
+  // Quote card (post citado)
   const quoteCard = post.is_quote && post.quoted_post_id
     ? `<div class="quote-placeholder" data-quoted-id="${post.quoted_post_id}">
         <div style="
@@ -551,6 +554,7 @@ function attachPostEventListeners(container = document, context = 'feed') {
     ? feedListenersController.signal
     : profileListenersController.signal;
 
+  // ── GAVETA (post-options-btn) ─────────────────────────────
   container.querySelectorAll('.post-options-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -600,7 +604,7 @@ function attachPostEventListeners(container = document, context = 'feed') {
         if (editModal && editInput) {
           currentEditingPostId = postId;
           editInput.value = currentText;
-          editModal.classList.add('active'); 
+          editModal.classList.add('active');
           editInput.focus();
         }
       });
@@ -625,6 +629,7 @@ function attachPostEventListeners(container = document, context = 'feed') {
     document.getElementById('floatingPostMenu')?.remove();
   }, { signal });
 
+  // ── LIKE ─────────────────────────────────────────────────
   container.querySelectorAll('.like-action').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
@@ -687,15 +692,16 @@ function attachPostEventListeners(container = document, context = 'feed') {
     }, { signal });
   });
 
+  // ── REPOST (via Reposts.js) ───────────────────────────────
   attachRepostListeners(container, currentProfile, signal, {
     showNotification,
     createNotification: async (payload) => {
       try { await createNotification(payload); } catch (_) {}
     },
-    onRepostSuccess: (postId) => {        
+    onRepostSuccess: (postId) => {
       repostedPostIds.add(postId);
     },
-    onUndoRepostSuccess: (postId) => {    
+    onUndoRepostSuccess: (postId) => {
       repostedPostIds.delete(postId);
     },
     prependPost: () => {
@@ -704,8 +710,10 @@ function attachPostEventListeners(container = document, context = 'feed') {
     },
   });
 
+  // ── MÍDIA (lightbox via Midia.js) ─────────────────────────
   attachMediaListeners(container, signal);
 
+  // ── QUOTE CARD (clicável) ─────────────────────────────────
   container.querySelectorAll('.quote-card').forEach(card => {
     card.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -714,6 +722,7 @@ function attachPostEventListeners(container = document, context = 'feed') {
     }, { signal });
   });
 
+  // ── AVATAR / NOME (ir para perfil) ───────────────────────
   container.querySelectorAll('.clickable-avatar').forEach(el => {
     el.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -726,6 +735,7 @@ function attachPostEventListeners(container = document, context = 'feed') {
     }, { signal });
   });
 
+  // ── CLIQUE NO CARD (abre modal de detalhe) ────────────────
   container.querySelectorAll('.post-card').forEach(card => {
     card.addEventListener('click', (e) => {
       if (
@@ -742,6 +752,7 @@ function attachPostEventListeners(container = document, context = 'feed') {
     }, { signal });
   });
 
+  // ── ABRIR SEÇÃO DE COMENTÁRIOS ───────────────────────────
   container.querySelectorAll('.reply-action').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
@@ -762,6 +773,7 @@ function attachPostEventListeners(container = document, context = 'feed') {
     }, { signal });
   });
 
+  // ── ENVIAR COMENTÁRIO ────────────────────────────────────
   container.querySelectorAll('.reply-submit-btn').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
@@ -926,6 +938,7 @@ async function openPostDetailModal(postId) {
     const isLiked = likedPostIds.has(postId);
     const authorId = postCard?.dataset?.authorId ?? likeBtn?.dataset?.authorId ?? '';
 
+    // Mídia do post
     const mediaGrid = postCard?.querySelector('.media-grid');
     const mediaHtml = mediaGrid ? mediaGrid.outerHTML : '';
 
@@ -1038,6 +1051,7 @@ async function openPostDetailModal(postId) {
       </div>
     `;
 
+    // Lightbox para mídia dentro do modal
     if (mediaHtml) {
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = mediaHtml;
@@ -1289,6 +1303,7 @@ function prependPost(post) {
   container.prepend(postEl);
   attachPostEventListeners(container, 'feed');
 
+  // Carrega quote card se necessário
   if (post.is_quote && post.quoted_post_id) {
     loadQuoteCards(container);
   }
@@ -1409,6 +1424,7 @@ async function loadProfileTabContent(tabType) {
   contentEl.innerHTML = '<p style="padding:20px;text-align:center;">Carregando...</p>';
 
   try {
+    // ABA MÍDIA
     if (tabType === 'midia') {
       const mediaPosts = await getMediaPostsByUser(profileToLoad.id);
       renderProfileMediaGrid(mediaPosts, contentEl);
@@ -1418,16 +1434,16 @@ async function loadProfileTabContent(tabType) {
     let postsToRender = [];
 
     if (tabType === 'posts') {
-  const [myPosts, myReposts] = await Promise.all([
-    getPostsByUser(profileToLoad.id),
-    getRepostedPosts(profileToLoad.id),
-  ]);
-
-  postsToRender = [...myPosts, ...myReposts].sort(
-    (a, b) => new Date(b.created_at) - new Date(a.created_at)
-  );
-}
-else if (tabType === 'curtidos') {
+      const [myPosts, myReposts] = await Promise.all([
+        getPostsByUser(profileToLoad.id),
+        getRepostedPosts(profileToLoad.id),
+      ]);
+      // Junta e ordena por data
+      postsToRender = [...myPosts, ...myReposts].sort(
+        (a, b) => new Date(b.created_at) - new Date(a.created_at)
+      );
+    }
+    else if (tabType === 'curtidos') {
       if (currentProfile && profileToLoad.id === currentProfile.id) {
         postsToRender = await getLikedPosts(profileToLoad.id);
       } else {
@@ -1445,7 +1461,7 @@ else if (tabType === 'curtidos') {
       contentEl.innerHTML = `<p style="padding:40px;text-align:center;color:var(--text-secondary)">${msg}</p>`;
       return;
     }
-    
+
     renderPosts(postsToRender, contentEl, 'profile');
     await loadQuoteCards(contentEl);
   } catch (err) {
@@ -1670,20 +1686,43 @@ function setupProfileModal() {
 }
 
 // ============================================================
-// MENSAGENS E CHAT
+// MENSAGENS E CHAT (Com Atualização Otimista)
 // ============================================================
+
 const renderedMessageIds = new Set();
+let currentOpenConvId = null;
 
 async function loadMessagesPage() {
   const listEl = document.getElementById('conversationsList');
+  const chatArea = document.getElementById('chatArea');
   if (!listEl) return;
+
+  // 1. Reseta o chat para o estado vazio (estilo Instagram)
+  if (chatArea) {
+    chatArea.innerHTML = `
+      <div style="
+        display:flex;flex-direction:column;align-items:center;justify-content:center;
+        height:100%;gap:12px;color:var(--text-secondary);
+      ">
+        <div style="font-size:48px;opacity:0.4;">💬</div>
+        <p style="font-size:16px;font-weight:600;color:var(--text-primary);margin:0;">Suas mensagens</p>
+        <p style="font-size:14px;margin:0;">Selecione uma conversa para começar</p>
+      </div>
+    `;
+  }
+
   listEl.innerHTML = '<p style="padding:20px;text-align:center;">Carregando...</p>';
 
   try {
     const convs = await getConversations();
 
     if (convs.length === 0) {
-      listEl.innerHTML = '<p style="padding:20px;text-align:center;color:var(--text-secondary)">Sem conversas ainda.</p>';
+      listEl.innerHTML = `
+        <div style="padding:40px 20px;text-align:center;color:var(--text-secondary);">
+          <div style="font-size:40px;margin-bottom:12px;">✉️</div>
+          <p style="font-size:15px;font-weight:600;color:var(--text-primary);margin:0 0 6px;">Nenhuma conversa ainda</p>
+          <p style="font-size:13px;margin:0;">Visite o perfil de alguém e clique em "✉ Mensagem"</p>
+        </div>`;
       return;
     }
 
@@ -1694,15 +1733,15 @@ async function loadMessagesPage() {
       const preview = c.lastMessage
         ? `<p class="conversation-preview" style="
             font-size:12px;color:var(--text-secondary);
-            white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;
+            white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;margin:2px 0 0;
           ">${escapeHtml(c.lastMessage.content)}</p>`
-        : `<p class="conversation-preview" style="font-size:12px;color:var(--text-secondary);font-style:italic;">Sem mensagens</p>`;
+        : `<p class="conversation-preview" style="font-size:12px;color:var(--text-secondary);font-style:italic;margin:2px 0 0;">Sem mensagens</p>`;
 
       return `
         <div class="conversation-item" data-id="${c.id}" style="cursor:pointer;">
           <img src="${avatar}" alt="Avatar" class="conversation-avatar">
           <div class="conversation-info" style="flex:1;min-width:0;">
-            <p class="conversation-name">${escapeHtml(c.otherUser?.name)}</p>
+            <p class="conversation-name" style="margin:0;">${escapeHtml(c.otherUser?.name ?? '')}</p>
             ${preview}
           </div>
         </div>
@@ -1711,6 +1750,10 @@ async function loadMessagesPage() {
 
     document.querySelectorAll('.conversation-item').forEach(item => {
       item.addEventListener('click', () => {
+        // Destaca conversa selecionada
+        document.querySelectorAll('.conversation-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+
         const convId = item.dataset.id;
         const conv = convs.find(c => c.id === convId);
         if (conv) openChat(convId, conv.otherUser);
@@ -1727,18 +1770,22 @@ async function openChat(convId, otherUser) {
   const chatArea = document.getElementById('chatArea');
   if (!chatArea) return;
 
+  // Para subscription anterior
   if (unsubscribeCurrentChat) {
     unsubscribeCurrentChat();
     unsubscribeCurrentChat = null;
   }
 
+  // Limpa IDs de mensagens já renderizadas e marca conversa atual
   renderedMessageIds.clear();
+  currentOpenConvId = convId;
 
   chatArea.innerHTML = `
     <div style="
       padding:16px;border-bottom:1px solid var(--border);
       background:var(--dark-bg-secondary);
       display:flex;align-items:center;gap:10px;
+      flex-shrink:0;
     ">
       <img src="${otherUser?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${otherUser?.handle}`}"
            style="width:36px;height:36px;border-radius:50%;object-fit:cover;">
@@ -1752,11 +1799,12 @@ async function openChat(convId, otherUser) {
       display:flex;flex-direction:column;gap:10px;
       background:var(--dark-bg);
     ">
-      <p style="text-align:center;color:var(--text-secondary);">Carregando histórico...</p>
+      <p id="chatLoadingMsg" style="text-align:center;color:var(--text-secondary);">Carregando histórico...</p>
     </div>
     <div style="
       padding:16px;border-top:1px solid var(--border);
       display:flex;gap:10px;background:var(--dark-bg-secondary);
+      flex-shrink:0;
     ">
       <input type="text" id="msgInput" placeholder="Envie uma mensagem..."
         style="
@@ -1769,34 +1817,63 @@ async function openChat(convId, otherUser) {
     </div>
   `;
 
-  try {
-    const msgs = await getMessages(convId);
-    renderMessagesList(msgs);
-    msgs.forEach(m => renderedMessageIds.add(m.id));
-  } catch (err) {
-    const chatMessages = document.getElementById('chatMessages');
-    if (chatMessages) chatMessages.innerHTML = '<p style="color:var(--danger);">Erro ao carregar mensagens.</p>';
-  }
+  // 1. Conecta o realtime ANTES de carregar o histórico
+  const seenIds = new Set();
 
   unsubscribeCurrentChat = subscribeToMessages(convId, (newMsg) => {
     if (renderedMessageIds.has(newMsg.id)) return;
     renderedMessageIds.add(newMsg.id);
+    seenIds.add(newMsg.id);
     appendMessageToUI(newMsg);
     updateConversationPreview(convId, newMsg.content);
   });
 
+  // 2. Carrega histórico e marca IDs como já vistos
+  try {
+    const msgs = await getMessages(convId);
+    document.getElementById('chatLoadingMsg')?.remove();
+    const container = document.getElementById('chatMessages');
+    
+    if (container && msgs.length === 0) {
+      container.innerHTML = '<p style="text-align:center;color:var(--text-secondary);padding:20px;">Diga olá! 👋</p>';
+    } else {
+      msgs.forEach(msg => {
+        renderedMessageIds.add(msg.id);
+        appendMessageToUI(msg);
+      });
+    }
+  } catch (err) {
+    const chatMessages = document.getElementById('chatMessages');
+    if (chatMessages) chatMessages.innerHTML = '<p style="color:var(--danger);text-align:center;padding:20px;">Erro ao carregar mensagens.</p>';
+  }
+
+  // 3. Configura envio
   const input = document.getElementById('msgInput');
   const btn = document.getElementById('sendMsgBtn');
-
   if (!input || !btn) return;
 
   const handleSend = async () => {
     const content = input.value.trim();
-    if (!content) return;
+    if (!content || !currentProfile) return;
+
     input.value = '';
-    input.focus(); 
+    input.focus();
+
+    // Otimismo: mostra a mensagem imediatamente na UI
+    const optimisticMsg = {
+      id: `optimistic-${Date.now()}`,
+      content,
+      sender_id: currentProfile.id,
+      conversation_id: convId,
+      created_at: new Date().toISOString(),
+    };
+    renderedMessageIds.add(optimisticMsg.id);
+    appendMessageToUI(optimisticMsg);
+    updateConversationPreview(convId, content);
+
     try {
-      await sendMessage(convId, content);
+      const saved = await sendMessage(convId, content);
+      renderedMessageIds.add(saved.id);
     } catch (err) {
       console.error('Erro ao enviar mensagem:', err);
       showNotification('Erro ao enviar mensagem.');
@@ -1805,7 +1882,7 @@ async function openChat(convId, otherUser) {
 
   btn.addEventListener('click', handleSend);
   input.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') handleSend();
+    if (e.key === 'Enter' && !e.shiftKey) handleSend();
   });
 
   input.focus();
@@ -1815,9 +1892,10 @@ function renderMessagesList(msgs) {
   const container = document.getElementById('chatMessages');
   if (!container) return;
 
-  container.innerHTML = msgs.length === 0
-    ? '<p style="text-align:center;color:var(--text-secondary);">Diga olá! 👋</p>'
-    : '';
+  if (msgs.length === 0) {
+    container.innerHTML = '<p style="text-align:center;color:var(--text-secondary);padding:20px;">Diga olá! 👋</p>';
+    return;
+  }
 
   msgs.forEach(msg => appendMessageToUI(msg));
 }
@@ -1826,8 +1904,9 @@ function appendMessageToUI(msg) {
   const container = document.getElementById('chatMessages');
   if (!container || !currentProfile) return;
 
+  // Remove placeholder
   const placeholder = container.querySelector('p');
-  if (placeholder?.textContent.includes('Diga olá') || placeholder?.textContent.includes('Carregando')) {
+  if (placeholder && (placeholder.textContent.includes('Diga olá') || placeholder.textContent.includes('Carregando'))) {
     placeholder.remove();
   }
 
@@ -1836,14 +1915,15 @@ function appendMessageToUI(msg) {
   bubble.style.cssText = `
     max-width:75%;padding:10px 14px;border-radius:18px;
     font-size:14px;line-height:1.5;word-break:break-word;
+    animation:slideDown 0.2s ease;
+    align-self:${isMe ? 'flex-end' : 'flex-start'};
     ${isMe
-      ? 'background:var(--primary);color:white;align-self:flex-end;border-bottom-right-radius:4px;'
-      : 'background:var(--dark-bg-secondary);color:var(--text-primary);align-self:flex-start;border-bottom-left-radius:4px;border:1px solid var(--border);'
+      ? 'background:var(--primary);color:white;border-bottom-right-radius:4px;'
+      : 'background:var(--dark-bg-secondary);color:var(--text-primary);border-bottom-left-radius:4px;border:1px solid var(--border);'
     }
   `;
   bubble.textContent = msg.content;
   container.appendChild(bubble);
-
   container.scrollTop = container.scrollHeight;
 }
 
