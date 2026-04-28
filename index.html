@@ -29,7 +29,23 @@
       <li><a href="#Home">Home</a></li>
       <li><a href="premium.html">Premium</a></li>
     </ul>
-    <div class="ms-lg-3">
+    
+    <div class="nav-actions">
+      
+      <div class="theme-switcher-wrapper">
+        <button class="theme-switcher-btn" id="themeSwitcherBtn" title="Alterar Tema">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+        <div class="theme-switcher-dropdown" id="themeSwitcherDropdown">
+          <div class="theme-opt" data-theme="padrao" style="background: #a31f4b;" title="Vinho (Padrão)"></div>
+          <div class="theme-opt" data-theme="azul" style="background: #1f5aa3;" title="Azul"></div>
+          <div class="theme-opt" data-theme="cinza" style="background: #888888;" title="Cinza"></div>
+          <div class="theme-opt" data-theme="amarelo" style="background: #b8860b;" title="Amarelo"></div>
+        </div>
+      </div>
+
       <a class="btn custom-btn custom-border-btn" href="inicial/cadastro.html">
         Entrar 👤
       </a>
@@ -137,6 +153,57 @@
     <span>© 2026 Vazadinhos da PUC</span>
     <span>Por Pedro L. e Pietro G.</span>
   </footer>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const btn = document.getElementById('themeSwitcherBtn');
+      const dropdown = document.getElementById('themeSwitcherDropdown');
+      const options = document.querySelectorAll('.theme-opt');
+
+      // Abre/Fecha o dropdown de temas
+      if (btn && dropdown) {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          dropdown.classList.toggle('active');
+        });
+      }
+
+      // Fecha o menu ao clicar fora dele
+      document.addEventListener('click', (e) => {
+        if (dropdown && !dropdown.contains(e.target) && e.target !== btn) {
+          dropdown.classList.remove('active');
+        }
+      });
+
+      // Lógica de aplicar o tema ao clicar nas cores
+      options.forEach(opt => {
+        opt.addEventListener('click', () => {
+          const theme = opt.getAttribute('data-theme');
+          
+          if (theme === 'padrao') {
+            document.documentElement.removeAttribute('data-theme');
+          } else {
+            document.documentElement.setAttribute('data-theme', theme);
+          }
+          localStorage.setItem('vazaPucTheme', theme);
+          
+          // Marca a bolinha seleccionada
+          options.forEach(o => o.style.borderColor = 'transparent');
+          opt.style.borderColor = '#ffffff';
+
+          // Fecha o menu depois de escolher
+          dropdown.classList.remove('active');
+        });
+      });
+
+      // Aplica a borda branca no tema guardado ao carregar a página
+      const currentTheme = localStorage.getItem('vazaPucTheme') || 'padrao';
+      const activeOpt = document.querySelector(`.theme-opt[data-theme="${currentTheme}"]`);
+      if (activeOpt) {
+        activeOpt.style.borderColor = '#ffffff';
+      }
+    });
+  </script>
 
   <script type="module">
     import { getPosts } from './js/posts.js';
