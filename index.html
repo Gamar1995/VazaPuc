@@ -20,6 +20,347 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Syne:wght@400;700;800&family=DM+Sans:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
   
   <link rel="stylesheet" href="css/Pagina_Principal.css">
+
+  <style>
+    /* =========================================
+       1. MODO CLARO - VARIÁVEIS BASE
+       ========================================= */
+    :root[data-theme$="-claro"] { color-scheme: light; }
+
+    :root[data-theme="padrao-claro"] {
+      --primary: #a31f4b; --primary-rgb: 163, 31, 75; --primary-dark: #7a1738;
+      --secondary: #d45b7e; --dark-bg: #f4f6f8; --dark-bg-secondary: #ffffff;
+      --dark-bg-tertiary: #e9ecef; --text-primary: #1a1a1a; --text-secondary: #5c6c7c;
+      --border: #dce0e4;
+    }
+
+    :root[data-theme="azul-claro"] {
+      --primary: #1f5aa3; --primary-rgb: 31, 90, 163; --primary-dark: #143e75;
+      --secondary: #5b92d4; --dark-bg: #f0f4f8; --dark-bg-secondary: #ffffff;
+      --dark-bg-tertiary: #e1e8ef; --text-primary: #0f1c2b; --text-secondary: #5a6e82;
+      --border: #d7e2ea;
+    }
+
+    :root[data-theme="cinza-claro"] {
+      --primary: #555555; --primary-rgb: 85, 85, 85; --primary-dark: #333333;
+      --secondary: #999999; --dark-bg: #f5f5f5; --dark-bg-secondary: #ffffff;
+      --dark-bg-tertiary: #ebebeb; --text-primary: #111111; --text-secondary: #666666;
+      --border: #e0e0e0;
+    }
+
+    :root[data-theme="amarelo-claro"] {
+      --primary: #b8860b; --primary-rgb: 184, 134, 11; --primary-dark: #8b6508;
+      --secondary: #d4af37; --dark-bg: #fcfbf7; --dark-bg-secondary: #ffffff;
+      --dark-bg-tertiary: #f2efe4; --text-primary: #1f1c0d; --text-secondary: #7a7051;
+      --border: #e8e4d3;
+    }
+
+    /* =========================================
+       2. MODO CLARO - OVERRIDE FORÇADO (Limpeza)
+       ========================================= */
+    
+    /* Fundos Globais */
+    :root[data-theme$="-claro"] body,
+    :root[data-theme$="-claro"] .hero,
+    :root[data-theme$="-claro"] .section,
+    :root[data-theme$="-claro"] .sobre-nos,
+    :root[data-theme$="-claro"] footer {
+      background-color: var(--dark-bg) !important;
+      color: var(--text-primary) !important;
+    }
+
+    /* Navbar Translúcida e Textos */
+    :root[data-theme$="-claro"] nav {
+      background: rgba(255, 255, 255, 0.85) !important;
+      backdrop-filter: blur(12px) !important;
+      -webkit-backdrop-filter: blur(12px) !important;
+      border-bottom: 1px solid var(--border) !important;
+    }
+    :root[data-theme$="-claro"] .nav-links a,
+    :root[data-theme$="-claro"] .logo {
+      color: var(--text-primary) !important;
+      -webkit-text-fill-color: var(--text-primary) !important;
+    }
+
+    /* Textos, Títulos e Etiquetas */
+    :root[data-theme$="-claro"] h1, :root[data-theme$="-claro"] h2, 
+    :root[data-theme$="-claro"] h3, :root[data-theme$="-claro"] strong,
+    :root[data-theme$="-claro"] .titulo-destaque,
+    :root[data-theme$="-claro"] .section-label,
+    :root[data-theme$="-claro"] .post-name-vertical {
+      color: var(--text-primary) !important;
+    }
+
+    :root[data-theme$="-claro"] p, :root[data-theme$="-claro"] span,
+    :root[data-theme$="-claro"] .hero-sub, :root[data-theme$="-claro"] .eyebrow,
+    :root[data-theme$="-claro"] .post-handle-vertical {
+      color: var(--text-secondary) !important;
+    }
+
+    /* FIX 4: Texto "Vazadinhos da PUC" dinâmico com o tema */
+    h1 em,
+    :root[data-theme$="-claro"] h1 em {
+      color: var(--primary) !important;
+      -webkit-text-fill-color: var(--primary) !important;
+      background: none !important;
+      text-shadow: none !important;
+    }
+
+    /* Caixas e Cards (Sem incluir elementos flutuantes) */
+    :root[data-theme$="-claro"] .card,
+    :root[data-theme$="-claro"] .cascade-item,
+    :root[data-theme$="-claro"] .post-internal-border,
+    :root[data-theme$="-claro"] .form-wrap input,
+    :root[data-theme$="-claro"] .form-wrap textarea {
+      background-color: var(--dark-bg-secondary) !important;
+      border: 1px solid var(--border) !important;
+      color: var(--text-primary) !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+    }
+
+    /* Ocultar fundos indesejados no texto "Quem Somos" e Emojis */
+    :root[data-theme$="-claro"] .sobre-conteudo,
+    :root[data-theme$="-claro"] .bolha-wrapper {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+    }
+
+    /* O Card Premium no Modo Claro */
+    :root[data-theme$="-claro"] .card-premium {
+      background: linear-gradient(135deg, var(--dark-bg-secondary), var(--dark-bg-tertiary)) !important;
+      border: 2px solid var(--primary) !important;
+    }
+    :root[data-theme$="-claro"] .premium-text-glow {
+      color: var(--primary) !important;
+      text-shadow: none !important;
+    }
+    :root[data-theme$="-claro"] .premium-badge-small {
+      background: var(--primary) !important;
+      color: #ffffff !important;
+    }
+
+    /* Inputs e Textareas mais elegantes */
+    :root[data-theme$="-claro"] .form-wrap input,
+    :root[data-theme$="-claro"] .form-wrap textarea,
+    :root[data-theme$="-claro"] input, 
+    :root[data-theme$="-claro"] textarea {
+      background-color: rgba(0, 0, 0, 0.03) !important; 
+      border: 1px solid var(--border) !important;
+      color: var(--text-primary) !important;
+      box-shadow: none !important;
+    }
+    :root[data-theme$="-claro"] .form-wrap input:focus,
+    :root[data-theme$="-claro"] .form-wrap textarea:focus {
+      background-color: var(--dark-bg-secondary) !important;
+      border-color: var(--primary) !important;
+    }
+
+    /* Alinhamento perfeito dos botões lado a lado */
+    .cta-row {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .cta-row .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 52px !important; 
+      padding: 0 32px !important; 
+      box-sizing: border-box !important;
+      margin: 0 !important;
+    }
+
+    :root[data-theme$="-claro"] .btn-primary,
+    :root[data-theme$="-claro"] .btn-cta {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark)) !important;
+      color: #ffffff !important;
+      border: none !important;
+    }
+
+    :root[data-theme$="-claro"] .btn-ghost,
+    :root[data-theme$="-claro"] .custom-border-btn {
+      background: transparent !important;
+      color: var(--primary) !important;
+      box-shadow: inset 0 0 0 2px var(--primary) !important; 
+      border: none !important;
+    }
+    
+    :root[data-theme$="-claro"] .btn-ghost:hover,
+    :root[data-theme$="-claro"] .custom-border-btn:hover {
+      background: rgba(var(--primary-rgb), 0.1) !important;
+    }
+
+    /* Linhas divisórias e Luzes de Fundo (Hero Glow) */
+    :root[data-theme$="-claro"] .divider {
+      background: var(--border) !important;
+      height: 1px !important;
+    }
+
+    :root[data-theme$="-claro"] .hero-glow,
+    :root[data-theme$="-claro"] .hero-glow2 {
+      background: var(--primary) !important;
+      opacity: 0.1 !important; 
+      filter: blur(100px) !important;
+    }
+
+    /* =========================================
+       3. SLIDER ENVIDRAÇADO (MENU DE TEMAS)
+       ========================================= */
+    .theme-switcher-wrapper { position: relative; }
+
+    .theme-slider-glass {
+      position: absolute; top: 130%; right: 0; display: flex; align-items: center; gap: 12px;
+      padding: 8px 12px; border-radius: 40px;
+      background: rgba(30, 30, 30, 0.4); backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      opacity: 0; visibility: hidden; transform: translateY(-15px) scale(0.9);
+      transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); z-index: 100;
+    }
+
+    :root[data-theme$="-claro"] .theme-slider-glass {
+      background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(0, 0, 0, 0.1);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    }
+
+    .theme-slider-glass.active { opacity: 1; visibility: visible; transform: translateY(0) scale(1); }
+
+    .theme-opt {
+      width: 28px; height: 28px; border-radius: 50%; cursor: pointer; position: relative;
+      z-index: 2; transition: transform 0.2s ease; border: none !important; 
+    }
+    .theme-opt:hover { transform: scale(1.15); }
+
+    .theme-indicator {
+      position: absolute; top: 50%; left: 0; width: 36px; height: 36px; border-radius: 50%;
+      background: rgba(255, 255, 255, 0.25); backdrop-filter: blur(4px);
+      border: 1px solid rgba(255, 255, 255, 0.5); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      transform: translateY(-50%); transition: left 0.4s cubic-bezier(0.25, 1, 0.5, 1); 
+      z-index: 1; pointer-events: none; 
+    }
+
+    :root[data-theme$="-claro"] .theme-indicator {
+      background: rgba(0, 0, 0, 0.05); border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
+    /* =========================================
+       4. BOTÃO PREMIUM
+       ========================================= */
+    .btn-assinar-premium {
+      position: relative; display: inline-block; overflow: hidden; padding: 16px 40px;
+      font-family: inherit; font-size: 18px; font-weight: 700; color: #ffffff !important;
+      text-decoration: none; text-align: center; border-radius: 8px; margin-top: 15px;
+      background: rgba(255, 215, 0, 0.15); backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 215, 0, 0.5); box-shadow: 0 4px 15px rgba(255, 215, 0, 0.15);
+      transition: all 0.3s ease; cursor: pointer;
+    }
+
+    :root[data-theme$="-claro"] .btn-assinar-premium {
+      background: #FFD700 !important; color: #1a1a1a !important; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4) !important;
+    }
+
+    .btn-assinar-premium::before {
+      content: ""; position: absolute; top: 0; left: -150%; width: 50%; height: 100%;
+      background: linear-gradient(to right, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.6) 50%, rgba(255, 255, 255, 0) 100%);
+      transform: skewX(-25deg); transition: left 0.6s ease;
+    }
+
+    .btn-assinar-premium:hover {
+      transform: translateY(-3px); background: rgba(255, 215, 0, 0.25);
+      box-shadow: 0 8px 25px rgba(255, 215, 0, 0.3); border: 1px solid rgba(255, 215, 0, 0.8);
+    }
+
+    :root[data-theme$="-claro"] .btn-assinar-premium:hover {
+      background: #e6c200 !important; color: #1a1a1a !important;
+    }
+
+    .btn-assinar-premium:hover::before { left: 150%; }
+
+    /* =========================================
+       5. DESIGN PROFISSIONAL - CARDS DE PLANOS
+       ========================================= */
+    .grid-3 {
+      display: grid;
+      gap: 32px !important;
+      align-items: stretch;
+    }
+
+    .card {
+      position: relative;
+      border-radius: 24px !important;
+      padding: 40px 32px !important;
+      text-align: center;
+      transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      z-index: 1;
+    }
+
+    .card h3 {
+      font-size: 22px;
+      margin: 16px 0;
+      font-weight: 800;
+    }
+
+    .card p {
+      flex-grow: 1;
+      margin-bottom: 24px;
+      line-height: 1.6;
+      font-size: 15px;
+    }
+
+    .card:hover {
+      transform: translateY(-8px);
+    }
+
+    .card-icon {
+      font-size: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 80px;
+      height: 80px;
+      margin: 0 auto;
+      border-radius: 50%;
+    }
+
+    /* Modo Olheiro (Conta Grátis) */
+    .card-standard {
+      background: linear-gradient(145deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)) !important;
+      border: 1px solid rgba(255,255,255,0.1) !important;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15) !important;
+    }
+
+    .card-standard .standard-icon {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .card-standard:hover {
+      border-color: var(--primary) !important;
+      box-shadow: 0 15px 35px rgba(var(--primary-rgb), 0.2) !important;
+    }
+
+    /* Adaptação para o Modo Claro */
+    :root[data-theme$="-claro"] .card-standard {
+      background: linear-gradient(145deg, #ffffff, #f8f9fa) !important;
+      border: 1px solid var(--border) !important;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.05) !important;
+    }
+    
+    :root[data-theme$="-claro"] .card-standard:hover {
+      border-color: var(--primary) !important;
+      box-shadow: 0 15px 40px rgba(var(--primary-rgb), 0.15) !important;
+    }
+
+    :root[data-theme$="-claro"] .card-standard .standard-icon {
+      background: rgba(0, 0, 0, 0.03);
+      border: 1px solid var(--border);
+    }
+  </style>
 </head>
 <body>
 
@@ -32,17 +373,28 @@
     
     <div class="nav-actions">
       
+      <!-- MENU DE TEMAS -->
       <div class="theme-switcher-wrapper">
         <button class="theme-switcher-btn" id="themeSwitcherBtn" title="Alterar Tema">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
           </svg>
         </button>
-        <div class="theme-switcher-dropdown" id="themeSwitcherDropdown">
-          <div class="theme-opt" data-theme="padrao" style="background: #a31f4b;" title="Vinho (Padrão)"></div>
-          <div class="theme-opt" data-theme="azul" style="background: #1f5aa3;" title="Azul"></div>
-          <div class="theme-opt" data-theme="cinza" style="background: #888888;" title="Cinza"></div>
-          <div class="theme-opt" data-theme="amarelo" style="background: #b8860b;" title="Amarelo"></div>
+        
+        <div class="theme-slider-glass" id="themeSwitcherDropdown">
+          <div class="theme-indicator" id="themeIndicator"></div>
+          
+          <div class="theme-opt" data-theme="padrao" style="background: #a31f4b;" title="Vinho (Escuro)"></div>
+          <div class="theme-opt" data-theme="azul" style="background: #1f5aa3;" title="Azul (Escuro)"></div>
+          <div class="theme-opt" data-theme="cinza" style="background: #888888;" title="Cinza (Escuro)"></div>
+          <div class="theme-opt" data-theme="amarelo" style="background: #b8860b;" title="Amarelo (Escuro)"></div>
+
+          <div style="width: 2px; height: 24px; background: rgba(150,150,150,0.3); margin: 0 6px; border-radius: 2px;"></div>
+
+          <div class="theme-opt" data-theme="padrao-claro" style="background: linear-gradient(135deg, #a31f4b 50%, #f4f6f8 50%); border: 1px solid #dce0e4 !important;" title="Vinho (Claro)"></div>
+          <div class="theme-opt" data-theme="azul-claro" style="background: linear-gradient(135deg, #1f5aa3 50%, #f0f4f8 50%); border: 1px solid #d7e2ea !important;" title="Azul (Claro)"></div>
+          <div class="theme-opt" data-theme="cinza-claro" style="background: linear-gradient(135deg, #555555 50%, #f5f5f5 50%); border: 1px solid #e0e0e0 !important;" title="Cinza (Claro)"></div>
+          <div class="theme-opt" data-theme="amarelo-claro" style="background: linear-gradient(135deg, #b8860b 50%, #fcfbf7 50%); border: 1px solid #e8e4d3 !important;" title="Amarelo (Claro)"></div>
         </div>
       </div>
 
@@ -61,8 +413,8 @@
       Veja, compartilhe e descubra os bastidores com a comunidade mais quente da universidade.
     </p>
     <div class="cta-row">
-      <a class="btn btn-primary" href="PaginaPrincipal/vazadinhos.html">👀 Explorar Agora 👀</a>
-      <a class="btn btn-ghost" href="#contato">Fale Conosco 🗯️</a>
+      <a class="btn btn-primary btn-cta" href="PaginaPrincipal/vazadinhos.html">👀 Explorar Agora 👀</a>
+      <a class="btn btn-ghost custom-border-btn" href="#contato">Fale Conosco 🗯️</a>
     </div>
   </section>
 
@@ -77,7 +429,7 @@
         <p>
             Seja você um <em>jogador</em> em busca do seu espaço de destaque ou um <em>olheiro</em> atento aos maiores talentos (e aos melhores babados), nossa plataforma oferece uma experiência imersiva, segura e com um design pensado para quem não tem tempo a perder.
         </p>
-        <a href="#features" class="btn-cta">Entenda mais...</a>
+        <a href="#features" class="btn btn-primary btn-cta" style="display:inline-block; margin-top: 15px;">Entenda mais...</a>
     </div>
 
     <div class="bolhas-container">
@@ -94,8 +446,7 @@
     <div class="container">
         <h2 class="section-title text-center" style="text-align: center;">O que andam falando por aí...</h2>
         
-        <div class="cascade-container" id="landingPostsContainer">
-            </div>
+        <div class="cascade-container" id="landingPostsContainer"></div>
         
     </div>
   </section>
@@ -108,19 +459,20 @@
     
     <div class="grid-3" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); max-width: 900px; margin: 0 auto; gap: 2rem;">
       
+      <!-- CARD GRÁTIS MELHORADO -->
       <div class="card card-standard">
         <div class="card-icon standard-icon">👤</div>
         <h3>Modo Olheiro (Grátis)</h3>
         <p>Crie sua conta padrão. Faça posts, comente, curta e interaja com a comunidade do campus sem pagar absolutamente nada.</p>
-        <a href="inicial/cadastro.html" class="btn btn-ghost btn-card-action">Criar Conta Grátis</a>
+        <a href="inicial/cadastro.html" class="btn btn-ghost custom-border-btn" style="border-radius: 8px;">Criar Conta Grátis</a>
       </div>
 
       <div class="card card-premium">
-        <div class="premium-badge-small">RECOMENDADO</div>
+        <div class="premium-badge-small">V.I.P.</div>
         <div class="card-icon premium-icon">👑</div>
         <h3 class="premium-text-glow">Elite Universitária</h3>
         <p>Destaque-se na multidão. Posts em destaque, modo Ghost avançado, mensagens ilimitadas e selo de verificado exclusivo.</p>
-        <a href="premium.html" class="btn btn-premium-action btn-card-action">Conhecer o Premium 🚀</a>
+        <a href="premium.html" class="btn-assinar-premium">Conhecer o Premium 🚀</a>
       </div>
 
     </div>
@@ -144,7 +496,7 @@
         <label for="mensagem">Mensagem</label>
         <textarea id="mensagem" rows="5" placeholder="Escreva aqui..."></textarea>
       </div>
-      <button class="btn btn-primary" onclick="enviarForm()">Enviar mensagem →</button>
+      <button class="btn btn-primary btn-cta" onclick="enviarForm()">Enviar mensagem →</button>
       <p id="form-msg" style="display: none; margin-top: 15px; color: #4ade80;">✅ Mensagem enviada com sucesso!</p>
     </div>
   </section>
@@ -159,23 +511,28 @@
       const btn = document.getElementById('themeSwitcherBtn');
       const dropdown = document.getElementById('themeSwitcherDropdown');
       const options = document.querySelectorAll('.theme-opt');
+      const indicator = document.getElementById('themeIndicator');
 
-      // Abre/Fecha o dropdown de temas
       if (btn && dropdown) {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
           dropdown.classList.toggle('active');
+          atualizarPosicaoIndicador(); 
         });
       }
 
-      // Fecha o menu ao clicar fora dele
       document.addEventListener('click', (e) => {
         if (dropdown && !dropdown.contains(e.target) && e.target !== btn) {
           dropdown.classList.remove('active');
         }
       });
 
-      // Lógica de aplicar o tema ao clicar nas cores
+      function atualizarPosicaoIndicador(elemento) {
+        if (!indicator) return;
+        const alvo = elemento || document.querySelector('.theme-opt.ativo') || options[0];
+        indicator.style.left = (alvo.offsetLeft - 4) + 'px'; 
+      }
+
       options.forEach(opt => {
         opt.addEventListener('click', () => {
           const theme = opt.getAttribute('data-theme');
@@ -187,20 +544,23 @@
           }
           localStorage.setItem('vazaPucTheme', theme);
           
-          // Marca a bolinha seleccionada
-          options.forEach(o => o.style.borderColor = 'transparent');
-          opt.style.borderColor = '#ffffff';
+          options.forEach(o => o.classList.remove('ativo'));
+          opt.classList.add('ativo');
 
-          // Fecha o menu depois de escolher
-          dropdown.classList.remove('active');
+          atualizarPosicaoIndicador(opt);
+
+          setTimeout(() => {
+            dropdown.classList.remove('active');
+          }, 800);
         });
       });
 
-      // Aplica a borda branca no tema guardado ao carregar a página
       const currentTheme = localStorage.getItem('vazaPucTheme') || 'padrao';
       const activeOpt = document.querySelector(`.theme-opt[data-theme="${currentTheme}"]`);
+      
       if (activeOpt) {
-        activeOpt.style.borderColor = '#ffffff';
+        activeOpt.classList.add('ativo');
+        setTimeout(() => atualizarPosicaoIndicador(activeOpt), 50);
       }
     });
   </script>
@@ -212,7 +572,7 @@
       const container = document.getElementById('landingPostsContainer');
       if (!container) return;
 
-      container.innerHTML = '<p style="text-align: center; width: 100%; color: #bba3ab; padding: 20px;">Analisando os maiores babados... 🔥</p>';
+      container.innerHTML = '<p style="text-align: center; width: 100%; color: var(--text-secondary); padding: 20px;">Analisando os maiores babados... 🔥</p>';
 
       try {
         const posts = await getPosts(20);
@@ -222,7 +582,7 @@
           .slice(0, 6);
 
         if (topPosts.length === 0) {
-          container.innerHTML = '<p style="text-align: center; width: 100%; color: #bba3ab;">Ainda não há posts. Entre e seja o primeiro a vazar algo!</p>';
+          container.innerHTML = '<p style="text-align: center; width: 100%; color: var(--text-secondary);">Ainda não há posts. Entre e seja o primeiro a vazar algo!</p>';
           return;
         }
 
@@ -249,7 +609,7 @@
                     <div class="post-content-vertical">
                         <p>${escapeHtml(post.content)}</p>
                     </div>
-                    <div style="margin-top: 12px; font-size: 13px; color: #bba3ab; display: flex; gap: 10px;">
+                    <div style="margin-top: 12px; font-size: 13px; color: var(--text-secondary); display: flex; gap: 10px;">
                         <span>❤️ ${post.likes_count || 0}</span>
                         <span>💬 ${post.replies_count || 0}</span>
                     </div>

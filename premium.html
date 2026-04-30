@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="css/Pagina_Principal.css">
   
   <style>
+    
     /* ===== HERO PREMIUM ===== */
     .premium-hero {
       display: flex;
@@ -160,6 +161,62 @@
       margin-top: auto; /* Trava o botão perfeitamente na base do cartão */
     }
   </style>
+  <!-- ESTILO DO BOTÃO PREMIUM -->
+  <!-- ESTILO DO BOTÃO PREMIUM CORRIGIDO -->
+  <style>
+    .btn-assinar-premium {
+      position: relative;
+      display: inline-block;
+      overflow: hidden;
+      padding: 16px 40px;
+      font-family: inherit;
+      font-size: 18px;
+      font-weight: 700;
+      color: #ffffff;
+      text-decoration: none;
+      text-align: center;
+      border-radius: 8px;
+      background: rgba(255, 215, 0, 0.15); 
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      
+      /* CORREÇÃO: Borda fina e uniforme para manter tudo centralizado */
+      border: 1px solid rgba(255, 215, 0, 0.5); 
+      box-shadow: 0 4px 15px rgba(255, 215, 0, 0.15); /* Sombra amarela em volta */
+      
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .btn-assinar-premium::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -150%;
+      width: 50%;
+      height: 100%;
+      background: linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.6) 50%,
+        rgba(255, 255, 255, 0) 100%
+      );
+      transform: skewX(-25deg);
+      transition: left 0.6s ease;
+    }
+
+    .btn-assinar-premium:hover {
+      transform: translateY(-3px);
+      background: rgba(255, 215, 0, 0.25);
+      box-shadow: 0 8px 25px rgba(255, 215, 0, 0.3);
+      border: 1px solid rgba(255, 215, 0, 0.8); /* Borda brilha mais no hover */
+      color: #ffffff;
+    }
+
+    .btn-assinar-premium:hover::before {
+      left: 150%;
+    }
+  </style>
 </head>
 <body>
 
@@ -218,7 +275,7 @@
         <li style="color: var(--text);">Modo anônimo avançado (Ghost)</li>
         <li style="color: var(--text);">Sem anúncios</li>
       </ul>
-      <a href="#" class="btn btn-primary btn-plan">Assinar Agora 🚀</a>
+     <a href="#" class="btn-assinar-premium">Assinar agora</a>
     </div>
   </section>
 

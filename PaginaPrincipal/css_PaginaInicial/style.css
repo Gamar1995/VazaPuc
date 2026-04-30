@@ -769,3 +769,68 @@ body {
 .post-option-item:hover { background: var(--dark-bg-tertiary); }
 .post-option-item.danger { color: var(--danger); }
 .post-option-item.danger:hover { background: rgba(231, 76, 60, 0.1); }
+
+/* =========================================
+   BOTÃO PREMIUM - EFEITO VIDRO E REFLEXO
+   ========================================= */
+
+.btn-assinar-premium {
+  position: relative;
+  display: inline-block;
+  overflow: hidden; /* Mantém o reflexo dentro do botão */
+  padding: 16px 40px;
+  font-family: inherit;
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff; /* Cor do texto */
+  text-decoration: none;
+  text-align: center;
+  border-radius: 8px;
+  
+  /* Efeito de Vidro (Glassmorphism) */
+  background: rgba(255, 215, 0, 0.15); /* Fundo amarelo transparente */
+  backdrop-filter: blur(12px); /* O desfoque do vidro */
+  -webkit-backdrop-filter: blur(12px); /* Suporte para Safari */
+  
+  /* Bordas: Borda superior amarela em destaque */
+  border: 1px solid rgba(255, 255, 255, 0.2); /* Borda geral sutil */
+  border-top: 3px solid #FFD700; /* Linha amarela premium no topo */
+  
+  /* Sombras e transições */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+/* Criando o Feixe de Luz (Reflexo) */
+.btn-assinar-premium::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -150%; /* Escondido à esquerda */
+  width: 50%;
+  height: 100%;
+  
+  /* Gradiente do reflexo */
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.6) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  
+  transform: skewX(-25deg); /* Deixa o reflexo inclinado */
+  transition: left 0.6s ease; /* Velocidade em que o brilho passa */
+}
+
+/* Efeito ao passar o mouse (Hover) */
+.btn-assinar-premium:hover {
+  transform: translateY(-3px); /* Levanta o botão suavemente */
+  background: rgba(255, 215, 0, 0.25); /* Fica um pouco mais amarelo */
+  box-shadow: 0 8px 25px rgba(255, 215, 0, 0.3); /* Sombra amarela */
+}
+
+/* Dispara a animação do reflexo no Hover */
+.btn-assinar-premium:hover::before {
+  left: 150%; /* Move o reflexo para a direita, cruzando o botão */
+}
