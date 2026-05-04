@@ -949,9 +949,12 @@ async function openPostDetailModal(postId) {
     const authorId = postCard?.dataset?.authorId ?? likeBtn?.dataset?.authorId ?? '';
 
     // Mídia do post
-    const mediaGrid = postCard?.querySelector('.media-grid');
-    const mediaHtml = mediaGrid ? mediaGrid.outerHTML : '';
+   const mediaGrid = postCard?.querySelector('.media-grid');
+const mediaHtml = mediaGrid ? mediaGrid.outerHTML : '';
 
+// Quote card do post (se existir)
+const quoteCard = postCard?.querySelector('.quote-card');
+const quoteCardHtml = quoteCard ? quoteCard.outerHTML : '';
     const userAvatar = currentProfile?.avatar_url
       || `https://api.dicebear.com/7.x/avataaars/svg?seed=anon`;
     const handle = authorHandle.replace('@', '');
@@ -975,8 +978,9 @@ async function openPostDetailModal(postId) {
             line-height:1.5;margin-top:12px;
             word-break:break-word;white-space:pre-wrap;
           ">${escapeHtml(postText)}</p>
-          ${mediaHtml}
-          <p style="color:var(--text-secondary);font-size:13px;margin-top:12px;">${postTime}</p>
+         ${mediaHtml}
+${quoteCardHtml}
+<p style="color:var(--text-secondary);font-size:13px;margin-top:12px;">${postTime}</p>
         </div>
       </div>
 
@@ -1069,6 +1073,16 @@ async function openPostDetailModal(postId) {
       const modalContent = document.getElementById('postDetailContent');
       if (modalContent) attachMedia(modalContent, new AbortController().signal);
     }
+    if (quoteCardHtml) {
+  const modalContent = document.getElementById('postDetailContent');
+  modalContent?.querySelectorAll('.quote-card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const qId = card.dataset.quotedPostId;
+      if (qId) openPostDetailModal(qId);
+    });
+  });
+}
 
     content.querySelectorAll('.detail-clickable-avatar').forEach(el => {
       el.addEventListener('click', () => {
