@@ -150,13 +150,13 @@ export function createQuoteCardHTML(originalPost) {
 
   return `
     <div class="quote-card" data-quoted-post-id="${originalPost.id}" style="
-      margin-top:10px;
-      border:1px solid var(--border);
-      border-radius:12px;
-      padding:10px 14px;
-      cursor:pointer;
-      background:var(--dark-bg);
-      transition:background 0.2s;
+  margin-top:10px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:10px 14px;
+  cursor:pointer;
+  background:var(--dark-bg);
+  transition:background 0.2s;
     " onmouseover="this.style.background='var(--dark-bg-secondary)'"
        onmouseout="this.style.background='var(--dark-bg)'">
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
@@ -227,9 +227,13 @@ export function openQuoteModal(originalPost, onSubmit) {
         box-sizing:border-box;
       "></textarea>
 
-      <div style="
-        border:1px solid var(--border);border-radius:12px;
-        padding:10px 14px;background:var(--dark-bg);
+      <div id="quotedPostBox" style="
+        border:1px solid var(--border);
+        border-radius:12px;
+        padding:10px 14px;
+        background:var(--dark-bg);
+        cursor:pointer;
+        transition:0.2s;
       ">
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
           <img src="${authorAvatar}" style="width:18px;height:18px;border-radius:50%;object-fit:cover;">
@@ -240,10 +244,14 @@ export function openQuoteModal(originalPost, onSubmit) {
             @${escapeHtml(originalPost.author?.handle ?? '')}
           </span>
         </div>
-        <p style="font-size:13px;color:var(--text-secondary);margin:0;line-height:1.4;
-                  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;">
+
+        <p style="
+          font-size:13px;color:var(--text-secondary);margin:0;line-height:1.4;
+          display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;
+        ">
           ${escapeHtml(originalPost.content ?? '')}
         </p>
+
         ${mediaThumb}
       </div>
 
@@ -253,23 +261,54 @@ export function openQuoteModal(originalPost, onSubmit) {
           color:var(--text-primary);padding:8px 18px;
           border-radius:20px;cursor:pointer;font-size:14px;
         ">Cancelar</button>
+
         <button id="submitQuoteBtn" style="
           background:var(--primary);color:white;border:none;
           padding:8px 22px;border-radius:20px;cursor:pointer;
           font-size:14px;font-weight:600;
-        ">Citar</button>
+        ">Citar</button>  
       </div>
     </div>
   `;
 
   document.body.appendChild(modal);
 
+  // =============================
+  // FECHAR MODAL
+  // =============================
   const closeModal = () => modal.remove();
+
   document.getElementById('closeQuoteModal').addEventListener('click', closeModal);
   document.getElementById('cancelQuoteBtn').addEventListener('click', closeModal);
-  modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeModal();
+  });
+
+  // =============================
+  // CLICK NO POST CITADO
+  // =============================
+  const quotedBox = document.getElementById('quotedPostBox');
+
+  quotedBox.addEventListener('click', (e) => {
+    e.stopPropagation(); // evita fechar modal
+    goToPost(originalPost.id);
+  });
+
+  // Hover efeito (mais clean que inline)
+  quotedBox.addEventListener('mouseenter', () => {
+    quotedBox.style.background = 'var(--dark-bg-hover)';
+  });
+
+  quotedBox.addEventListener('mouseleave', () => {
+    quotedBox.style.background = 'var(--dark-bg)';
+  });
+
+  // =============================
+  // ENVIAR CITAÇÃO
+  // =============================
   const submitBtn = document.getElementById('submitQuoteBtn');
+
   submitBtn.addEventListener('click', async () => {
     const content = document.getElementById('quoteInput').value.trim();
     if (!content) return;
@@ -287,6 +326,45 @@ export function openQuoteModal(originalPost, onSubmit) {
   });
 
   document.getElementById('quoteInput').focus();
+}
+export function attachQuoteCardListeners(container) {
+  container.querySelectorAll('.quote-card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      e.stopPropagation();
+
+      const postId = card.dataset.quotedPostId;
+      if (!postId) return;
+
+      // Usa o modal do home.js se disponível
+      if (window.renderPostPage) {
+        window.renderPostPage(postId);
+      } else {
+        window.location.href = `/post/${postId}`;
+      }
+    });
+
+    card.addEventListener('mouseenter', () => {
+      card.style.background = 'var(--dark-bg-secondary)';
+    });
+
+    card.addEventListener('mouseleave', () => {
+      card.style.background = 'var(--dark-bg)';
+    });
+  });
+}
+
+// =============================
+// FUNÇÃO DE NAVEGAÇÃO
+// =============================
+function goToPost(postId) {
+  // Se você tiver SPA (recomendado)
+  if (window.renderPostPage) {
+    window.renderPostPage(postId);
+    return;
+  }
+
+  // fallback (caso seja página tradicional)
+  window.location.href = `/post/${postId}`;
 }
 
 // ============================================================

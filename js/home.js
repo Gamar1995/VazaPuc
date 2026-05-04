@@ -23,6 +23,7 @@ import {
   createQuoteCardHTML,
   getOriginalPost,
   attachRepostListeners,
+  attachQuoteCardListeners,
   getRepostedPosts,   
 } from './Reposts.js';
 
@@ -74,6 +75,9 @@ let currentEditingPostId = null;
 let feedListenersController = new AbortController();
 let profileListenersController = new AbortController();
 let profileBtnControllers = [];
+
+window.renderPostPage = (postId) => openPostDetailModal(postId);
+
 
 // ============================================================
 // INICIALIZAÇÃO IMEDIATA
@@ -394,7 +398,15 @@ async function loadQuoteCards(container) {
       const originalPost = await getOriginalPost(quotedId);
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = createQuoteCardHTML(originalPost);
-      placeholder.replaceWith(tempDiv.firstElementChild);
+      const newCard = tempDiv.firstElementChild;
+
+      // ✅ Anexa o listener DIRETO no novo card, após criá-lo
+      newCard.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openPostDetailModal(quotedId);
+      });
+
+      placeholder.replaceWith(newCard);
     } catch (_) {
       placeholder.remove();
     }
@@ -425,6 +437,7 @@ function renderPosts(posts, containerElement, context = 'feed') {
   if (context === 'profile') abortProfileListeners();
   containerElement.innerHTML = posts.map(post => createPostHTML(post)).join('');
   attachPostEventListeners(containerElement, context);
+  attachQuoteCardListeners(containerElement);
 }
 
 // ============================================================
