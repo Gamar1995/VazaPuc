@@ -24,7 +24,7 @@ import {
   getOriginalPost,
   attachRepostListeners,
   attachQuoteCardListeners,
-  getRepostedPosts,   
+  getRepostedPosts,
 } from './Reposts.js';
 
 import {
@@ -78,7 +78,6 @@ let profileBtnControllers = [];
 
 window.renderPostPage = (postId) => openPostDetailModal(postId);
 
-
 // ============================================================
 // INICIALIZAÇÃO IMEDIATA
 // ============================================================
@@ -96,7 +95,8 @@ try {
   setupEditPostModal();
   setupTrendingWidget();
   setupMediaInModal();
-  setupTemas(); // Inicializa as Configurações e Temas
+  setupSearch();
+  setupTemas();
 } catch (erroInterface) {
   console.error('Erro ao carregar interface:', erroInterface);
 }
@@ -388,7 +388,7 @@ async function loadFollowingFeed() {
 }
 
 // ============================================================
-// CARREGA QUOTE CARDS (posts citados)
+// CARREGA QUOTE CARDS
 // ============================================================
 async function loadQuoteCards(container) {
   const placeholders = container.querySelectorAll('.quote-placeholder[data-quoted-id]');
@@ -400,7 +400,6 @@ async function loadQuoteCards(container) {
       tempDiv.innerHTML = createQuoteCardHTML(originalPost);
       const newCard = tempDiv.firstElementChild;
 
-      // ✅ Anexa o listener DIRETO no novo card, após criá-lo
       newCard.addEventListener('click', (e) => {
         e.stopPropagation();
         openPostDetailModal(quotedId);
@@ -441,7 +440,7 @@ function renderPosts(posts, containerElement, context = 'feed') {
 }
 
 // ============================================================
-// CRIA HTML DO POST (com suporte a mídia e quote)
+// CRIA HTML DO POST
 // ============================================================
 function createPostHTML(post) {
   const isLiked = likedPostIds.has(post.id);
@@ -454,7 +453,7 @@ function createPostHTML(post) {
 
   const isMyPost = currentProfile && currentProfile.id === post.author?.id;
 
-const optionsMenu = isMyPost ? `
+  const optionsMenu = isMyPost ? `
     <div class="post-options-wrapper">
       <button class="post-options-btn" data-post-id="${post.id}" style="
         background:none;border:none;cursor:pointer;
@@ -496,22 +495,19 @@ const optionsMenu = isMyPost ? `
       <div class="post-main" style="display:flex;gap:16px;width:100%;">
         <img src="${authorAvatar}" class="avatar clickable-avatar" data-handle="${post.author?.handle}" style="cursor:pointer;">
         <div class="post-content" style="flex:1;min-width:0;">
-         <div class="post-header" style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;width:100%;">
+          <div class="post-header" style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;width:100%;">
             <span class="post-author clickable-avatar" data-handle="${post.author?.handle}" style="cursor:pointer;">
               ${escapeHtml(post.author?.name ?? 'Usuário')}
             </span>
             <span class="post-handle">@${escapeHtml(post.author?.handle ?? '')}</span>
-            
-            <div style="margin-left:auto; display:flex; align-items:center; gap:8px;">
+            <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
               <span class="post-time" style="margin-left:0;">${timeAgo}</span>
               ${optionsMenu}
             </div>
           </div>
           <p class="post-text post-clickable-body" data-post-id="${post.id}">${escapeHtml(post.content)}</p>
-
           ${mediaGrid}
           ${quoteCard}
-
           <div class="post-actions">
             <button class="post-action reply-action" title="Responder" data-post-id="${post.id}" style="background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:4px;color:inherit;font-size:inherit;padding:4px 8px;">
               💬 <span class="reply-count">${post.replies_count ?? 0}</span>
@@ -537,7 +533,6 @@ const optionsMenu = isMyPost ? `
           </div>
         </div>
       </div>
-
       <div class="post-replies-section" id="replies-${post.id}" style="display:none;">
         <div class="reply-composer">
           <img src="${userAvatar}" class="reply-avatar">
@@ -564,7 +559,7 @@ function attachPostEventListeners(container = document, context = 'feed') {
     ? feedListenersController.signal
     : profileListenersController.signal;
 
-  // ── GAVETA (post-options-btn) ─────────────────────────────
+  // ── MENU DE OPÇÕES ────────────────────────────────────────
   container.querySelectorAll('.post-options-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -604,13 +599,10 @@ function attachPostEventListeners(container = document, context = 'feed') {
       menu.querySelector('.fm-edit')?.addEventListener('click', async (ev) => {
         ev.stopPropagation();
         menu.remove();
-        
         const postCard = document.querySelector(`.post-card[data-post-id="${postId}"]`);
         const currentText = postCard?.querySelector('.post-text')?.textContent ?? '';
-        
         const editModal = document.getElementById('editPostModal');
         const editInput = document.getElementById('editPostInput');
-        
         if (editModal && editInput) {
           currentEditingPostId = postId;
           editInput.value = currentText;
@@ -628,7 +620,9 @@ function attachPostEventListeners(container = document, context = 'feed') {
             await deletePost(postId);
             document.querySelector(`.post-card[data-post-id="${postId}"]`)?.remove();
             showNotification('Post apagado 🗑️');
-          } catch (err) { showNotification('Erro ao apagar post.'); }
+          } catch (err) {
+            showNotification('Erro ao apagar post.');
+          }
         }
       });
 
@@ -639,7 +633,7 @@ function attachPostEventListeners(container = document, context = 'feed') {
     document.getElementById('floatingPostMenu')?.remove();
   }, { signal });
 
-  // ── LIKE ─────────────────────────────────────────────────
+  // ── LIKE ──────────────────────────────────────────────────
   container.querySelectorAll('.like-action').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
@@ -692,38 +686,31 @@ function attachPostEventListeners(container = document, context = 'feed') {
         });
         if (wasLiked) likedPostIds.add(postId);
         else likedPostIds.delete(postId);
-
-        if (err?.status !== 409) {
-          showNotification('Erro ao curtir. Tente novamente.');
-        }
+        if (err?.status !== 409) showNotification('Erro ao curtir. Tente novamente.');
       } finally {
         allBtns.forEach(b => { b.style.pointerEvents = ''; });
       }
     }, { signal });
   });
 
-  // ── REPOST (via Reposts.js) ───────────────────────────────
+  // ── REPOST ────────────────────────────────────────────────
   attachRepostListeners(container, currentProfile, signal, {
     showNotification,
     createNotification: async (payload) => {
       try { await createNotification(payload); } catch (_) {}
     },
-    onRepostSuccess: (postId) => {
-      repostedPostIds.add(postId);
-    },
-    onUndoRepostSuccess: (postId) => {
-      repostedPostIds.delete(postId);
-    },
+    onRepostSuccess: (postId) => { repostedPostIds.add(postId); },
+    onUndoRepostSuccess: (postId) => { repostedPostIds.delete(postId); },
     prependPost: () => {
       if (activeFeedTab === 'para-voce') loadFeed();
       else loadFollowingFeed();
     },
   });
 
-  // ── MÍDIA (lightbox via Midia.js) ─────────────────────────
+  // ── MÍDIA ─────────────────────────────────────────────────
   attachMediaListeners(container, signal);
 
-  // ── QUOTE CARD (clicável) ─────────────────────────────────
+  // ── QUOTE CARD ────────────────────────────────────────────
   container.querySelectorAll('.quote-card').forEach(card => {
     card.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -732,20 +719,19 @@ function attachPostEventListeners(container = document, context = 'feed') {
     }, { signal });
   });
 
-  // ── AVATAR / NOME (ir para perfil) ───────────────────────
+  // ── AVATAR / NOME → PERFIL ────────────────────────────────
   container.querySelectorAll('.clickable-avatar').forEach(el => {
     el.addEventListener('click', (e) => {
       e.stopPropagation();
       const handle = el.dataset.handle;
       if (!handle) return;
-
       document.querySelectorAll('.page-container').forEach(p => p.classList.remove('active'));
       document.getElementById('profile-page').classList.add('active');
       loadProfileByHandle(handle);
     }, { signal });
   });
 
-  // ── CLIQUE NO CARD (abre modal de detalhe) ────────────────
+  // ── CLIQUE NO CARD → MODAL DE DETALHE ────────────────────
   container.querySelectorAll('.post-card').forEach(card => {
     card.addEventListener('click', (e) => {
       if (
@@ -756,20 +742,18 @@ function attachPostEventListeners(container = document, context = 'feed') {
         e.target.closest('.media-grid') ||
         e.target.closest('.quote-card')
       ) return;
-
       const postId = card.dataset.postId;
       if (postId) openPostDetailModal(postId);
     }, { signal });
   });
 
-  // ── ABRIR SEÇÃO DE COMENTÁRIOS ───────────────────────────
+  // ── ABRIR COMENTÁRIOS ─────────────────────────────────────
   container.querySelectorAll('.reply-action').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
       const postId = btn.dataset.postId;
       const postCard = btn.closest('.post-card');
       const repliesSection = postCard.querySelector('.post-replies-section');
-
       if (!repliesSection) return;
 
       if (repliesSection.style.display === 'none') {
@@ -783,7 +767,7 @@ function attachPostEventListeners(container = document, context = 'feed') {
     }, { signal });
   });
 
-  // ── ENVIAR COMENTÁRIO ────────────────────────────────────
+  // ── ENVIAR COMENTÁRIO ─────────────────────────────────────
   container.querySelectorAll('.reply-submit-btn').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
@@ -798,7 +782,6 @@ function attachPostEventListeners(container = document, context = 'feed') {
       const postCard = btn.closest('.post-card');
       const input = postCard.querySelector('.reply-input');
       const content = input?.value.trim();
-
       if (!content) return;
 
       btn.disabled = true;
@@ -825,8 +808,7 @@ function attachPostEventListeners(container = document, context = 'feed') {
           </div>
         `;
 
-        const allRepliesLists = document.querySelectorAll(`[id="replies-list-${postId}"]`);
-        allRepliesLists.forEach(list => {
+        document.querySelectorAll(`[id="replies-list-${postId}"]`).forEach(list => {
           const emptyMsg = list.querySelector('p');
           if (emptyMsg) emptyMsg.remove();
           list.insertAdjacentHTML('afterbegin', newReplyHTML);
@@ -948,13 +930,11 @@ async function openPostDetailModal(postId) {
     const isLiked = likedPostIds.has(postId);
     const authorId = postCard?.dataset?.authorId ?? likeBtn?.dataset?.authorId ?? '';
 
-    // Mídia do post
-   const mediaGrid = postCard?.querySelector('.media-grid');
-const mediaHtml = mediaGrid ? mediaGrid.outerHTML : '';
+    const mediaGrid = postCard?.querySelector('.media-grid');
+    const mediaHtml = mediaGrid ? mediaGrid.outerHTML : '';
+    const quoteCard = postCard?.querySelector('.quote-card');
+    const quoteCardHtml = quoteCard ? quoteCard.outerHTML : '';
 
-// Quote card do post (se existir)
-const quoteCard = postCard?.querySelector('.quote-card');
-const quoteCardHtml = quoteCard ? quoteCard.outerHTML : '';
     const userAvatar = currentProfile?.avatar_url
       || `https://api.dicebear.com/7.x/avataaars/svg?seed=anon`;
     const handle = authorHandle.replace('@', '');
@@ -973,24 +953,16 @@ const quoteCardHtml = quoteCard ? quoteCard.outerHTML : '';
             </span>
             <span style="color:var(--text-secondary);font-size:14px;">${escapeHtml(authorHandle)}</span>
           </div>
-          <p style="
-            font-size:20px;color:var(--text-primary);
-            line-height:1.5;margin-top:12px;
-            word-break:break-word;white-space:pre-wrap;
-          ">${escapeHtml(postText)}</p>
-         ${mediaHtml}
-${quoteCardHtml}
-<p style="color:var(--text-secondary);font-size:13px;margin-top:12px;">${postTime}</p>
+          <p style="font-size:20px;color:var(--text-primary);line-height:1.5;margin-top:12px;word-break:break-word;white-space:pre-wrap;">
+            ${escapeHtml(postText)}
+          </p>
+          ${mediaHtml}
+          ${quoteCardHtml}
+          <p style="color:var(--text-secondary);font-size:13px;margin-top:12px;">${postTime}</p>
         </div>
       </div>
 
-      <div style="
-        display:flex;gap:20px;
-        padding:14px 0;
-        border-top:1px solid var(--border);
-        border-bottom:1px solid var(--border);
-        margin-bottom:16px;
-      ">
+      <div style="display:flex;gap:20px;padding:14px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:16px;">
         <span style="color:var(--text-secondary);font-size:14px;">
           <strong style="color:var(--text-primary);">${replyCount}</strong> Respostas
         </span>
@@ -999,33 +971,20 @@ ${quoteCardHtml}
         </span>
       </div>
 
-      <div style="
-        display:flex;gap:24px;
-        padding-bottom:16px;
-        border-bottom:1px solid var(--border);
-        margin-bottom:16px;
-      ">
+      <div style="display:flex;gap:24px;padding-bottom:16px;border-bottom:1px solid var(--border);margin-bottom:16px;">
         <button id="detailLikeBtn"
           data-post-id="${postId}"
           data-author-id="${authorId}"
           data-liked="${isLiked}"
           class="like-action ${isLiked ? 'liked' : ''}"
-          style="
-            background:none;border:none;cursor:pointer;
-            display:flex;align-items:center;gap:6px;
-            color:${isLiked ? 'var(--danger, #e0245e)' : 'var(--text-secondary)'};
-            font-size:15px;font-weight:600;
-            transition:color 0.2s;
-            padding:0;
-          ">
+          style="background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;
+                 color:${isLiked ? 'var(--danger,#e0245e)' : 'var(--text-secondary)'};
+                 font-size:15px;font-weight:600;transition:color 0.2s;padding:0;">
           ${isLiked ? '❤️' : '🤍'} <span class="like-count">${likeCount}</span>
         </button>
         <button id="detailReplyToggle"
-          style="
-            background:none;border:none;cursor:pointer;
-            display:flex;align-items:center;gap:6px;
-            color:var(--text-secondary);font-size:15px;font-weight:600;
-          ">
+          style="background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;
+                 color:var(--text-secondary);font-size:15px;font-weight:600;">
           💬 Responder
         </button>
       </div>
@@ -1035,26 +994,19 @@ ${quoteCardHtml}
           <img src="${userAvatar}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;">
           <div style="flex:1;">
             <textarea id="detailReplyInput" placeholder="Postar sua resposta..." rows="3"
-              style="
-                width:100%;resize:none;
-                background:var(--dark-bg);
-                border:1px solid var(--border);
-                border-radius:12px;padding:10px 14px;
-                color:var(--text-primary);font-size:14px;
-                outline:none;font-family:inherit;
-              "></textarea>
+              style="width:100%;resize:none;background:var(--dark-bg);border:1px solid var(--border);
+                     border-radius:12px;padding:10px 14px;color:var(--text-primary);font-size:14px;
+                     outline:none;font-family:inherit;"></textarea>
             <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;">
               <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-secondary);cursor:pointer;">
                 <input type="checkbox" id="detailReplyPrivacy">
                 🔒 Apenas o autor pode ver
               </label>
               <button id="detailReplySubmit" data-post-id="${postId}" data-author-id="${authorId}"
-                style="
-                  background:var(--primary);color:white;
-                  border:none;border-radius:20px;
-                  padding:8px 20px;font-size:14px;font-weight:600;
-                  cursor:pointer;
-                ">Responder</button>
+                style="background:var(--primary);color:white;border:none;border-radius:20px;
+                       padding:8px 20px;font-size:14px;font-weight:600;cursor:pointer;">
+                Responder
+              </button>
             </div>
           </div>
         </div>
@@ -1065,24 +1017,22 @@ ${quoteCardHtml}
       </div>
     `;
 
-    // Lightbox para mídia dentro do modal
     if (mediaHtml) {
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = mediaHtml;
       const { attachMediaListeners: attachMedia } = await import('./Midia.js');
       const modalContent = document.getElementById('postDetailContent');
       if (modalContent) attachMedia(modalContent, new AbortController().signal);
     }
+
     if (quoteCardHtml) {
-  const modalContent = document.getElementById('postDetailContent');
-  modalContent?.querySelectorAll('.quote-card').forEach(card => {
-    card.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const qId = card.dataset.quotedPostId;
-      if (qId) openPostDetailModal(qId);
-    });
-  });
-}
+      const modalContent = document.getElementById('postDetailContent');
+      modalContent?.querySelectorAll('.quote-card').forEach(card => {
+        card.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const qId = card.dataset.quotedPostId;
+          if (qId) openPostDetailModal(qId);
+        });
+      });
+    }
 
     content.querySelectorAll('.detail-clickable-avatar').forEach(el => {
       el.addEventListener('click', () => {
@@ -1115,12 +1065,13 @@ ${quoteCardHtml}
         const c = b.querySelector('.like-count');
         if (c) c.textContent = newCount;
       });
+
       const statEl = document.getElementById('detailLikeCountStat');
       if (statEl) statEl.textContent = newCount;
 
       const iconSpan = detailLikeBtn.childNodes[0];
       if (iconSpan) iconSpan.textContent = newLiked ? '❤️' : '🤍';
-      detailLikeBtn.style.color = newLiked ? 'var(--danger, #e0245e)' : 'var(--text-secondary)';
+      detailLikeBtn.style.color = newLiked ? 'var(--danger,#e0245e)' : 'var(--text-secondary)';
 
       if (newLiked) likedPostIds.add(pid);
       else likedPostIds.delete(pid);
@@ -1144,8 +1095,7 @@ ${quoteCardHtml}
         if (statEl) statEl.textContent = currentCount;
         const iconSpanRev = detailLikeBtn.childNodes[0];
         if (iconSpanRev) iconSpanRev.textContent = wasLiked ? '❤️' : '🤍';
-        detailLikeBtn.style.color = wasLiked ? 'var(--danger, #e0245e)' : 'var(--text-secondary)';
-
+        detailLikeBtn.style.color = wasLiked ? 'var(--danger,#e0245e)' : 'var(--text-secondary)';
         if (wasLiked) likedPostIds.add(pid);
         else likedPostIds.delete(pid);
         if (err?.status !== 409) showNotification('Erro ao curtir.');
@@ -1229,11 +1179,7 @@ async function loadDetailReplies(postId) {
         || `https://api.dicebear.com/7.x/avataaars/svg?seed=${r.author?.handle}`;
       const timeAgo = formatTimeAgo(r.created_at);
       return `
-        <div style="
-          display:flex;gap:12px;
-          padding:14px 0;
-          border-bottom:1px solid var(--border);
-        ">
+        <div style="display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);">
           <img src="${avatar}"
                class="detail-reply-avatar"
                data-handle="${r.author?.handle ?? ''}"
@@ -1270,7 +1216,7 @@ async function loadDetailReplies(postId) {
 }
 
 // ============================================================
-// CARREGA REPLIES INLINE
+// REPLIES INLINE
 // ============================================================
 async function loadRepliesForPost(postId, listElement = null) {
   const repliesList = listElement || document.getElementById(`replies-list-${postId}`);
@@ -1290,7 +1236,6 @@ async function loadRepliesForPost(postId, listElement = null) {
       const avatar = r.author?.avatar_url
         || `https://api.dicebear.com/7.x/avataaars/svg?seed=${r.author?.handle}`;
       const timeAgo = formatTimeAgo(r.created_at);
-
       return `
         <div class="reply-item">
           <img src="${avatar}" class="reply-avatar" style="width:30px;height:30px;">
@@ -1327,7 +1272,6 @@ function prependPost(post) {
   container.prepend(postEl);
   attachPostEventListeners(container, 'feed');
 
-  // Carrega quote card se necessário
   if (post.is_quote && post.quoted_post_id) {
     loadQuoteCards(container);
   }
@@ -1368,6 +1312,7 @@ function setupPostModal() {
     if (modalInput) modalInput.value = '';
     mediaComposer?.clearFiles();
   };
+
   closeBtn?.addEventListener('click', closeModal);
   cancelBtn?.addEventListener('click', closeModal);
   modal?.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
@@ -1448,7 +1393,6 @@ async function loadProfileTabContent(tabType) {
   contentEl.innerHTML = '<p style="padding:20px;text-align:center;">Carregando...</p>';
 
   try {
-    // ABA MÍDIA
     if (tabType === 'midia') {
       const mediaPosts = await getMediaPostsByUser(profileToLoad.id);
       renderProfileMediaGrid(mediaPosts, contentEl);
@@ -1462,12 +1406,10 @@ async function loadProfileTabContent(tabType) {
         getPostsByUser(profileToLoad.id),
         getRepostedPosts(profileToLoad.id),
       ]);
-      // Junta e ordena por data
       postsToRender = [...myPosts, ...myReposts].sort(
         (a, b) => new Date(b.created_at) - new Date(a.created_at)
       );
-    }
-    else if (tabType === 'curtidos') {
+    } else if (tabType === 'curtidos') {
       if (currentProfile && profileToLoad.id === currentProfile.id) {
         postsToRender = await getLikedPosts(profileToLoad.id);
       } else {
@@ -1479,9 +1421,7 @@ async function loadProfileTabContent(tabType) {
     postsToRender = postsToRender.filter(p => p != null);
 
     if (postsToRender.length === 0) {
-      const msg = tabType === 'curtidos'
-        ? 'Nenhum post curtido ainda. ❤️'
-        : 'Nenhum post encontrado. 🚀';
+      const msg = tabType === 'curtidos' ? 'Nenhum post curtido ainda. ❤️' : 'Nenhum post encontrado. 🚀';
       contentEl.innerHTML = `<p style="padding:40px;text-align:center;color:var(--text-secondary)">${msg}</p>`;
       return;
     }
@@ -1594,9 +1534,7 @@ async function loadProfilePage() {
       followBtn.style.cssText = 'margin-left:8px;';
 
       let alreadyFollowing = false;
-      try {
-        alreadyFollowing = await isFollowing(profile.id);
-      } catch (_) {}
+      try { alreadyFollowing = await isFollowing(profile.id); } catch (_) {}
 
       const setFollowState = (following) => {
         followBtn.textContent = following ? '✓ Seguindo' : '+ Seguir';
@@ -1645,7 +1583,6 @@ async function loadProfilePage() {
   const tabs = document.querySelectorAll('.profile-tab-btn');
   tabs.forEach(t => t.classList.remove('active'));
   document.querySelector('.profile-tab-btn[data-tab="posts"]')?.classList.add('active');
-
   loadProfileTabContent('posts');
 }
 
@@ -1710,9 +1647,8 @@ function setupProfileModal() {
 }
 
 // ============================================================
-// MENSAGENS E CHAT (Com Atualização Otimista)
+// MENSAGENS E CHAT
 // ============================================================
-
 const renderedMessageIds = new Set();
 let currentOpenConvId = null;
 
@@ -1721,13 +1657,9 @@ async function loadMessagesPage() {
   const chatArea = document.getElementById('chatArea');
   if (!listEl) return;
 
-  // 1. Reseta o chat para o estado vazio (estilo Instagram)
   if (chatArea) {
     chatArea.innerHTML = `
-      <div style="
-        display:flex;flex-direction:column;align-items:center;justify-content:center;
-        height:100%;gap:12px;color:var(--text-secondary);
-      ">
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;color:var(--text-secondary);">
         <div style="font-size:48px;opacity:0.4;">💬</div>
         <p style="font-size:16px;font-weight:600;color:var(--text-primary);margin:0;">Suas mensagens</p>
         <p style="font-size:14px;margin:0;">Selecione uma conversa para começar</p>
@@ -1753,12 +1685,8 @@ async function loadMessagesPage() {
     listEl.innerHTML = convs.map(c => {
       const avatar = c.otherUser?.avatar_url
         || `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.otherUser?.handle}`;
-
       const preview = c.lastMessage
-        ? `<p class="conversation-preview" style="
-            font-size:12px;color:var(--text-secondary);
-            white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;margin:2px 0 0;
-          ">${escapeHtml(c.lastMessage.content)}</p>`
+        ? `<p class="conversation-preview" style="font-size:12px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;margin:2px 0 0;">${escapeHtml(c.lastMessage.content)}</p>`
         : `<p class="conversation-preview" style="font-size:12px;color:var(--text-secondary);font-style:italic;margin:2px 0 0;">Sem mensagens</p>`;
 
       return `
@@ -1774,10 +1702,8 @@ async function loadMessagesPage() {
 
     document.querySelectorAll('.conversation-item').forEach(item => {
       item.addEventListener('click', () => {
-        // Destaca conversa selecionada
         document.querySelectorAll('.conversation-item').forEach(i => i.classList.remove('active'));
         item.classList.add('active');
-
         const convId = item.dataset.id;
         const conv = convs.find(c => c.id === convId);
         if (conv) openChat(convId, conv.otherUser);
@@ -1794,23 +1720,16 @@ async function openChat(convId, otherUser) {
   const chatArea = document.getElementById('chatArea');
   if (!chatArea) return;
 
-  // Para subscription anterior
   if (unsubscribeCurrentChat) {
     unsubscribeCurrentChat();
     unsubscribeCurrentChat = null;
   }
 
-  // Limpa IDs de mensagens já renderizadas e marca conversa atual
   renderedMessageIds.clear();
   currentOpenConvId = convId;
 
   chatArea.innerHTML = `
-    <div style="
-      padding:16px;border-bottom:1px solid var(--border);
-      background:var(--dark-bg-secondary);
-      display:flex;align-items:center;gap:10px;
-      flex-shrink:0;
-    ">
+    <div style="padding:16px;border-bottom:1px solid var(--border);background:var(--dark-bg-secondary);display:flex;align-items:center;gap:10px;flex-shrink:0;">
       <img src="${otherUser?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${otherUser?.handle}`}"
            style="width:36px;height:36px;border-radius:50%;object-fit:cover;">
       <div>
@@ -1818,46 +1737,28 @@ async function openChat(convId, otherUser) {
         <span style="color:var(--text-secondary);font-size:13px;margin-left:6px;">@${escapeHtml(otherUser?.handle ?? '')}</span>
       </div>
     </div>
-    <div id="chatMessages" style="
-      flex:1;overflow-y:auto;padding:16px;
-      display:flex;flex-direction:column;gap:10px;
-      background:var(--dark-bg);
-    ">
+    <div id="chatMessages" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;background:var(--dark-bg);">
       <p id="chatLoadingMsg" style="text-align:center;color:var(--text-secondary);">Carregando histórico...</p>
     </div>
-    <div style="
-      padding:16px;border-top:1px solid var(--border);
-      display:flex;gap:10px;background:var(--dark-bg-secondary);
-      flex-shrink:0;
-    ">
+    <div style="padding:16px;border-top:1px solid var(--border);display:flex;gap:10px;background:var(--dark-bg-secondary);flex-shrink:0;">
       <input type="text" id="msgInput" placeholder="Envie uma mensagem..."
-        style="
-          flex:1;padding:12px 16px;border-radius:20px;
-          border:1px solid var(--border);
-          background:var(--dark-bg);color:var(--text-primary);
-          outline:none;font-size:14px;
-        ">
+        style="flex:1;padding:12px 16px;border-radius:20px;border:1px solid var(--border);background:var(--dark-bg);color:var(--text-primary);outline:none;font-size:14px;">
       <button id="sendMsgBtn" class="post-submit-btn" style="padding:0 24px;">Enviar</button>
     </div>
   `;
 
-  // 1. Conecta o realtime ANTES de carregar o histórico
-  const seenIds = new Set();
-
   unsubscribeCurrentChat = subscribeToMessages(convId, (newMsg) => {
     if (renderedMessageIds.has(newMsg.id)) return;
     renderedMessageIds.add(newMsg.id);
-    seenIds.add(newMsg.id);
     appendMessageToUI(newMsg);
     updateConversationPreview(convId, newMsg.content);
   });
 
-  // 2. Carrega histórico e marca IDs como já vistos
   try {
     const msgs = await getMessages(convId);
     document.getElementById('chatLoadingMsg')?.remove();
     const container = document.getElementById('chatMessages');
-    
+
     if (container && msgs.length === 0) {
       container.innerHTML = '<p style="text-align:center;color:var(--text-secondary);padding:20px;">Diga olá! 👋</p>';
     } else {
@@ -1871,7 +1772,6 @@ async function openChat(convId, otherUser) {
     if (chatMessages) chatMessages.innerHTML = '<p style="color:var(--danger);text-align:center;padding:20px;">Erro ao carregar mensagens.</p>';
   }
 
-  // 3. Configura envio
   const input = document.getElementById('msgInput');
   const btn = document.getElementById('sendMsgBtn');
   if (!input || !btn) return;
@@ -1883,7 +1783,6 @@ async function openChat(convId, otherUser) {
     input.value = '';
     input.focus();
 
-    // Otimismo: mostra a mensagem imediatamente na UI
     const optimisticMsg = {
       id: `optimistic-${Date.now()}`,
       content,
@@ -1912,23 +1811,10 @@ async function openChat(convId, otherUser) {
   input.focus();
 }
 
-function renderMessagesList(msgs) {
-  const container = document.getElementById('chatMessages');
-  if (!container) return;
-
-  if (msgs.length === 0) {
-    container.innerHTML = '<p style="text-align:center;color:var(--text-secondary);padding:20px;">Diga olá! 👋</p>';
-    return;
-  }
-
-  msgs.forEach(msg => appendMessageToUI(msg));
-}
-
 function appendMessageToUI(msg) {
   const container = document.getElementById('chatMessages');
   if (!container || !currentProfile) return;
 
-  // Remove placeholder
   const placeholder = container.querySelector('p');
   if (placeholder && (placeholder.textContent.includes('Diga olá') || placeholder.textContent.includes('Carregando'))) {
     placeholder.remove();
@@ -1954,14 +1840,10 @@ function appendMessageToUI(msg) {
 function updateConversationPreview(convId, content) {
   const item = document.querySelector(`.conversation-item[data-id="${convId}"]`);
   if (!item) return;
-
   const preview = item.querySelector('.conversation-preview');
   if (preview) preview.textContent = content;
-
   const list = item.parentElement;
-  if (list && list.firstChild !== item) {
-    list.prepend(item);
-  }
+  if (list && list.firstChild !== item) list.prepend(item);
 }
 
 // ============================================================
@@ -1983,7 +1865,6 @@ async function initNotifications() {
 async function refreshNotifBadge() {
   const badge = document.getElementById('notifBadge');
   if (!badge) return;
-
   const count = await getUnreadCount();
   if (count > 0) {
     badge.textContent = count > 99 ? '99+' : count;
@@ -2013,16 +1894,12 @@ function setupNotifications() {
   bellBtn.addEventListener('click', async (e) => {
     e.preventDefault();
     e.stopPropagation();
-
     if (!currentProfile) {
       showNotification('Faça login para ver suas notificações! 🔐');
       return;
     }
-
     panel.classList.toggle('active');
-    if (panel.classList.contains('active')) {
-      await renderNotifList();
-    }
+    if (panel.classList.contains('active')) await renderNotifList();
   });
 
   backdrop?.addEventListener('click', () => panel.classList.remove('active'));
@@ -2114,38 +1991,75 @@ async function loadExplorePage() {
   const exploreContent = document.getElementById('exploreContent');
   if (!exploreContent) return;
 
-  exploreContent.innerHTML = '<p style="text-align:center;padding:40px;color:var(--text-secondary);">Carregando recomendações... 🔄</p>';
+  exploreContent.innerHTML = '<p style="text-align:center;padding:40px;color:var(--text-secondary);">Carregando... 🔄</p>';
 
   try {
-    const posts = await getPosts(30);
+    const posts = await getPosts(50);
+
+    // ── USUÁRIOS SUGERIDOS DINÂMICOS ──────────────────────────
+    let suggestedUsers = [];
+
+    if (currentProfile) {
+      const followingIds = await getFollowingIds(currentProfile.id);
+
+      const authorMap = new Map();
+      for (const post of posts) {
+        const author = post.author;
+        if (!author) continue;
+        if (author.id === currentProfile.id) continue;
+        if (followingIds.includes(author.id)) continue;
+        if (!authorMap.has(author.id)) authorMap.set(author.id, author);
+      }
+
+      const authorScore = new Map();
+      for (const post of posts) {
+        const author = post.author;
+        if (!author || author.id === currentProfile.id) continue;
+        if (followingIds.includes(author.id)) continue;
+        const score = (post.likes_count || 0) + (post.replies_count || 0) * 2;
+        authorScore.set(author.id, (authorScore.get(author.id) || 0) + score);
+      }
+
+      const sorted = [...authorMap.values()].sort((a, b) => {
+        const scoreA = (authorScore.get(a.id) || 0) * (0.7 + Math.random() * 0.6);
+        const scoreB = (authorScore.get(b.id) || 0) * (0.7 + Math.random() * 0.6);
+        return scoreB - scoreA;
+      });
+
+      suggestedUsers = sorted.slice(0, 6);
+    } else {
+      const authorMap = new Map();
+      for (const post of posts) {
+        if (post.author && !authorMap.has(post.author.id)) {
+          authorMap.set(post.author.id, post.author);
+        }
+      }
+      suggestedUsers = [...authorMap.values()].sort(() => Math.random() - 0.5).slice(0, 6);
+    }
+
+    // ── POSTS CATEGORIZADOS ───────────────────────────────────
     const topPosts = [...posts].sort((a, b) => (b.likes_count || 0) - (a.likes_count || 0)).slice(0, 4);
     const recentPosts = [...posts].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 4);
-    const friendsLiked = [...posts].sort(() => 0.5 - Math.random()).slice(0, 4);
-
-    const suggestedUsers = [
-      { name: 'Diretório Central', handle: 'dce_puc', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=dce' },
-      { name: 'Atlética de Exatas', handle: 'atletica_exatas', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=exatas' },
-      { name: 'Bateria Fúria', handle: 'bateria_furia', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=furia' },
-      { name: 'Lucas Mendes', handle: 'lucas_mendes', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=lucas' },
-      { name: 'Mariana Souza', handle: 'mari_sz', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=mari' },
-    ];
+    const randomPosts = [...posts].sort(() => Math.random() - 0.5).slice(0, 4);
 
     const renderMiniPost = (post, contextLabel, contextIcon) => {
-      const avatar = post.author?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author?.handle}`;
+      const avatar = post.author?.avatar_url
+        || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author?.handle}`;
       const mediaThumb = post.media_urls?.length
-        ? `<img src="${post.media_urls[0]}" style="width:100%;height:100px;object-fit:cover;border-radius:8px;margin-top:6px;">`
+        ? `<img src="${post.media_urls[0]}" style="width:100%;height:100px;object-fit:cover;border-radius:8px;margin-top:6px;" loading="lazy">`
         : '';
       return `
-        <div class="explore-post-card">
+        <div class="explore-post-card" data-post-id="${post.id}" style="cursor:pointer;">
           ${contextLabel ? `<div class="explore-context"><span class="explore-context-icon">${contextIcon}</span> ${contextLabel}</div>` : ''}
           <div style="display:flex;gap:8px;align-items:center;">
-            <img src="${avatar}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;">
+            <img src="${avatar}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;"
+                 class="explore-avatar-clickable" data-handle="${post.author?.handle}" loading="lazy">
             <div>
               <div style="font-weight:700;font-size:14px;color:var(--text-primary);">${escapeHtml(post.author?.name)}</div>
               <div style="color:var(--text-secondary);font-size:12px;">@${escapeHtml(post.author?.handle)}</div>
             </div>
           </div>
-          <div style="font-size:14px;color:var(--text-primary);line-height:1.5;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;">
+          <div style="font-size:14px;color:var(--text-primary);line-height:1.5;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;margin-top:8px;">
             ${escapeHtml(post.content)}
           </div>
           ${mediaThumb}
@@ -2156,32 +2070,108 @@ async function loadExplorePage() {
         </div>`;
     };
 
+    const renderSuggestedUser = (user) => {
+      const avatar = user.avatar_url
+        || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.handle}`;
+      return `
+        <div class="suggested-user-card" data-handle="${user.handle}" style="cursor:pointer;">
+          <img src="${avatar}" alt="${escapeHtml(user.name)}" loading="lazy">
+          <div>
+            <h4>${escapeHtml(user.name)}</h4>
+            <p>@${escapeHtml(user.handle)}</p>
+          </div>
+          <button class="btn-follow-small explore-follow-btn" data-user-id="${user.id}" data-handle="${user.handle}">Seguir</button>
+        </div>`;
+    };
+
     exploreContent.innerHTML = `
       <div class="explore-sections">
+        ${suggestedUsers.length > 0 ? `
         <section>
           <h3 class="explore-section-title">✨ Sugestões para você</h3>
           <div class="suggested-users-row">
-            ${suggestedUsers.map(u => `
-              <div class="suggested-user-card">
-                <img src="${u.avatar}" alt="${u.name}">
-                <div><h4>${u.name}</h4><p>@${u.handle}</p></div>
-                <button class="btn-follow-small">Seguir</button>
-              </div>`).join('')}
+            ${suggestedUsers.map(u => renderSuggestedUser(u)).join('')}
           </div>
-        </section>
+        </section>` : ''}
+
         <section>
           <h3 class="explore-section-title">🔥 Em Alta no VazaPUC</h3>
-          <div class="explore-grid">${topPosts.map(p => renderMiniPost(p, 'Baseado nos seus gostos', '⭐')).join('')}</div>
+          <div class="explore-grid">${topPosts.map(p => renderMiniPost(p, 'Mais curtidos', '⭐')).join('')}</div>
         </section>
+
         <section>
-          <h3 class="explore-section-title">👀 O que a galera tá vendo</h3>
-          <div class="explore-grid">${friendsLiked.map(p => renderMiniPost(p, 'Amigos também interagiram', '👥')).join('')}</div>
+          <h3 class="explore-section-title">👀 Descobrir posts</h3>
+          <div class="explore-grid">${randomPosts.map(p => renderMiniPost(p, 'Pode te interessar', '💫')).join('')}</div>
         </section>
+
         <section>
           <h3 class="explore-section-title">🕒 Acabou de vazar</h3>
           <div class="explore-grid">${recentPosts.map(p => renderMiniPost(p, 'Postado recentemente', '✨')).join('')}</div>
         </section>
       </div>`;
+
+    // ── EVENT LISTENERS ───────────────────────────────────────
+    exploreContent.querySelectorAll('.explore-post-card').forEach(card => {
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.explore-follow-btn') || e.target.closest('.explore-avatar-clickable')) return;
+        const postId = card.dataset.postId;
+        if (postId) openPostDetailModal(postId);
+      });
+    });
+
+    exploreContent.querySelectorAll('.explore-avatar-clickable').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const handle = el.dataset.handle;
+        if (!handle) return;
+        document.querySelectorAll('.page-container').forEach(p => p.classList.remove('active'));
+        document.getElementById('profile-page').classList.add('active');
+        loadProfileByHandle(handle);
+      });
+    });
+
+    exploreContent.querySelectorAll('.suggested-user-card').forEach(card => {
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.explore-follow-btn')) return;
+        const handle = card.dataset.handle;
+        if (!handle) return;
+        document.querySelectorAll('.page-container').forEach(p => p.classList.remove('active'));
+        document.getElementById('profile-page').classList.add('active');
+        loadProfileByHandle(handle);
+      });
+    });
+
+    exploreContent.querySelectorAll('.explore-follow-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (!currentProfile) { showNotification('Faça login para seguir! 🔐'); return; }
+        const userId = btn.dataset.userId;
+        btn.disabled = true;
+
+        if (btn.textContent.includes('Seguindo')) {
+          try {
+            await unfollowUserAndSync(currentProfile.id, userId);
+            btn.textContent = 'Seguir';
+            btn.style.background = '';
+            btn.style.color = '';
+          } catch { showNotification('Erro ao deixar de seguir.'); }
+        } else {
+          try {
+            await followUserAndSync(currentProfile.id, userId);
+            btn.textContent = '✓ Seguindo';
+            btn.style.background = 'var(--primary)';
+            btn.style.color = 'white';
+            await createNotification({
+              toUserId: userId,
+              actorId: currentProfile.id,
+              type: NOTIF_TYPES.FOLLOW,
+            });
+          } catch { showNotification('Erro ao seguir.'); }
+        }
+        btn.disabled = false;
+      });
+    });
+
   } catch (err) {
     console.error('Erro ao carregar explorar:', err);
     exploreContent.innerHTML = '<p style="color:var(--danger);text-align:center;padding:20px;">Erro ao carregar. Tente novamente!</p>';
@@ -2301,7 +2291,6 @@ function setupEditPostModal() {
 
   saveBtn?.addEventListener('click', async () => {
     if (!currentEditingPostId) return;
-    
     const newContent = input?.value.trim();
     if (!newContent) return;
 
@@ -2331,58 +2320,216 @@ function setupEditPostModal() {
 }
 
 // ============================================================
-// CONFIGURAÇÕES GERAIS E SISTEMA DE TEMAS
+// CONFIGURAÇÕES E TEMAS
 // ============================================================
 function setupTemas() {
-  // 1. Lógica das Abas Internas da Página de Configurações
   const settingsTabs = document.querySelectorAll('.settings-tab-btn');
   const settingsSections = document.querySelectorAll('.settings-section');
 
   settingsTabs.forEach(tab => {
     tab.addEventListener('click', () => {
-      // Remove o status de "ativo" de todas as abas e painéis
       settingsTabs.forEach(t => t.classList.remove('active'));
       settingsSections.forEach(s => s.classList.remove('active'));
-
-      // Adiciona o "ativo" no botão que o usuário acabou de clicar
       tab.classList.add('active');
-      
-      // Descobre qual painel deve ser aberto e o ativa
-      const targetId = `settings-${tab.getAttribute('data-settings-tab')}`;
-      const targetSection = document.getElementById(targetId);
-      if (targetSection) {
-        targetSection.classList.add('active');
-      }
+      const targetSection = document.getElementById(`settings-${tab.getAttribute('data-settings-tab')}`);
+      if (targetSection) targetSection.classList.add('active');
     });
   });
 
-  // 2. Lógica de Alteração do Tema de Cores
   const themeOptions = document.querySelectorAll('.theme-option');
-
   themeOptions.forEach(opcao => {
     opcao.addEventListener('click', () => {
       const temaEscolhido = opcao.getAttribute('data-theme');
-      
-      // Aplica a cor globalmente no site
       if (temaEscolhido === 'padrao') {
         document.documentElement.removeAttribute('data-theme');
       } else {
         document.documentElement.setAttribute('data-theme', temaEscolhido);
       }
-      
-      // Salva no navegador para o usuário não perder o tema
       localStorage.setItem('vazaPucTheme', temaEscolhido);
-
-      // Dá feedback visual na bolinha de cor (borda branca)
       themeOptions.forEach(opt => opt.style.borderColor = 'transparent');
       opcao.style.borderColor = '#ffffff';
     });
   });
 
-  // 3. Mantém a bolinha correta marcada quando recarrega a página
   const temaAtual = localStorage.getItem('vazaPucTheme') || 'padrao';
   const opcaoAtiva = document.querySelector(`.theme-option[data-theme="${temaAtual}"]`);
-  if (opcaoAtiva) {
-    opcaoAtiva.style.borderColor = '#ffffff';
-  }
+  if (opcaoAtiva) opcaoAtiva.style.borderColor = '#ffffff';
+}
+
+// ============================================================
+// BUSCA DE USUÁRIOS
+// ============================================================
+function setupSearch() {
+  const searchInput = document.getElementById('searchInput');
+  if (!searchInput) return;
+
+  let searchTimeout = null;
+
+  const getOrCreateDropdown = () => {
+    let el = document.getElementById('searchResultsDropdown');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'searchResultsDropdown';
+      el.style.cssText = `
+        position: absolute;
+        top: calc(100% + 6px);
+        left: 0; right: 0;
+        background: var(--dark-bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        z-index: 9000;
+        max-height: 420px;
+        overflow-y: auto;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        display: none;
+      `;
+      const searchBox = searchInput.closest('.search-box');
+      if (searchBox) {
+        if (getComputedStyle(searchBox).position === 'static') {
+          searchBox.style.position = 'relative';
+        }
+        searchBox.appendChild(el);
+      }
+    }
+    return el;
+  };
+
+  const hideResults = () => {
+    const el = document.getElementById('searchResultsDropdown');
+    if (el) el.style.display = 'none';
+  };
+
+  const showResults = (users, query) => {
+    const dropdown = getOrCreateDropdown();
+    dropdown.style.display = 'block';
+
+    if (users.length === 0) {
+      dropdown.innerHTML = `
+        <div style="padding:24px;text-align:center;color:var(--text-secondary);">
+          <div style="font-size:32px;margin-bottom:8px;">🔍</div>
+          <p style="font-size:14px;">Nenhuma conta para "<strong>${escapeHtml(query)}</strong>"</p>
+        </div>`;
+      return;
+    }
+
+    dropdown.innerHTML = `
+      <div style="padding:10px 16px 6px;font-size:11px;font-weight:700;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;">
+        Contas encontradas
+      </div>
+      ${users.map(user => {
+        const avatar = user.avatar_url
+          || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.handle}`;
+        const seguidores = user.followers_count != null ? user.followers_count : '—';
+        return `
+          <div class="search-result-item" data-handle="${escapeHtml(user.handle)}" style="
+            display:flex;align-items:center;gap:12px;
+            padding:10px 16px;cursor:pointer;
+            transition:background 0.15s;
+          ">
+            <img src="${avatar}"
+                 style="width:42px;height:42px;border-radius:50%;object-fit:cover;flex-shrink:0;"
+                 loading="lazy"
+                 onerror="this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${escapeHtml(user.handle)}'">
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:700;font-size:14px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                ${escapeHtml(user.name)}
+              </div>
+              <div style="color:var(--text-secondary);font-size:13px;">@${escapeHtml(user.handle)}</div>
+              ${user.bio ? `<div style="color:var(--text-secondary);font-size:12px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(user.bio)}</div>` : ''}
+            </div>
+            <div style="flex-shrink:0;">
+              <div style="font-size:12px;color:var(--text-secondary);">👥 ${seguidores}</div>
+            </div>
+          </div>`;
+      }).join('')}
+    `;
+
+    dropdown.querySelectorAll('.search-result-item').forEach(item => {
+      item.addEventListener('mouseenter', () => item.style.background = 'var(--border)');
+      item.addEventListener('mouseleave', () => item.style.background = '');
+      item.addEventListener('click', () => {
+        const handle = item.dataset.handle;
+        hideResults();
+        searchInput.value = '';
+        if (!handle) return;
+
+        document.querySelectorAll('.page-container').forEach(p => p.classList.remove('active'));
+        document.getElementById('profile-page')?.classList.add('active');
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.querySelector('.nav-item[data-page="profile"]')?.classList.add('active');
+
+        viewingProfile = null;
+        loadProfileByHandle(handle);
+      });
+    });
+  };
+
+  const performSearch = async (query) => {
+    if (!query || query.length < 2) { hideResults(); return; }
+
+    const dropdown = getOrCreateDropdown();
+    dropdown.style.display = 'block';
+    dropdown.innerHTML = `
+      <div style="padding:20px;text-align:center;color:var(--text-secondary);font-size:14px;">
+        🔍 Buscando...
+      </div>`;
+
+    try {
+      let data, error;
+
+      ({ data, error } = await supabase
+        .from('profiles')
+        .select('id, name, handle, avatar_url, bio, followers_count')
+        .or(`name.ilike.%${query}%,handle.ilike.%${query}%`)
+        .order('followers_count', { ascending: false })
+        .limit(10));
+
+      // Fallback se followers_count não existir
+      if (error && (error.code === '42703' || error.message?.includes('followers_count'))) {
+        ({ data, error } = await supabase
+          .from('profiles')
+          .select('id, name, handle, avatar_url, bio')
+          .or(`name.ilike.%${query}%,handle.ilike.%${query}%`)
+          .limit(10));
+      }
+
+      if (error) throw error;
+
+      showResults(data || [], query);
+    } catch (err) {
+      console.error('Erro na busca:', err);
+      const dd = document.getElementById('searchResultsDropdown');
+      if (dd) {
+        dd.innerHTML = `
+          <div style="padding:20px;text-align:center;color:var(--danger);font-size:14px;">
+            Erro ao buscar. Tente novamente.
+          </div>`;
+      }
+    }
+  };
+
+  searchInput.addEventListener('input', (e) => {
+    const query = e.target.value.trim();
+    clearTimeout(searchTimeout);
+    if (!query) { hideResults(); return; }
+    searchTimeout = setTimeout(() => performSearch(query), 350);
+  });
+
+  searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      clearTimeout(searchTimeout);
+      performSearch(e.target.value.trim());
+    }
+    if (e.key === 'Escape') {
+      hideResults();
+      searchInput.value = '';
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    const dropdown = document.getElementById('searchResultsDropdown');
+    if (dropdown && !searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+      hideResults();
+    }
+  });
 }
