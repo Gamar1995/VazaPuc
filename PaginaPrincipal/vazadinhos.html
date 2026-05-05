@@ -103,64 +103,8 @@
           </div>
         </header>
         <div class="feed">
-
-  <!-- Composer inline do feed -->
-  <div style="
-    border-bottom: 1px solid var(--border);
-    padding: 16px;
-    display: flex;
-    gap: 12px;
-    align-items: flex-start;
-  ">
-    <img class="composer-avatar"
-         src="https://api.dicebear.com/7.x/avataaars/svg?seed=anon"
-         style="width:42px; height:42px; border-radius:50%; object-fit:cover; flex-shrink:0;">
-
-    <div style="flex:1; display:flex; flex-direction:column; gap:8px;">
-      <textarea id="postInput" placeholder="O que está vazando? 👀" rows="2" style="
-        width:100%; resize:none; background:transparent;
-        border:none; outline:none;
-        color:var(--text-primary); font-size:15px;
-        font-family:inherit; line-height:1.5;
-      "></textarea>
-
-      <!-- Preview de imagens -->
-      <div id="feedImgPreview" style="display:none; flex-wrap:wrap; gap:6px;"></div>
-
-      <!-- Picker de emojis do feed -->
-      <div id="pickerEmojiFeed" style="
-        display:none; flex-wrap:wrap; gap:4px;
-        padding:10px;
-        background:var(--dark-bg); border:1px solid var(--border);
-        border-radius:10px; max-height:130px; overflow-y:auto;
-      "></div>
-
-      <!-- Toolbar -->
-      <div style="display:flex; align-items:center; gap:6px; border-top:1px solid var(--border); padding-top:10px;">
-        <input type="file" id="feedFileInput" accept="image/*,video/*" multiple style="display:none">
-
-        <button type="button" id="btnImgFeed" style="
-          background:none; border:1px solid var(--border); border-radius:8px;
-          padding:5px 12px; cursor:pointer; color:var(--text-secondary); font-size:13px;
-        ">📷 Imagem</button>
-
-        <button type="button" id="btnEmojiFeed" style="
-          background:none; border:1px solid var(--border); border-radius:8px;
-          padding:5px 12px; cursor:pointer; color:var(--text-secondary); font-size:13px;
-        ">😊 Emoji</button>
-
-        <button id="postSubmitBtn" style="
-          margin-left:auto;
-          background:var(--primary); color:white;
-          border:none; border-radius:20px;
-          padding:8px 22px; font-size:14px; font-weight:600; cursor:pointer;
-        ">Postar</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="posts-container" id="postsContainer"></div>
-</div>
+          <div class="posts-container" id="postsContainer"></div>
+        </div>
       </div>
 
       <div class="page-container" id="explore-page">
@@ -224,7 +168,6 @@
             <button class="settings-tab-btn active" data-settings-tab="conta">👤 Sua Conta</button>
             <button class="settings-tab-btn" data-settings-tab="privacidade">🔒 Privacidade</button>
             <button class="settings-tab-btn" data-settings-tab="notificacoes">🔔 Notificações</button>
-            <button class="settings-tab-btn" data-settings-tab="customizacao">🎨 Customização</button>
           </div>
 
           <div class="settings-content">
@@ -252,19 +195,6 @@
                 <p>Em breve: Alertas de menções, curtidas e novos seguidores.</p>
               </div>
             </div>
-
-            <div class="settings-section" id="settings-customizacao">
-              <h3>Aparência e Tema</h3>
-              <p style="color: var(--text-secondary); margin-bottom: 24px;">Personalize a cor de destaque do site. Isso será salvo apenas no seu dispositivo.</p>
-              
-              <div class="theme-options-grid">
-                <div class="theme-option" data-theme="padrao" style="background: #a31f4b;"></div>
-                <div class="theme-option" data-theme="azul" style="background: #1f5aa3;"></div>
-                <div class="theme-option" data-theme="cinza" style="background: #888888;"></div>
-                <div class="theme-option" data-theme="amarelo" style="background: #b8860b;"></div>
-              </div>
-            </div>
-
           </div>
         </div>
       </div>
@@ -308,9 +238,22 @@
         <h3>Compor Post</h3>
         <button class="modal-close" id="closePostModal">✕</button>
       </div>
-      <div class="modal-body">
+      <div class="modal-body" id="modalComposerBody">
+        <!-- Dentro de .modal-body do postModal, a ordem deve ser exatamente esta: -->
         <textarea id="modalPostInput" placeholder="O que está em sua mente?" rows="8"></textarea>
+
+        <div id="modalImgPreview" style="display:none; flex-wrap:wrap; gap:8px; margin:10px 0;"></div>
+
+        <div class="composer-toolbar-subbox">
+          <button type="button" class="toolbar-btn" id="btnEmojiModal" title="Adicionar Emoji">😊</button>
+          <label for="modalFileInput" class="toolbar-btn" title="Adicionar Foto" style="cursor:pointer;">📷</label>
+          <input type="file" id="modalFileInput" accept="image/*" multiple style="display:none">
+        </div>
+
+        <!-- picker DEVE vir logo após o toolbar, fora dele -->
+        <div id="pickerEmojiModal" class="emoji-picker-container"></div>
       </div>
+      
       <div class="modal-footer">
         <button class="btn-secondary" id="cancelPostBtn">Cancelar</button>
         <button class="btn-primary" id="submitPostBtn">Postar</button>

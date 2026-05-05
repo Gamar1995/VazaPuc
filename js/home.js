@@ -2643,4 +2643,79 @@ function setupSearch() {
     }
   });
 }
- document.addEventListener('DOMContentLoaded', setupEmojis);
+
+let arquivoSelecionadoModal = null;
+
+// Mostrar preview da imagem quando selecionada
+inputImagem.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        arquivoSelecionadoModal = file;
+        const reader = new FileReader();
+        reader.onload = function(evento) {
+            imagemPreview.src = evento.target.result;
+            previewContainer.style.display = 'block';
+        }
+        reader.readAsDataURL(file);
+    }
+});
+
+// Remover a imagem do preview
+removerImagem.addEventListener('click', () => {
+    inputImagem.value = '';
+    arquivoSelecionadoModal = null;
+    previewContainer.style.display = 'none';
+});
+
+// Abrir/Fechar emojis (adicione aqui a lógica da sua biblioteca de emojis, como o Emoji Button ou Emoji Mart)
+btnEmoji.addEventListener('click', () => {
+    if (emojiPickerContainer.style.display === 'none') {
+        emojiPickerContainer.style.display = 'block';
+    } else {
+        emojiPickerContainer.style.display = 'none';
+    }
+});
+
+// Limpar ao fechar o modal (procure onde você já fecha o modal e adicione isso)
+document.getElementById('closePostModal').addEventListener('click', limparModalImagem);
+document.getElementById('cancelPostBtn').addEventListener('click', limparModalImagem);
+
+function limparModalImagem() {
+    inputImagem.value = '';
+    arquivoSelecionadoModal = null;
+    previewContainer.style.display = 'none';
+    emojiPickerContainer.style.display = 'none';
+}
+// ── EMOJI FIX: garante listeners após DOM pronto ──
+document.addEventListener('DOMContentLoaded', () => {
+  const btnModal  = document.getElementById('btnEmojiModal');
+  const pkrModal  = document.getElementById('pickerEmojiModal');
+  const btnFeed   = document.getElementById('btnEmojiFeed');
+  const pkrFeed   = document.getElementById('pickerEmojiFeed');
+
+  const toggle = (picker, outro) => {
+    if (!picker) return;
+    picker.classList.toggle('active');
+    outro?.classList.remove('active');
+  };
+
+  btnModal?.addEventListener('click', e => {
+    e.stopPropagation();
+    toggle(pkrModal, pkrFeed);
+  });
+
+  btnFeed?.addEventListener('click', e => {
+    e.stopPropagation();
+    toggle(pkrFeed, pkrModal);
+  });
+
+  // fecha ao clicar fora
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.emoji-picker-container') &&
+        !e.target.closest('#btnEmojiModal') &&
+        !e.target.closest('#btnEmojiFeed')) {
+      pkrModal?.classList.remove('active');
+      pkrFeed?.classList.remove('active');
+    }
+  });
+});

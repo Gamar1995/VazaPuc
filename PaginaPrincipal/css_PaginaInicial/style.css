@@ -834,3 +834,48 @@ body {
 .btn-assinar-premium:hover::before {
   left: 150%; /* Move o reflexo para a direita, cruzando o botão */
 }
+/* ── EMOJI PICKER ── */
+.emoji-picker-container {
+  display: none;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  max-height: 180px;
+  overflow-y: auto;
+  margin-top: 8px;
+  width: 100%;
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent) var(--surface);
+}
+
+.emoji-picker-container.active {
+  display: flex;
+}
+
+.emoji-picker-container::-webkit-scrollbar { width: 4px; }
+.emoji-picker-container::-webkit-scrollbar-track { background: var(--surface); }
+.emoji-picker-container::-webkit-scrollbar-thumb {
+  background: var(--accent);
+  border-radius: 4px;
+}
+
+.emoji-item {
+  cursor: pointer;
+  font-size: 22px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  line-height: 1;
+  transition: background 0.15s, transform 0.1s;
+  user-select: none;
+}
+
+.emoji-item:hover {
+  background: rgba(var(--accent-rgb), 0.18);
+  border-color: var(--border);
+  transform: scale(1.25);
+}
