@@ -103,8 +103,64 @@
           </div>
         </header>
         <div class="feed">
-          <div class="posts-container" id="postsContainer"></div>
-        </div>
+
+  <!-- Composer inline do feed -->
+  <div style="
+    border-bottom: 1px solid var(--border);
+    padding: 16px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  ">
+    <img class="composer-avatar"
+         src="https://api.dicebear.com/7.x/avataaars/svg?seed=anon"
+         style="width:42px; height:42px; border-radius:50%; object-fit:cover; flex-shrink:0;">
+
+    <div style="flex:1; display:flex; flex-direction:column; gap:8px;">
+      <textarea id="postInput" placeholder="O que está vazando? 👀" rows="2" style="
+        width:100%; resize:none; background:transparent;
+        border:none; outline:none;
+        color:var(--text-primary); font-size:15px;
+        font-family:inherit; line-height:1.5;
+      "></textarea>
+
+      <!-- Preview de imagens -->
+      <div id="feedImgPreview" style="display:none; flex-wrap:wrap; gap:6px;"></div>
+
+      <!-- Picker de emojis do feed -->
+      <div id="pickerEmojiFeed" style="
+        display:none; flex-wrap:wrap; gap:4px;
+        padding:10px;
+        background:var(--dark-bg); border:1px solid var(--border);
+        border-radius:10px; max-height:130px; overflow-y:auto;
+      "></div>
+
+      <!-- Toolbar -->
+      <div style="display:flex; align-items:center; gap:6px; border-top:1px solid var(--border); padding-top:10px;">
+        <input type="file" id="feedFileInput" accept="image/*,video/*" multiple style="display:none">
+
+        <button type="button" id="btnImgFeed" style="
+          background:none; border:1px solid var(--border); border-radius:8px;
+          padding:5px 12px; cursor:pointer; color:var(--text-secondary); font-size:13px;
+        ">📷 Imagem</button>
+
+        <button type="button" id="btnEmojiFeed" style="
+          background:none; border:1px solid var(--border); border-radius:8px;
+          padding:5px 12px; cursor:pointer; color:var(--text-secondary); font-size:13px;
+        ">😊 Emoji</button>
+
+        <button id="postSubmitBtn" style="
+          margin-left:auto;
+          background:var(--primary); color:white;
+          border:none; border-radius:20px;
+          padding:8px 22px; font-size:14px; font-weight:600; cursor:pointer;
+        ">Postar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="posts-container" id="postsContainer"></div>
+</div>
       </div>
 
       <div class="page-container" id="explore-page">

@@ -90,6 +90,7 @@ try {
   setupPostDetailModal();
   setupProfileModal();
   setupEmojis();
+    setupFeedImageUpload();
   setupUserMini();
   setupProfileTabs();
   setupEditPostModal();
@@ -1322,25 +1323,36 @@ function setupPostModal() {
   });
 }
 
-async function handleSubmitPost(content) {
+async function handleSubmitPost(content, source = 'feed') {
   content = content?.trim();
-  const hasMedia = mediaComposer?.hasFiles();
+  const hasModalMedia = source === 'modal' && mediaComposer?.hasFiles();
+  const hasFeedMedia  = source === 'feed'  && feedSelectedFiles.length > 0;
+  const hasMedia = hasModalMedia || hasFeedMedia;
 
   if (!content && !hasMedia) return;
   if (!currentProfile) { showNotification('Faça login para postar! 🔐'); return; }
 
-  const postInput = document.getElementById('postInput');
-  const modalInput = document.getElementById('modalPostInput');
-  if (postInput) { postInput.value = ''; postInput.style.height = 'auto'; }
+  const postInput   = document.getElementById('postInput');
+  const modalInput  = document.getElementById('modalPostInput');
+  const previewArea = document.getElementById('feedImgPreview');
+
+  if (postInput)  { postInput.value = ''; postInput.style.height = 'auto'; }
   if (modalInput) modalInput.value = '';
 
   try {
     let mediaUrls = [];
 
-    if (hasMedia) {
+    if (hasModalMedia) {
       showNotification('Enviando fotos... 📸');
       mediaUrls = await uploadPostMedia(mediaComposer.getFiles());
       mediaComposer.clearFiles();
+    }
+
+    if (hasFeedMedia) {
+      showNotification('Enviando fotos... 📸');
+      mediaUrls = await uploadPostMedia(feedSelectedFiles);
+      feedSelectedFiles = [];
+      renderFeedImgPreview(previewArea);
     }
 
     if (mediaUrls.length > 0) {
@@ -1355,7 +1367,6 @@ async function handleSubmitPost(content) {
     showNotification(`Erro: ${err.message || 'Tente novamente.'}`);
   }
 }
-
 function startRealtimeFeed() {
   if (unsubscribePosts) unsubscribePosts();
   unsubscribePosts = subscribeToNewPosts((newPost) => {
@@ -2195,6 +2206,9 @@ function setupTrendingWidget() {
 // ============================================================
 // EMOJIS
 // ============================================================
+// ============================================================
+// EMOJIS (feed + modal)
+// ============================================================
 function setupEmojis() {
   const emojis = ['😀','😂','🥰','😎','😭','😡','👍','👎','❤️','🔥','✨','🎉','🤔','👀','🙌','🙏','💀','🤡','💩','💯','✅','❌','⚠️','💡','🗣️','🧊','🍺','🍕','🎓','📚'];
 
@@ -2213,6 +2227,9 @@ function setupEmojis() {
         input.selectionStart = input.selectionEnd = start + item.textContent.length;
         input.focus();
         input.dispatchEvent(new Event('input'));
+
+        // fecha o picker após inserir
+        document.getElementById(containerId)?.classList.remove('active');
       });
     });
   };
@@ -2220,17 +2237,110 @@ function setupEmojis() {
   renderEmojis('pickerEmojiFeed', 'postInput');
   renderEmojis('pickerEmojiModal', 'modalPostInput');
 
-  const toggleFeed = document.getElementById('btnEmojiFeed');
-  const pickerFeed = document.getElementById('pickerEmojiFeed');
+  const toggleFeed  = document.getElementById('btnEmojiFeed');
+  const pickerFeed  = document.getElementById('pickerEmojiFeed');
   const toggleModal = document.getElementById('btnEmojiModal');
   const pickerModal = document.getElementById('pickerEmojiModal');
 
-  toggleFeed?.addEventListener('click', (e) => { e.stopPropagation(); e.preventDefault(); pickerFeed?.classList.toggle('active'); pickerModal?.classList.remove('active'); });
-  toggleModal?.addEventListener('click', (e) => { e.stopPropagation(); e.preventDefault(); pickerModal?.classList.toggle('active'); pickerFeed?.classList.remove('active'); });
+  toggleFeed?.addEventListener('click', (e) => {
+    e.stopPropagation(); e.preventDefault();
+    pickerFeed?.classList.toggle('active');
+    pickerModal?.classList.remove('active');
+  });
+  toggleModal?.addEventListener('click', (e) => {
+    e.stopPropagation(); e.preventDefault();
+    pickerModal?.classList.toggle('active');
+    pickerFeed?.classList.remove('active');
+  });
 
-  document.addEventListener('click', () => { pickerFeed?.classList.remove('active'); pickerModal?.classList.remove('active'); });
-  pickerFeed?.addEventListener('click', e => e.stopPropagation());
+  document.addEventListener('click', () => {
+    pickerFeed?.classList.remove('active');
+    pickerModal?.classList.remove('active');
+  });
+  pickerFeed?.addEventListener('click',  e => e.stopPropagation());
   pickerModal?.addEventListener('click', e => e.stopPropagation());
+}
+
+// ============================================================
+// UPLOAD DE IMAGEM NO FEED INLINE
+// ============================================================
+// ============================================================
+// UPLOAD DE IMAGEM NO FEED INLINE
+// ============================================================
+let feedSelectedFiles = [];
+
+function setupFeedImageUpload() {
+  const fileInput   = document.getElementById('feedFileInput');
+  const imgBtn      = document.getElementById('btnImgFeed');
+  const previewArea = document.getElementById('feedImgPreview');
+  if (!fileInput || !imgBtn) return;
+
+  imgBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    fileInput.click();
+  });
+
+  fileInput.addEventListener('change', () => {
+    const novos = Array.from(fileInput.files);
+    feedSelectedFiles = [...feedSelectedFiles, ...novos].slice(0, 4);
+    renderFeedImgPreview(previewArea);
+    fileInput.value = '';
+  });
+
+  // Botão de imagem do modal
+  const modalFileInput = document.getElementById('modalFileInput');
+  const btnImgModal    = document.getElementById('btnImgModal');
+  const modalPreview   = document.getElementById('modalImgPreview');
+  let   modalFiles     = [];
+
+  btnImgModal?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    modalFileInput?.click();
+  });
+
+  modalFileInput?.addEventListener('change', () => {
+    const novos = Array.from(modalFileInput.files);
+    modalFiles = [...modalFiles, ...novos].slice(0, 4);
+    renderImgPreview(modalPreview, modalFiles, (i) => { modalFiles.splice(i, 1); renderImgPreview(modalPreview, modalFiles, arguments.callee); });
+    modalFileInput.value = '';
+  });
+}
+
+function renderFeedImgPreview(previewArea) {
+  if (!previewArea) return;
+  if (feedSelectedFiles.length === 0) {
+    previewArea.style.display = 'none';
+    previewArea.innerHTML = '';
+    return;
+  }
+  previewArea.style.display = 'flex';
+  previewArea.innerHTML = '';
+  feedSelectedFiles.forEach((file, index) => {
+    const wrapper = criarThumb(file, () => {
+      feedSelectedFiles.splice(index, 1);
+      renderFeedImgPreview(previewArea);
+    });
+    previewArea.appendChild(wrapper);
+  });
+}
+
+function criarThumb(file, onRemove) {
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = 'position:relative;width:80px;height:80px;border-radius:8px;overflow:hidden;border:1px solid var(--border);flex-shrink:0;';
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const img = document.createElement('img');
+    img.src = ev.target.result;
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
+    wrapper.appendChild(img);
+  };
+  reader.readAsDataURL(file);
+  const rm = document.createElement('button');
+  rm.textContent = '×';
+  rm.style.cssText = 'position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.6);color:white;border:none;border-radius:50%;width:18px;height:18px;font-size:13px;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;';
+  rm.addEventListener('click', (e) => { e.stopPropagation(); onRemove(); });
+  wrapper.appendChild(rm);
+  return wrapper;
 }
 
 // ============================================================
@@ -2533,3 +2643,4 @@ function setupSearch() {
     }
   });
 }
+ document.addEventListener('DOMContentLoaded', setupEmojis);

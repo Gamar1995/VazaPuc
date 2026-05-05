@@ -1,17 +1,4 @@
-// ============================================================
-// supabase.js — Configuração e conexão com o Supabase
-// 
-// Este arquivo é o "ponto de entrada" para tudo que envolve
-// banco de dados. Ele exporta o cliente do Supabase que os
-// outros arquivos vão importar.
-//
-// COMO USAR:
-//   1. Crie uma conta em https://supabase.com
-//   2. Crie um projeto novo
-//   3. Vá em Project Settings > API
-//   4. Copie "Project URL" e "anon public key"
-//   5. Cole abaixo substituindo os placeholders
-// ============================================================
+
 
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
