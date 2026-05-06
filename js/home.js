@@ -1,5 +1,5 @@
 // ============================================================
-// js/home.js — Versão COMPLETA (Feed, Chat, Mídia e Configurações)
+// js/home.js — Versão COMPLETA CORRIGIDA
 // ============================================================
 
 import { supabase, getCurrentUser } from './supabase.js';
@@ -71,6 +71,7 @@ let unsubscribeNotifs = null;
 let viewingProfile = null;
 let activeFeedTab = 'para-voce';
 let currentEditingPostId = null;
+let feedSelectedFiles = [];
 
 let feedListenersController = new AbortController();
 let profileListenersController = new AbortController();
@@ -79,7 +80,7 @@ let profileBtnControllers = [];
 window.renderPostPage = (postId) => openPostDetailModal(postId);
 
 // ============================================================
-// INICIALIZAÇÃO IMEDIATA
+// INICIALIZAÇÃO
 // ============================================================
 try {
   setupNotifications();
@@ -90,7 +91,7 @@ try {
   setupPostDetailModal();
   setupProfileModal();
   setupEmojis();
-    setupFeedImageUpload();
+  setupFeedImageUpload();
   setupUserMini();
   setupProfileTabs();
   setupEditPostModal();
@@ -135,18 +136,6 @@ function setupMediaInModal() {
       if (btn) btn.style.color = files.length > 0 ? 'var(--primary)' : '';
     },
   });
-
-  const toolbar = document.querySelector('#postModal .toolbar-icons');
-  if (toolbar) {
-    const imgBtn = toolbar.querySelector('.toolbar-btn');
-    if (imgBtn) {
-      imgBtn.setAttribute('data-type', 'media');
-      imgBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        mediaComposer.openFilePicker();
-      });
-    }
-  }
 }
 
 // ============================================================
@@ -305,7 +294,6 @@ async function loadFeed() {
   if (!container) return;
 
   abortFeedListeners();
-
   container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-secondary)">Carregando...</div>';
 
   try {
@@ -380,10 +368,9 @@ async function loadFollowingFeed() {
     });
 
   } catch (err) {
-    console.error('[seguindo] Erro ao carregar feed de seguidos:', err);
+    console.error('[seguindo] Erro:', err);
     container.innerHTML = `<div style="padding:20px;text-align:center;color:var(--danger)">
-      Erro ao carregar. Tente novamente.<br>
-      <small style="color:var(--text-secondary);font-size:11px;">${err?.message ?? ''}</small>
+      Erro ao carregar.<br><small>${err?.message ?? ''}</small>
     </div>`;
   }
 }
@@ -400,12 +387,10 @@ async function loadQuoteCards(container) {
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = createQuoteCardHTML(originalPost);
       const newCard = tempDiv.firstElementChild;
-
       newCard.addEventListener('click', (e) => {
         e.stopPropagation();
         openPostDetailModal(quotedId);
       });
-
       placeholder.replaceWith(newCard);
     } catch (_) {
       placeholder.remove();
@@ -466,11 +451,7 @@ function createPostHTML(post) {
   ` : '';
 
   const repostIndicator = post.reposted_by ? `
-    <div style="
-      display:flex;align-items:center;gap:6px;
-      color:var(--text-secondary);font-size:12px;
-      padding:0 0 6px 52px;
-    ">
+    <div style="display:flex;align-items:center;gap:6px;color:var(--text-secondary);font-size:12px;padding:0 0 6px 52px;">
       🔁 <span>${escapeHtml(post.reposted_by_name ?? '')} repostou</span>
     </div>
   ` : '';
@@ -481,12 +462,7 @@ function createPostHTML(post) {
 
   const quoteCard = post.is_quote && post.quoted_post_id
     ? `<div class="quote-placeholder" data-quoted-id="${post.quoted_post_id}">
-        <div style="
-          margin-top:10px;border:1px solid var(--border);
-          border-radius:12px;padding:10px 14px;
-          background:var(--dark-bg);
-          color:var(--text-secondary);font-size:13px;
-        ">Carregando post citado...</div>
+        <div style="margin-top:10px;border:1px solid var(--border);border-radius:12px;padding:10px 14px;background:var(--dark-bg);color:var(--text-secondary);font-size:13px;">Carregando post citado...</div>
        </div>`
     : '';
 
@@ -514,21 +490,14 @@ function createPostHTML(post) {
               💬 <span class="reply-count">${post.replies_count ?? 0}</span>
             </button>
             <button class="post-action like-action ${isLiked ? 'liked' : ''}"
-                 title="Curtir"
-                 data-post-id="${post.id}"
-                 data-author-id="${post.author?.id ?? ''}"
-                 data-liked="${isLiked}"
+                 data-post-id="${post.id}" data-author-id="${post.author?.id ?? ''}" data-liked="${isLiked}"
                  style="background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:4px;color:inherit;font-size:inherit;padding:4px 8px;">
               ❤️ <span class="like-count">${post.likes_count ?? 0}</span>
             </button>
             <button class="post-action repost-action ${isReposted ? 'reposted' : ''}"
-                 title="Republicar"
-                 data-post-id="${post.id}"
-                 data-author-id="${post.author?.id ?? ''}"
-                 data-reposted="${isReposted}"
+                 data-post-id="${post.id}" data-author-id="${post.author?.id ?? ''}" data-reposted="${isReposted}"
                  style="background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:4px;
-                        color:${isReposted ? 'var(--success, #17bf63)' : 'inherit'};
-                        font-size:inherit;padding:4px 8px;transition:color 0.2s;">
+                        color:${isReposted ? 'var(--success, #17bf63)' : 'inherit'};font-size:inherit;padding:4px 8px;transition:color 0.2s;">
               🔁 <span class="repost-count">${post.reposts_count ?? 0}</span>
             </button>
           </div>
@@ -544,9 +513,7 @@ function createPostHTML(post) {
             </div>
           </div>
         </div>
-        <div class="replies-list" id="replies-list-${post.id}">
-          <p style="padding:12px;text-align:center;color:var(--text-secondary);font-size:13px;">Carregando comentários...</p>
-        </div>
+        <div class="replies-list" id="replies-list-${post.id}"></div>
       </div>
     </div>
   `;
@@ -560,7 +527,7 @@ function attachPostEventListeners(container = document, context = 'feed') {
     ? feedListenersController.signal
     : profileListenersController.signal;
 
-  // ── MENU DE OPÇÕES ────────────────────────────────────────
+  // ── MENU DE OPÇÕES
   container.querySelectorAll('.post-options-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -571,25 +538,17 @@ function attachPostEventListeners(container = document, context = 'feed') {
 
       const menu = document.createElement('div');
       menu.id = 'floatingPostMenu';
-      menu.dataset.postId = postId;
       menu.style.cssText = `
-        position:fixed;
-        top:${rect.bottom + 4}px;
+        position:fixed;top:${rect.bottom + 4}px;
         left:${Math.min(rect.right - 190, window.innerWidth - 198)}px;
-        z-index:9999;
-        background:var(--dark-bg-secondary);
-        border:1px solid var(--border);
-        border-radius:10px;
-        min-width:190px;
-        box-shadow:0 4px 20px rgba(0,0,0,0.4);
-        overflow:hidden;
+        z-index:9999;background:var(--dark-bg-secondary);
+        border:1px solid var(--border);border-radius:10px;
+        min-width:190px;box-shadow:0 4px 20px rgba(0,0,0,0.4);overflow:hidden;
       `;
-
       menu.innerHTML = `
-        <button class="post-option-item fm-edit" data-post-id="${postId}" style="display:block;width:100%;text-align:left;padding:11px 16px;background:none;border:none;cursor:pointer;color:var(--text-primary);font-size:14px;">✏️ Editar</button>
-        <button class="post-option-item fm-delete" data-post-id="${postId}" style="display:block;width:100%;text-align:left;padding:11px 16px;background:none;border:none;cursor:pointer;color:var(--danger,#e0245e);font-size:14px;">🗑️ Apagar</button>
+        <button class="fm-edit" data-post-id="${postId}" style="display:block;width:100%;text-align:left;padding:11px 16px;background:none;border:none;cursor:pointer;color:var(--text-primary);font-size:14px;">✏️ Editar</button>
+        <button class="fm-delete" data-post-id="${postId}" style="display:block;width:100%;text-align:left;padding:11px 16px;background:none;border:none;cursor:pointer;color:var(--danger,#e0245e);font-size:14px;">🗑️ Apagar</button>
       `;
-
       document.body.appendChild(menu);
 
       menu.querySelectorAll('button').forEach(b => {
@@ -626,7 +585,6 @@ function attachPostEventListeners(container = document, context = 'feed') {
           }
         }
       });
-
     }, { signal });
   });
 
@@ -634,15 +592,11 @@ function attachPostEventListeners(container = document, context = 'feed') {
     document.getElementById('floatingPostMenu')?.remove();
   }, { signal });
 
-  // ── LIKE ──────────────────────────────────────────────────
+  // ── LIKE
   container.querySelectorAll('.like-action').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
-
-      if (!currentProfile) {
-        showNotification('Faça login para curtir! 🔐');
-        return;
-      }
+      if (!currentProfile) { showNotification('Faça login para curtir! 🔐'); return; }
 
       const postId = btn.dataset.postId;
       const authorId = btn.dataset.authorId;
@@ -668,12 +622,7 @@ function attachPostEventListeners(container = document, context = 'feed') {
         if (newLiked) {
           await likePost(postId);
           if (authorId && authorId !== currentProfile.id) {
-            await createNotification({
-              toUserId: authorId,
-              actorId: currentProfile.id,
-              type: NOTIF_TYPES.LIKE,
-              postId,
-            });
+            await createNotification({ toUserId: authorId, actorId: currentProfile.id, type: NOTIF_TYPES.LIKE, postId });
           }
         } else {
           await unlikePost(postId);
@@ -694,12 +643,10 @@ function attachPostEventListeners(container = document, context = 'feed') {
     }, { signal });
   });
 
-  // ── REPOST ────────────────────────────────────────────────
+  // ── REPOST
   attachRepostListeners(container, currentProfile, signal, {
     showNotification,
-    createNotification: async (payload) => {
-      try { await createNotification(payload); } catch (_) {}
-    },
+    createNotification: async (payload) => { try { await createNotification(payload); } catch (_) {} },
     onRepostSuccess: (postId) => { repostedPostIds.add(postId); },
     onUndoRepostSuccess: (postId) => { repostedPostIds.delete(postId); },
     prependPost: () => {
@@ -708,10 +655,10 @@ function attachPostEventListeners(container = document, context = 'feed') {
     },
   });
 
-  // ── MÍDIA ─────────────────────────────────────────────────
+  // ── MÍDIA
   attachMediaListeners(container, signal);
 
-  // ── QUOTE CARD ────────────────────────────────────────────
+  // ── QUOTE CARD
   container.querySelectorAll('.quote-card').forEach(card => {
     card.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -720,7 +667,7 @@ function attachPostEventListeners(container = document, context = 'feed') {
     }, { signal });
   });
 
-  // ── AVATAR / NOME → PERFIL ────────────────────────────────
+  // ── AVATAR / NOME → PERFIL
   container.querySelectorAll('.clickable-avatar').forEach(el => {
     el.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -732,7 +679,7 @@ function attachPostEventListeners(container = document, context = 'feed') {
     }, { signal });
   });
 
-  // ── CLIQUE NO CARD → MODAL DE DETALHE ────────────────────
+  // ── CLIQUE NO CARD → MODAL
   container.querySelectorAll('.post-card').forEach(card => {
     card.addEventListener('click', (e) => {
       if (
@@ -748,7 +695,7 @@ function attachPostEventListeners(container = document, context = 'feed') {
     }, { signal });
   });
 
-  // ── ABRIR COMENTÁRIOS ─────────────────────────────────────
+  // ── ABRIR COMENTÁRIOS
   container.querySelectorAll('.reply-action').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
@@ -768,15 +715,11 @@ function attachPostEventListeners(container = document, context = 'feed') {
     }, { signal });
   });
 
-  // ── ENVIAR COMENTÁRIO ─────────────────────────────────────
+  // ── ENVIAR COMENTÁRIO
   container.querySelectorAll('.reply-submit-btn').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
-
-      if (!currentProfile) {
-        showNotification('Faça login para comentar! 🔐');
-        return;
-      }
+      if (!currentProfile) { showNotification('Faça login para comentar! 🔐'); return; }
 
       const postId = btn.dataset.postId;
       const authorId = btn.dataset.authorId;
@@ -799,10 +742,8 @@ function attachPostEventListeners(container = document, context = 'feed') {
             <img src="${userAvatar}" class="reply-avatar" style="width:30px;height:30px;">
             <div class="reply-bubble">
               <div class="reply-header">
-                <div>
-                  <span class="reply-author">${escapeHtml(currentProfile.name)}</span>
-                  <span class="reply-handle">@${escapeHtml(currentProfile.handle)}</span>
-                </div>
+                <span class="reply-author">${escapeHtml(currentProfile.name)}</span>
+                <span class="reply-handle">@${escapeHtml(currentProfile.handle)}</span>
               </div>
               <p style="font-size:13.5px;color:var(--text-primary);line-height:1.4;">${escapeHtml(content)}</p>
             </div>
@@ -820,16 +761,10 @@ function attachPostEventListeners(container = document, context = 'feed') {
         });
 
         document.querySelectorAll(`[id="reply-input-${postId}"]`).forEach(inp => inp.value = '');
-
         showNotification('Comentário enviado! 💬');
 
         if (authorId && authorId !== currentProfile.id) {
-          await createNotification({
-            toUserId: authorId,
-            actorId: currentProfile.id,
-            type: NOTIF_TYPES.REPLY,
-            postId,
-          });
+          await createNotification({ toUserId: authorId, actorId: currentProfile.id, type: NOTIF_TYPES.REPLY, postId });
         }
       } catch (err) {
         console.error('Erro ao comentar:', err);
@@ -851,62 +786,36 @@ function setupPostDetailModal() {
   const modal = document.createElement('div');
   modal.id = 'postDetailModal';
   modal.style.cssText = `
-    display:none;
-    position:fixed;inset:0;z-index:3000;
-    background:rgba(0,0,0,0.7);
-    align-items:center;justify-content:center;
-    padding:20px;
-    backdrop-filter:blur(4px);
+    display:none;position:fixed;inset:0;z-index:3000;
+    background:rgba(0,0,0,0.7);align-items:center;justify-content:center;
+    padding:20px;backdrop-filter:blur(4px);
   `;
   modal.innerHTML = `
     <div id="postDetailBox" style="
-      background:var(--dark-bg-secondary);
-      border:1px solid var(--border);
-      border-radius:16px;
-      width:100%;max-width:600px;
-      max-height:85vh;
-      overflow-y:auto;
-      display:flex;flex-direction:column;
-      position:relative;
+      background:var(--dark-bg-secondary);border:1px solid var(--border);
+      border-radius:16px;width:100%;max-width:600px;
+      max-height:85vh;overflow-y:auto;display:flex;flex-direction:column;position:relative;
     ">
-      <div style="
-        position:sticky;top:0;z-index:10;
-        display:flex;align-items:center;gap:12px;
-        padding:16px 20px;
-        background:var(--dark-bg-secondary);
-        border-bottom:1px solid var(--border);
-      ">
-        <button id="closePostDetailBtn" style="
-          background:none;border:none;
-          color:var(--text-primary);font-size:20px;
-          cursor:pointer;padding:4px 8px;
-          border-radius:50%;
-          transition:background 0.2s;
-          line-height:1;
-        " onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background='none'">←</button>
+      <div style="position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:12px;
+        padding:16px 20px;background:var(--dark-bg-secondary);border-bottom:1px solid var(--border);">
+        <button id="closePostDetailBtn" style="background:none;border:none;color:var(--text-primary);
+          font-size:20px;cursor:pointer;padding:4px 8px;border-radius:50%;transition:background 0.2s;line-height:1;"
+          onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background='none'">←</button>
         <h3 style="font-size:16px;font-weight:700;color:var(--text-primary);">Post</h3>
       </div>
       <div id="postDetailContent" style="padding:20px;flex:1;"></div>
     </div>
   `;
-
   document.body.appendChild(modal);
 
   document.getElementById('closePostDetailBtn').addEventListener('click', closePostDetailModal);
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) closePostDetailModal();
-  });
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closePostDetailModal();
-  });
+  modal.addEventListener('click', (e) => { if (e.target === modal) closePostDetailModal(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePostDetailModal(); });
 }
 
 function closePostDetailModal() {
   const modal = document.getElementById('postDetailModal');
-  if (modal) {
-    modal.style.display = 'none';
-    document.body.style.overflow = '';
-  }
+  if (modal) { modal.style.display = 'none'; document.body.style.overflow = ''; }
 }
 
 async function openPostDetailModal(postId) {
@@ -930,21 +839,16 @@ async function openPostDetailModal(postId) {
     const replyCount = postCard?.querySelector('.reply-count')?.textContent ?? '0';
     const isLiked = likedPostIds.has(postId);
     const authorId = postCard?.dataset?.authorId ?? likeBtn?.dataset?.authorId ?? '';
-
     const mediaGrid = postCard?.querySelector('.media-grid');
     const mediaHtml = mediaGrid ? mediaGrid.outerHTML : '';
     const quoteCard = postCard?.querySelector('.quote-card');
     const quoteCardHtml = quoteCard ? quoteCard.outerHTML : '';
-
-    const userAvatar = currentProfile?.avatar_url
-      || `https://api.dicebear.com/7.x/avataaars/svg?seed=anon`;
+    const userAvatar = currentProfile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=anon`;
     const handle = authorHandle.replace('@', '');
 
     content.innerHTML = `
       <div style="display:flex;gap:14px;margin-bottom:20px;">
-        <img src="${authorAvatar}"
-             class="detail-clickable-avatar"
-             data-handle="${handle}"
+        <img src="${authorAvatar}" class="detail-clickable-avatar" data-handle="${handle}"
              style="width:48px;height:48px;border-radius:50%;object-fit:cover;cursor:pointer;flex-shrink:0;">
         <div style="flex:1;min-width:0;">
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
@@ -962,34 +866,21 @@ async function openPostDetailModal(postId) {
           <p style="color:var(--text-secondary);font-size:13px;margin-top:12px;">${postTime}</p>
         </div>
       </div>
-
       <div style="display:flex;gap:20px;padding:14px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:16px;">
-        <span style="color:var(--text-secondary);font-size:14px;">
-          <strong style="color:var(--text-primary);">${replyCount}</strong> Respostas
-        </span>
-        <span style="color:var(--text-secondary);font-size:14px;">
-          <strong id="detailLikeCountStat">${likeCount}</strong>&nbsp;Curtidas
-        </span>
+        <span style="color:var(--text-secondary);font-size:14px;"><strong style="color:var(--text-primary);">${replyCount}</strong> Respostas</span>
+        <span style="color:var(--text-secondary);font-size:14px;"><strong id="detailLikeCountStat">${likeCount}</strong> Curtidas</span>
       </div>
-
       <div style="display:flex;gap:24px;padding-bottom:16px;border-bottom:1px solid var(--border);margin-bottom:16px;">
-        <button id="detailLikeBtn"
-          data-post-id="${postId}"
-          data-author-id="${authorId}"
-          data-liked="${isLiked}"
+        <button id="detailLikeBtn" data-post-id="${postId}" data-author-id="${authorId}" data-liked="${isLiked}"
           class="like-action ${isLiked ? 'liked' : ''}"
           style="background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;
-                 color:${isLiked ? 'var(--danger,#e0245e)' : 'var(--text-secondary)'};
-                 font-size:15px;font-weight:600;transition:color 0.2s;padding:0;">
+                 color:${isLiked ? 'var(--danger,#e0245e)' : 'var(--text-secondary)'};font-size:15px;font-weight:600;padding:0;">
           ${isLiked ? '❤️' : '🤍'} <span class="like-count">${likeCount}</span>
         </button>
-        <button id="detailReplyToggle"
-          style="background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;
-                 color:var(--text-secondary);font-size:15px;font-weight:600;">
+        <button id="detailReplyToggle" style="background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;color:var(--text-secondary);font-size:15px;font-weight:600;">
           💬 Responder
         </button>
       </div>
-
       <div id="detailReplyComposer" style="display:none;margin-bottom:16px;">
         <div style="display:flex;gap:12px;">
           <img src="${userAvatar}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;">
@@ -998,11 +889,7 @@ async function openPostDetailModal(postId) {
               style="width:100%;resize:none;background:var(--dark-bg);border:1px solid var(--border);
                      border-radius:12px;padding:10px 14px;color:var(--text-primary);font-size:14px;
                      outline:none;font-family:inherit;"></textarea>
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;">
-              <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-secondary);cursor:pointer;">
-                <input type="checkbox" id="detailReplyPrivacy">
-                🔒 Apenas o autor pode ver
-              </label>
+            <div style="display:flex;justify-content:flex-end;margin-top:8px;">
               <button id="detailReplySubmit" data-post-id="${postId}" data-author-id="${authorId}"
                 style="background:var(--primary);color:white;border:none;border-radius:20px;
                        padding:8px 20px;font-size:14px;font-weight:600;cursor:pointer;">
@@ -1012,7 +899,6 @@ async function openPostDetailModal(postId) {
           </div>
         </div>
       </div>
-
       <div id="detailRepliesList">
         <p style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Carregando respostas...</p>
       </div>
@@ -1022,17 +908,6 @@ async function openPostDetailModal(postId) {
       const { attachMediaListeners: attachMedia } = await import('./Midia.js');
       const modalContent = document.getElementById('postDetailContent');
       if (modalContent) attachMedia(modalContent, new AbortController().signal);
-    }
-
-    if (quoteCardHtml) {
-      const modalContent = document.getElementById('postDetailContent');
-      modalContent?.querySelectorAll('.quote-card').forEach(card => {
-        card.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const qId = card.dataset.quotedPostId;
-          if (qId) openPostDetailModal(qId);
-        });
-      });
     }
 
     content.querySelectorAll('.detail-clickable-avatar').forEach(el => {
@@ -1069,7 +944,6 @@ async function openPostDetailModal(postId) {
 
       const statEl = document.getElementById('detailLikeCountStat');
       if (statEl) statEl.textContent = newCount;
-
       const iconSpan = detailLikeBtn.childNodes[0];
       if (iconSpan) iconSpan.textContent = newLiked ? '❤️' : '🤍';
       detailLikeBtn.style.color = newLiked ? 'var(--danger,#e0245e)' : 'var(--text-secondary)';
@@ -1108,12 +982,8 @@ async function openPostDetailModal(postId) {
     document.getElementById('detailReplyToggle')?.addEventListener('click', () => {
       const composer = document.getElementById('detailReplyComposer');
       if (!composer) return;
-      if (composer.style.display === 'none') {
-        composer.style.display = 'block';
-        document.getElementById('detailReplyInput')?.focus();
-      } else {
-        composer.style.display = 'none';
-      }
+      composer.style.display = composer.style.display === 'none' ? 'block' : 'none';
+      if (composer.style.display === 'block') document.getElementById('detailReplyInput')?.focus();
     });
 
     document.getElementById('detailReplySubmit')?.addEventListener('click', async (e) => {
@@ -1122,7 +992,6 @@ async function openPostDetailModal(postId) {
       const pid = btn.dataset.postId;
       const aid = btn.dataset.authorId;
       const input = document.getElementById('detailReplyInput');
-      const privacy = document.getElementById('detailReplyPrivacy');
       const text = input?.value.trim();
       if (!text) return;
 
@@ -1130,20 +999,16 @@ async function openPostDetailModal(postId) {
       btn.textContent = '...';
 
       try {
-        await addReply(pid, text, privacy?.checked ?? false);
+        await addReply(pid, text);
         if (input) input.value = '';
-        if (privacy) privacy.checked = false;
         document.getElementById('detailReplyComposer').style.display = 'none';
-        showNotification(privacy?.checked ? 'Resposta privada enviada! 🤫' : 'Resposta enviada! 💬');
-
+        showNotification('Resposta enviada! 💬');
         document.querySelectorAll(`.reply-action[data-post-id="${pid}"] .reply-count`).forEach(el => {
           el.textContent = parseInt(el.textContent || '0') + 1;
         });
-
         if (aid && aid !== currentProfile.id) {
           await createNotification({ toUserId: aid, actorId: currentProfile.id, type: NOTIF_TYPES.REPLY, postId: pid });
         }
-
         await loadDetailReplies(pid);
       } catch (err) {
         showNotification('Erro ao enviar resposta.');
@@ -1154,7 +1019,6 @@ async function openPostDetailModal(postId) {
     });
 
     await loadDetailReplies(postId);
-
   } catch (err) {
     console.error('Erro ao abrir post:', err);
     content.innerHTML = '<p style="color:var(--danger);text-align:center;padding:40px;">Erro ao carregar post.</p>';
@@ -1164,26 +1028,19 @@ async function openPostDetailModal(postId) {
 async function loadDetailReplies(postId) {
   const container = document.getElementById('detailRepliesList');
   if (!container) return;
-
   container.innerHTML = '<p style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Carregando...</p>';
 
   try {
     const replies = await getReplies(postId, currentProfile?.id);
-
     if (replies.length === 0) {
       container.innerHTML = '<p style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Nenhuma resposta ainda. Seja o primeiro! 💬</p>';
       return;
     }
-
     container.innerHTML = replies.map(r => {
-      const avatar = r.author?.avatar_url
-        || `https://api.dicebear.com/7.x/avataaars/svg?seed=${r.author?.handle}`;
-      const timeAgo = formatTimeAgo(r.created_at);
+      const avatar = r.author?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${r.author?.handle}`;
       return `
         <div style="display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);">
-          <img src="${avatar}"
-               class="detail-reply-avatar"
-               data-handle="${r.author?.handle ?? ''}"
+          <img src="${avatar}" class="detail-reply-avatar" data-handle="${r.author?.handle ?? ''}"
                style="width:38px;height:38px;border-radius:50%;object-fit:cover;cursor:pointer;flex-shrink:0;">
           <div style="flex:1;min-width:0;">
             <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
@@ -1192,7 +1049,7 @@ async function loadDetailReplies(postId) {
                 ${escapeHtml(r.author?.name ?? 'Usuário')}
               </span>
               <span style="color:var(--text-secondary);font-size:13px;">@${escapeHtml(r.author?.handle ?? '')}</span>
-              <span style="color:var(--text-secondary);font-size:11px;">· ${timeAgo}</span>
+              <span style="color:var(--text-secondary);font-size:11px;">· ${formatTimeAgo(r.created_at)}</span>
             </div>
             <p style="font-size:14px;color:var(--text-primary);line-height:1.5;word-break:break-word;">${escapeHtml(r.content)}</p>
           </div>
@@ -1210,7 +1067,6 @@ async function loadDetailReplies(postId) {
         loadProfileByHandle(h);
       });
     });
-
   } catch (err) {
     container.innerHTML = '<p style="color:var(--danger);text-align:center;padding:16px;">Erro ao carregar respostas.</p>';
   }
@@ -1222,40 +1078,31 @@ async function loadDetailReplies(postId) {
 async function loadRepliesForPost(postId, listElement = null) {
   const repliesList = listElement || document.getElementById(`replies-list-${postId}`);
   if (!repliesList) return;
-
   repliesList.innerHTML = '<p style="padding:12px;text-align:center;color:var(--text-secondary);font-size:13px;">Carregando...</p>';
 
   try {
     const replies = await getReplies(postId, currentProfile?.id);
-
     if (replies.length === 0) {
       repliesList.innerHTML = '<p style="padding:16px;text-align:center;color:var(--text-secondary);font-size:13px;">Nenhum comentário ainda. Seja o primeiro!</p>';
       return;
     }
-
     repliesList.innerHTML = replies.map(r => {
-      const avatar = r.author?.avatar_url
-        || `https://api.dicebear.com/7.x/avataaars/svg?seed=${r.author?.handle}`;
-      const timeAgo = formatTimeAgo(r.created_at);
+      const avatar = r.author?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${r.author?.handle}`;
       return `
         <div class="reply-item">
           <img src="${avatar}" class="reply-avatar" style="width:30px;height:30px;">
           <div class="reply-bubble">
             <div class="reply-header">
-              <div>
-                <span class="reply-author">${escapeHtml(r.author?.name)}</span>
-                <span class="reply-handle">@${escapeHtml(r.author?.handle)}</span>
-                <span style="color:var(--text-secondary);font-size:11px;margin-left:6px;">${timeAgo}</span>
-              </div>
+              <span class="reply-author">${escapeHtml(r.author?.name)}</span>
+              <span class="reply-handle">@${escapeHtml(r.author?.handle)}</span>
+              <span style="color:var(--text-secondary);font-size:11px;margin-left:6px;">${formatTimeAgo(r.created_at)}</span>
             </div>
             <p style="font-size:13.5px;color:var(--text-primary);line-height:1.4;">${escapeHtml(r.content)}</p>
           </div>
         </div>
       `;
     }).join('');
-
   } catch (err) {
-    console.error('Erro ao carregar comentários:', err);
     repliesList.innerHTML = '<p style="padding:12px;text-align:center;color:var(--danger);font-size:13px;">Erro ao carregar comentários.</p>';
   }
 }
@@ -1272,10 +1119,7 @@ function prependPost(post) {
   postEl.style.animation = 'slideDown 0.3s ease';
   container.prepend(postEl);
   attachPostEventListeners(container, 'feed');
-
-  if (post.is_quote && post.quoted_post_id) {
-    loadQuoteCards(container);
-  }
+  if (post.is_quote && post.quoted_post_id) loadQuoteCards(container);
 }
 
 // ============================================================
@@ -1317,26 +1161,48 @@ function setupPostModal() {
   closeBtn?.addEventListener('click', closeModal);
   cancelBtn?.addEventListener('click', closeModal);
   modal?.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+  // ── BOTÃO DE FOTO NO MODAL ─────────────────────────────────
+  const modalFileInput = document.getElementById('modalFileInput');
+  const btnImgModal = document.getElementById('btnImgModal');
+
+  btnImgModal?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    modalFileInput?.click();
+  });
+
+  modalFileInput?.addEventListener('change', () => {
+    if (!mediaComposer) return;
+    const files = Array.from(modalFileInput.files || []);
+    if (files.length > 0) {
+      // repassa pro mediaComposer via openFilePicker ou direto
+      // Como o setupMediaComposer cria seu próprio fileInput,
+      // vamos acionar o dele:
+      mediaComposer.openFilePicker();
+    }
+    modalFileInput.value = '';
+  });
+
   submitBtn?.addEventListener('click', async () => {
-    await handleSubmitPost(modalInput?.value ?? '');
+    const content = modalInput?.value ?? '';
+    await handleSubmitPost(content, 'modal');
     closeModal();
   });
 }
 
 async function handleSubmitPost(content, source = 'feed') {
   content = content?.trim();
-  const hasModalMedia = source === 'modal' && mediaComposer?.hasFiles();
-  const hasFeedMedia  = source === 'feed'  && feedSelectedFiles.length > 0;
-  const hasMedia = hasModalMedia || hasFeedMedia;
+  const hasModalMedia = mediaComposer?.hasFiles() ?? false;
+  const hasFeedMedia = feedSelectedFiles.length > 0;
 
-  if (!content && !hasMedia) return;
+  if (!content && !hasModalMedia && !hasFeedMedia) return;
   if (!currentProfile) { showNotification('Faça login para postar! 🔐'); return; }
 
-  const postInput   = document.getElementById('postInput');
-  const modalInput  = document.getElementById('modalPostInput');
+  const postInput = document.getElementById('postInput');
+  const modalInput = document.getElementById('modalPostInput');
   const previewArea = document.getElementById('feedImgPreview');
 
-  if (postInput)  { postInput.value = ''; postInput.style.height = 'auto'; }
+  if (postInput) { postInput.value = ''; postInput.style.height = 'auto'; }
   if (modalInput) modalInput.value = '';
 
   try {
@@ -1346,9 +1212,7 @@ async function handleSubmitPost(content, source = 'feed') {
       showNotification('Enviando fotos... 📸');
       mediaUrls = await uploadPostMedia(mediaComposer.getFiles());
       mediaComposer.clearFiles();
-    }
-
-    if (hasFeedMedia) {
+    } else if (hasFeedMedia) {
       showNotification('Enviando fotos... 📸');
       mediaUrls = await uploadPostMedia(feedSelectedFiles);
       feedSelectedFiles = [];
@@ -1367,6 +1231,7 @@ async function handleSubmitPost(content, source = 'feed') {
     showNotification(`Erro: ${err.message || 'Tente novamente.'}`);
   }
 }
+
 function startRealtimeFeed() {
   if (unsubscribePosts) unsubscribePosts();
   unsubscribePosts = subscribeToNewPosts((newPost) => {
@@ -1395,7 +1260,6 @@ async function loadProfileTabContent(tabType) {
   if (!contentEl) return;
 
   const profileToLoad = viewingProfile || currentProfile;
-
   if (!profileToLoad) {
     contentEl.innerHTML = '<p style="padding:40px;text-align:center;color:var(--text-secondary);">Faça login para ver seu perfil. 🚀</p>';
     return;
@@ -1417,9 +1281,7 @@ async function loadProfileTabContent(tabType) {
         getPostsByUser(profileToLoad.id),
         getRepostedPosts(profileToLoad.id),
       ]);
-      postsToRender = [...myPosts, ...myReposts].sort(
-        (a, b) => new Date(b.created_at) - new Date(a.created_at)
-      );
+      postsToRender = [...myPosts, ...myReposts].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     } else if (tabType === 'curtidos') {
       if (currentProfile && profileToLoad.id === currentProfile.id) {
         postsToRender = await getLikedPosts(profileToLoad.id);
@@ -1456,21 +1318,12 @@ async function loadProfilePage() {
     document.getElementById('profileName').textContent = 'Visitante';
     document.getElementById('profileHandle').textContent = '@anonimo';
     document.getElementById('profileBio').textContent = 'Faça login para ter seu próprio perfil!';
-
     const profileAvatar = document.querySelector('.profile-avatar');
     if (profileAvatar) profileAvatar.src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=visitante';
-
     document.querySelectorAll('.stat-value').forEach(el => { el.textContent = '0'; });
-
-    if (editBtn) {
-      editBtn.textContent = 'Fazer Login';
-      editBtn.style.display = 'block';
-      editBtn.classList.add('btn-login-animado');
-    }
-
+    if (editBtn) { editBtn.textContent = 'Fazer Login'; editBtn.style.display = 'block'; }
     document.getElementById('msgProfileBtn')?.remove();
     document.getElementById('followProfileBtn')?.remove();
-
     document.getElementById('profileContent').innerHTML =
       '<p style="padding:40px;text-align:center;color:var(--text-secondary);">Faça login para visualizar seus posts. 🚀</p>';
     return;
@@ -1482,8 +1335,7 @@ async function loadProfilePage() {
 
   const profileAvatar = document.querySelector('.profile-avatar');
   if (profileAvatar) {
-    profileAvatar.src = profile.avatar_url
-      || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.handle}`;
+    profileAvatar.src = profile.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.handle}`;
   }
 
   const statValues = document.querySelectorAll('.stat-value');
@@ -1508,11 +1360,7 @@ async function loadProfilePage() {
   const isOwnProfile = currentProfile && profile.id === currentProfile.id;
 
   if (isOwnProfile) {
-    if (editBtn) {
-      editBtn.textContent = 'Editar Perfil';
-      editBtn.style.display = 'block';
-      editBtn.classList.remove('btn-login-animado');
-    }
+    if (editBtn) { editBtn.textContent = 'Editar Perfil'; editBtn.style.display = 'block'; }
   } else {
     if (editBtn) editBtn.style.display = 'none';
 
@@ -1533,9 +1381,7 @@ async function loadProfilePage() {
           document.getElementById('messages-page').classList.add('active');
           await loadMessagesPage();
           openChat(conv.id, profile);
-        } catch (err) {
-          showNotification('Erro ao abrir conversa.');
-        }
+        } catch (err) { showNotification('Erro ao abrir conversa.'); }
       }, { signal });
       profileInfo.appendChild(msgBtn);
 
@@ -1562,29 +1408,16 @@ async function loadProfilePage() {
             await unfollowUserAndSync(currentProfile.id, profile.id);
             setFollowState(false);
             const statVals = document.querySelectorAll('.stat-value');
-            if (statVals.length >= 2) {
-              const cur = parseInt(statVals[1].textContent) || 0;
-              statVals[1].textContent = Math.max(0, cur - 1);
-            }
+            if (statVals.length >= 2) statVals[1].textContent = Math.max(0, parseInt(statVals[1].textContent) - 1);
           } else {
             await followUserAndSync(currentProfile.id, profile.id);
             setFollowState(true);
             const statVals = document.querySelectorAll('.stat-value');
-            if (statVals.length >= 2) {
-              const cur = parseInt(statVals[1].textContent) || 0;
-              statVals[1].textContent = cur + 1;
-            }
-            await createNotification({
-              toUserId: profile.id,
-              actorId: currentProfile.id,
-              type: NOTIF_TYPES.FOLLOW,
-            });
+            if (statVals.length >= 2) statVals[1].textContent = parseInt(statVals[1].textContent) + 1;
+            await createNotification({ toUserId: profile.id, actorId: currentProfile.id, type: NOTIF_TYPES.FOLLOW });
           }
-        } catch (err) {
-          showNotification('Erro ao seguir/deixar de seguir.');
-        } finally {
-          followBtn.disabled = false;
-        }
+        } catch (err) { showNotification('Erro ao seguir/deixar de seguir.'); }
+        finally { followBtn.disabled = false; }
       }, { signal });
 
       profileInfo.appendChild(followBtn);
@@ -1609,10 +1442,7 @@ function setupProfileModal() {
 
   openBtn?.addEventListener('click', (e) => {
     e.preventDefault();
-    if (!currentProfile) {
-      window.location.assign('../inicial/login.html');
-      return;
-    }
+    if (!currentProfile) { window.location.assign('../inicial/login.html'); return; }
     document.getElementById('editName').value = currentProfile.name || '';
     document.getElementById('editHandle').value = currentProfile.handle || '';
     document.getElementById('editBio').value = currentProfile.bio || '';
@@ -1630,7 +1460,6 @@ function setupProfileModal() {
     try {
       const fileInput = document.getElementById('avatarInput');
       let avatarUrl = currentProfile?.avatar_url;
-
       if (fileInput && fileInput.files.length > 0) {
         avatarUrl = await uploadAvatar(fileInput.files[0]);
       }
@@ -1694,8 +1523,7 @@ async function loadMessagesPage() {
     }
 
     listEl.innerHTML = convs.map(c => {
-      const avatar = c.otherUser?.avatar_url
-        || `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.otherUser?.handle}`;
+      const avatar = c.otherUser?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.otherUser?.handle}`;
       const preview = c.lastMessage
         ? `<p class="conversation-preview" style="font-size:12px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;margin:2px 0 0;">${escapeHtml(c.lastMessage.content)}</p>`
         : `<p class="conversation-preview" style="font-size:12px;color:var(--text-secondary);font-style:italic;margin:2px 0 0;">Sem mensagens</p>`;
@@ -1727,27 +1555,12 @@ async function loadMessagesPage() {
   }
 }
 
-// ============================================================
-// SUBSTITUA o início de openChat() em home.js por isso
-// Remove a dependência do Realtime e usa polling confiável
-// ============================================================
-
-// Variável de controle do polling — coloque junto com as outras no topo do home.js:
-// let pollingInterval = null;
-
 async function openChat(convId, otherUser) {
   const chatArea = document.getElementById('chatArea');
   if (!chatArea) return;
 
-  // Para tudo que estava rodando antes
-  if (unsubscribeCurrentChat) {
-    unsubscribeCurrentChat();
-    unsubscribeCurrentChat = null;
-  }
-  if (window._chatPolling) {
-    clearInterval(window._chatPolling);
-    window._chatPolling = null;
-  }
+  if (unsubscribeCurrentChat) { unsubscribeCurrentChat(); unsubscribeCurrentChat = null; }
+  if (window._chatPolling) { clearInterval(window._chatPolling); window._chatPolling = null; }
 
   renderedMessageIds.clear();
   currentOpenConvId = convId;
@@ -1771,86 +1584,57 @@ async function openChat(convId, otherUser) {
     </div>
   `;
 
-  // Tenta conectar Realtime (best-effort)
+  // Realtime (best-effort)
   try {
     unsubscribeCurrentChat = subscribeToMessages(convId, (newMsg) => {
       if (renderedMessageIds.has(newMsg.id)) return;
-
-      // Mensagem própria recente já foi renderizada de forma otimista
       if (currentProfile && newMsg.sender_id === currentProfile.id) {
         const ehRecente = Math.abs(Date.now() - new Date(newMsg.created_at).getTime()) < 10000;
-        if (ehRecente) {
-          renderedMessageIds.add(newMsg.id);
-          return;
-        }
+        if (ehRecente) { renderedMessageIds.add(newMsg.id); return; }
       }
-
       renderedMessageIds.add(newMsg.id);
       appendMessageToUI(newMsg);
       updateConversationPreview(convId, newMsg.content);
     });
   } catch (e) {
-    console.warn('[chat] Realtime falhou, usando só polling:', e);
+    console.warn('[chat] Realtime indisponível, usando polling:', e);
   }
 
-  // ── POLLING GARANTIDO a cada 3 segundos ──────────────────
-  // Isso garante que mensagens chegam MESMO se o Realtime falhar
+  // ── POLLING a cada 3s (garantia) ─────────────────────────
   window._chatPolling = setInterval(async () => {
-    // Só roda se este chat ainda estiver aberto
-    if (currentOpenConvId !== convId) {
-      clearInterval(window._chatPolling);
-      return;
-    }
-
+    if (currentOpenConvId !== convId) { clearInterval(window._chatPolling); return; }
     try {
       const msgs = await getMessages(convId);
       let temNova = false;
-
       msgs.forEach(msg => {
-        if (!renderedMessageIds.has(msg.id)) {
-          // Mensagem própria recente = otimista já renderizou
-          if (currentProfile && msg.sender_id === currentProfile.id) {
-            const ehRecente = Math.abs(Date.now() - new Date(msg.created_at).getTime()) < 10000;
-            if (ehRecente) {
-              renderedMessageIds.add(msg.id);
-              return;
-            }
-          }
-
-          renderedMessageIds.add(msg.id);
-          appendMessageToUI(msg);
-          temNova = true;
+        if (renderedMessageIds.has(msg.id)) return;
+        if (currentProfile && msg.sender_id === currentProfile.id) {
+          const ehRecente = Math.abs(Date.now() - new Date(msg.created_at).getTime()) < 10000;
+          if (ehRecente) { renderedMessageIds.add(msg.id); return; }
         }
+        renderedMessageIds.add(msg.id);
+        appendMessageToUI(msg);
+        temNova = true;
       });
+      if (temNova) updateConversationPreview(convId, msgs[msgs.length - 1]?.content ?? '');
+    } catch (_) {}
+  }, 3000);
 
-      if (temNova) {
-        updateConversationPreview(convId, msgs[msgs.length - 1]?.content ?? '');
-      }
-    } catch (e) {
-      // Silencia erros de polling para não poluir o console
-    }
-  }, 3000); // verifica a cada 3 segundos
-
-  // ── CARREGA HISTÓRICO INICIAL ────────────────────────────
+  // Carrega histórico
   try {
     const msgs = await getMessages(convId);
     document.getElementById('chatLoadingMsg')?.remove();
     const container = document.getElementById('chatMessages');
-
     if (container && msgs.length === 0) {
       container.innerHTML = '<p style="text-align:center;color:var(--text-secondary);padding:20px;">Diga olá! 👋</p>';
     } else {
-      msgs.forEach(msg => {
-        renderedMessageIds.add(msg.id);
-        appendMessageToUI(msg);
-      });
+      msgs.forEach(msg => { renderedMessageIds.add(msg.id); appendMessageToUI(msg); });
     }
   } catch (err) {
     const chatMessages = document.getElementById('chatMessages');
     if (chatMessages) chatMessages.innerHTML = '<p style="color:var(--danger);text-align:center;padding:20px;">Erro ao carregar mensagens.</p>';
   }
 
-  // ── ENVIO DE MENSAGEM ────────────────────────────────────
   const input = document.getElementById('msgInput');
   const btn = document.getElementById('sendMsgBtn');
   if (!input || !btn) return;
@@ -1858,25 +1642,17 @@ async function openChat(convId, otherUser) {
   const handleSend = async () => {
     const content = input.value.trim();
     if (!content || !currentProfile) return;
-
     input.value = '';
     input.focus();
 
     const optimisticId = `optimistic-${Date.now()}`;
-    const optimisticMsg = {
-      id: optimisticId,
-      content,
-      sender_id: currentProfile.id,
-      conversation_id: convId,
-      created_at: new Date().toISOString(),
-    };
+    const optimisticMsg = { id: optimisticId, content, sender_id: currentProfile.id, created_at: new Date().toISOString() };
     renderedMessageIds.add(optimisticId);
     appendMessageToUI(optimisticMsg);
     updateConversationPreview(convId, content);
 
     try {
       const saved = await sendMessage(convId, content);
-      // Registra o ID real para o polling/realtime não duplicar
       renderedMessageIds.add(saved.id);
     } catch (err) {
       console.error('Erro ao enviar mensagem:', err);
@@ -1885,10 +1661,7 @@ async function openChat(convId, otherUser) {
   };
 
   btn.addEventListener('click', handleSend);
-  input.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) handleSend();
-  });
-
+  input.addEventListener('keypress', (e) => { if (e.key === 'Enter' && !e.shiftKey) handleSend(); });
   input.focus();
 }
 
@@ -1933,9 +1706,7 @@ function updateConversationPreview(convId, content) {
 async function initNotifications() {
   if (!currentProfile) return;
   await refreshNotifBadge();
-
   if (unsubscribeNotifs) unsubscribeNotifs();
-
   unsubscribeNotifs = subscribeToNotifications(currentProfile.id, (newNotif) => {
     refreshNotifBadge();
     showNotifToast(newNotif);
@@ -1947,12 +1718,8 @@ async function refreshNotifBadge() {
   const badge = document.getElementById('notifBadge');
   if (!badge) return;
   const count = await getUnreadCount();
-  if (count > 0) {
-    badge.textContent = count > 99 ? '99+' : count;
-    badge.classList.add('visible');
-  } else {
-    badge.classList.remove('visible');
-  }
+  if (count > 0) { badge.textContent = count > 99 ? '99+' : count; badge.classList.add('visible'); }
+  else { badge.classList.remove('visible'); }
 }
 
 function pulseNotifBell() {
@@ -1975,16 +1742,12 @@ function setupNotifications() {
   bellBtn.addEventListener('click', async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!currentProfile) {
-      showNotification('Faça login para ver suas notificações! 🔐');
-      return;
-    }
+    if (!currentProfile) { showNotification('Faça login para ver suas notificações! 🔐'); return; }
     panel.classList.toggle('active');
     if (panel.classList.contains('active')) await renderNotifList();
   });
 
   backdrop?.addEventListener('click', () => panel.classList.remove('active'));
-
   markAllBtn?.addEventListener('click', async () => {
     await markAllAsRead();
     await refreshNotifBadge();
@@ -1996,23 +1759,16 @@ function setupNotifications() {
 async function renderNotifList() {
   const listEl = document.getElementById('notifList');
   if (!listEl) return;
-
   listEl.innerHTML = '<div class="notif-empty"><span class="notif-empty-icon">⏳</span>Carregando...</div>';
 
   const notifs = await getNotifications(30);
-
   if (notifs.length === 0) {
-    listEl.innerHTML = `
-      <div class="notif-empty">
-        <span class="notif-empty-icon">🔔</span>
-        Nenhuma notificação ainda.<br>Interaja com a galera!
-      </div>`;
+    listEl.innerHTML = `<div class="notif-empty"><span class="notif-empty-icon">🔔</span>Nenhuma notificação ainda.<br>Interaja com a galera!</div>`;
     return;
   }
 
   listEl.innerHTML = notifs.map(n => {
-    const avatar = n.actor?.avatar_url
-      || `https://api.dicebear.com/7.x/avataaars/svg?seed=${n.actor?.handle || 'anon'}`;
+    const avatar = n.actor?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${n.actor?.handle || 'anon'}`;
     return `
       <div class="notif-item ${n.read ? '' : 'unread'}" data-notif-id="${n.id}">
         <img src="${avatar}" class="notif-item-avatar" alt="Avatar">
@@ -2042,20 +1798,14 @@ async function renderNotifList() {
 
 function showNotifToast(notif) {
   document.querySelector('.notif-toast')?.remove();
-
   const toast = document.createElement('div');
   toast.className = 'notif-toast';
-  toast.innerHTML = `
-    <span class="notif-toast-icon">${getNotifIcon(notif.type)}</span>
-    <p class="notif-toast-text">${escapeHtml(getNotifText(notif))}</p>
-  `;
-
+  toast.innerHTML = `<span class="notif-toast-icon">${getNotifIcon(notif.type)}</span><p class="notif-toast-text">${escapeHtml(getNotifText(notif))}</p>`;
   toast.addEventListener('click', async () => {
     removeToast(toast);
     document.getElementById('notifPanel')?.classList.add('active');
     await renderNotifList();
   });
-
   document.body.appendChild(toast);
   setTimeout(() => removeToast(toast), 5000);
 }
@@ -2071,61 +1821,40 @@ function removeToast(toast) {
 async function loadExplorePage() {
   const exploreContent = document.getElementById('exploreContent');
   if (!exploreContent) return;
-
   exploreContent.innerHTML = '<p style="text-align:center;padding:40px;color:var(--text-secondary);">Carregando... 🔄</p>';
 
   try {
     const posts = await getPosts(50);
-
-    // ── USUÁRIOS SUGERIDOS DINÂMICOS ──────────────────────────
     let suggestedUsers = [];
 
     if (currentProfile) {
       const followingIds = await getFollowingIds(currentProfile.id);
-
       const authorMap = new Map();
-      for (const post of posts) {
-        const author = post.author;
-        if (!author) continue;
-        if (author.id === currentProfile.id) continue;
-        if (followingIds.includes(author.id)) continue;
-        if (!authorMap.has(author.id)) authorMap.set(author.id, author);
-      }
-
       const authorScore = new Map();
       for (const post of posts) {
         const author = post.author;
-        if (!author || author.id === currentProfile.id) continue;
-        if (followingIds.includes(author.id)) continue;
+        if (!author || author.id === currentProfile.id || followingIds.includes(author.id)) continue;
+        if (!authorMap.has(author.id)) authorMap.set(author.id, author);
         const score = (post.likes_count || 0) + (post.replies_count || 0) * 2;
         authorScore.set(author.id, (authorScore.get(author.id) || 0) + score);
       }
-
-      const sorted = [...authorMap.values()].sort((a, b) => {
-        const scoreA = (authorScore.get(a.id) || 0) * (0.7 + Math.random() * 0.6);
-        const scoreB = (authorScore.get(b.id) || 0) * (0.7 + Math.random() * 0.6);
-        return scoreB - scoreA;
-      });
-
-      suggestedUsers = sorted.slice(0, 6);
+      suggestedUsers = [...authorMap.values()]
+        .sort((a, b) => ((authorScore.get(b.id) || 0) * (0.7 + Math.random() * 0.6)) - ((authorScore.get(a.id) || 0) * (0.7 + Math.random() * 0.6)))
+        .slice(0, 6);
     } else {
       const authorMap = new Map();
       for (const post of posts) {
-        if (post.author && !authorMap.has(post.author.id)) {
-          authorMap.set(post.author.id, post.author);
-        }
+        if (post.author && !authorMap.has(post.author.id)) authorMap.set(post.author.id, post.author);
       }
       suggestedUsers = [...authorMap.values()].sort(() => Math.random() - 0.5).slice(0, 6);
     }
 
-    // ── POSTS CATEGORIZADOS ───────────────────────────────────
     const topPosts = [...posts].sort((a, b) => (b.likes_count || 0) - (a.likes_count || 0)).slice(0, 4);
     const recentPosts = [...posts].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 4);
     const randomPosts = [...posts].sort(() => Math.random() - 0.5).slice(0, 4);
 
     const renderMiniPost = (post, contextLabel, contextIcon) => {
-      const avatar = post.author?.avatar_url
-        || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author?.handle}`;
+      const avatar = post.author?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author?.handle}`;
       const mediaThumb = post.media_urls?.length
         ? `<img src="${post.media_urls[0]}" style="width:100%;height:100px;object-fit:cover;border-radius:8px;margin-top:6px;" loading="lazy">`
         : '';
@@ -2152,16 +1881,12 @@ async function loadExplorePage() {
     };
 
     const renderSuggestedUser = (user) => {
-      const avatar = user.avatar_url
-        || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.handle}`;
+      const avatar = user.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.handle}`;
       return `
         <div class="suggested-user-card" data-handle="${user.handle}" style="cursor:pointer;">
           <img src="${avatar}" alt="${escapeHtml(user.name)}" loading="lazy">
-          <div>
-            <h4>${escapeHtml(user.name)}</h4>
-            <p>@${escapeHtml(user.handle)}</p>
-          </div>
-          <button class="btn-follow-small explore-follow-btn" data-user-id="${user.id}" data-handle="${user.handle}">Seguir</button>
+          <div><h4>${escapeHtml(user.name)}</h4><p>@${escapeHtml(user.handle)}</p></div>
+          <button class="btn-follow-small explore-follow-btn" data-user-id="${user.id}">Seguir</button>
         </div>`;
     };
 
@@ -2170,28 +1895,22 @@ async function loadExplorePage() {
         ${suggestedUsers.length > 0 ? `
         <section>
           <h3 class="explore-section-title">✨ Sugestões para você</h3>
-          <div class="suggested-users-row">
-            ${suggestedUsers.map(u => renderSuggestedUser(u)).join('')}
-          </div>
+          <div class="suggested-users-row">${suggestedUsers.map(u => renderSuggestedUser(u)).join('')}</div>
         </section>` : ''}
-
         <section>
           <h3 class="explore-section-title">🔥 Em Alta no VazaPUC</h3>
           <div class="explore-grid">${topPosts.map(p => renderMiniPost(p, 'Mais curtidos', '⭐')).join('')}</div>
         </section>
-
         <section>
           <h3 class="explore-section-title">👀 Descobrir posts</h3>
           <div class="explore-grid">${randomPosts.map(p => renderMiniPost(p, 'Pode te interessar', '💫')).join('')}</div>
         </section>
-
         <section>
           <h3 class="explore-section-title">🕒 Acabou de vazar</h3>
           <div class="explore-grid">${recentPosts.map(p => renderMiniPost(p, 'Postado recentemente', '✨')).join('')}</div>
         </section>
       </div>`;
 
-    // ── EVENT LISTENERS ───────────────────────────────────────
     exploreContent.querySelectorAll('.explore-post-card').forEach(card => {
       card.addEventListener('click', (e) => {
         if (e.target.closest('.explore-follow-btn') || e.target.closest('.explore-avatar-clickable')) return;
@@ -2228,25 +1947,14 @@ async function loadExplorePage() {
         if (!currentProfile) { showNotification('Faça login para seguir! 🔐'); return; }
         const userId = btn.dataset.userId;
         btn.disabled = true;
-
         if (btn.textContent.includes('Seguindo')) {
-          try {
-            await unfollowUserAndSync(currentProfile.id, userId);
-            btn.textContent = 'Seguir';
-            btn.style.background = '';
-            btn.style.color = '';
-          } catch { showNotification('Erro ao deixar de seguir.'); }
+          try { await unfollowUserAndSync(currentProfile.id, userId); btn.textContent = 'Seguir'; btn.style.background = ''; btn.style.color = ''; }
+          catch { showNotification('Erro ao deixar de seguir.'); }
         } else {
           try {
             await followUserAndSync(currentProfile.id, userId);
-            btn.textContent = '✓ Seguindo';
-            btn.style.background = 'var(--primary)';
-            btn.style.color = 'white';
-            await createNotification({
-              toUserId: userId,
-              actorId: currentProfile.id,
-              type: NOTIF_TYPES.FOLLOW,
-            });
+            btn.textContent = '✓ Seguindo'; btn.style.background = 'var(--primary)'; btn.style.color = 'white';
+            await createNotification({ toUserId: userId, actorId: currentProfile.id, type: NOTIF_TYPES.FOLLOW });
           } catch { showNotification('Erro ao seguir.'); }
         }
         btn.disabled = false;
@@ -2266,18 +1974,12 @@ function setupTrendingWidget() {
   const widget = document.getElementById('trendingWidget');
   const btn = document.getElementById('toggleBlocksBtn');
   if (widget && btn) {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      widget.classList.toggle('expanded');
-    });
+    btn.addEventListener('click', (e) => { e.stopPropagation(); widget.classList.toggle('expanded'); });
   }
 }
 
 // ============================================================
 // EMOJIS
-// ============================================================
-// ============================================================
-// EMOJIS (feed + modal)
 // ============================================================
 function setupEmojis() {
   const emojis = ['😀','😂','🥰','😎','😭','😡','👍','👎','❤️','🔥','✨','🎉','🤔','👀','🙌','🙏','💀','🤡','💩','💯','✅','❌','⚠️','💡','🗣️','🧊','🍺','🍕','🎓','📚'];
@@ -2297,8 +1999,6 @@ function setupEmojis() {
         input.selectionStart = input.selectionEnd = start + item.textContent.length;
         input.focus();
         input.dispatchEvent(new Event('input'));
-
-        // fecha o picker após inserir
         document.getElementById(containerId)?.classList.remove('active');
       });
     });
@@ -2312,67 +2012,30 @@ function setupEmojis() {
   const toggleModal = document.getElementById('btnEmojiModal');
   const pickerModal = document.getElementById('pickerEmojiModal');
 
-  toggleFeed?.addEventListener('click', (e) => {
-    e.stopPropagation(); e.preventDefault();
-    pickerFeed?.classList.toggle('active');
-    pickerModal?.classList.remove('active');
-  });
-  toggleModal?.addEventListener('click', (e) => {
-    e.stopPropagation(); e.preventDefault();
-    pickerModal?.classList.toggle('active');
-    pickerFeed?.classList.remove('active');
-  });
+  toggleFeed?.addEventListener('click', (e) => { e.stopPropagation(); pickerFeed?.classList.toggle('active'); pickerModal?.classList.remove('active'); });
+  toggleModal?.addEventListener('click', (e) => { e.stopPropagation(); pickerModal?.classList.toggle('active'); pickerFeed?.classList.remove('active'); });
 
-  document.addEventListener('click', () => {
-    pickerFeed?.classList.remove('active');
-    pickerModal?.classList.remove('active');
-  });
-  pickerFeed?.addEventListener('click',  e => e.stopPropagation());
+  document.addEventListener('click', () => { pickerFeed?.classList.remove('active'); pickerModal?.classList.remove('active'); });
+  pickerFeed?.addEventListener('click', e => e.stopPropagation());
   pickerModal?.addEventListener('click', e => e.stopPropagation());
 }
 
 // ============================================================
-// UPLOAD DE IMAGEM NO FEED INLINE
+// UPLOAD DE IMAGEM NO FEED
 // ============================================================
-// ============================================================
-// UPLOAD DE IMAGEM NO FEED INLINE
-// ============================================================
-let feedSelectedFiles = [];
-
 function setupFeedImageUpload() {
   const fileInput   = document.getElementById('feedFileInput');
   const imgBtn      = document.getElementById('btnImgFeed');
   const previewArea = document.getElementById('feedImgPreview');
   if (!fileInput || !imgBtn) return;
 
-  imgBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    fileInput.click();
-  });
+  imgBtn.addEventListener('click', (e) => { e.stopPropagation(); fileInput.click(); });
 
   fileInput.addEventListener('change', () => {
     const novos = Array.from(fileInput.files);
     feedSelectedFiles = [...feedSelectedFiles, ...novos].slice(0, 4);
     renderFeedImgPreview(previewArea);
     fileInput.value = '';
-  });
-
-  // Botão de imagem do modal
-  const modalFileInput = document.getElementById('modalFileInput');
-  const btnImgModal    = document.getElementById('btnImgModal');
-  const modalPreview   = document.getElementById('modalImgPreview');
-  let   modalFiles     = [];
-
-  btnImgModal?.addEventListener('click', (e) => {
-    e.stopPropagation();
-    modalFileInput?.click();
-  });
-
-  modalFileInput?.addEventListener('change', () => {
-    const novos = Array.from(modalFileInput.files);
-    modalFiles = [...modalFiles, ...novos].slice(0, 4);
-    renderImgPreview(modalPreview, modalFiles, (i) => { modalFiles.splice(i, 1); renderImgPreview(modalPreview, modalFiles, arguments.callee); });
-    modalFileInput.value = '';
   });
 }
 
@@ -2480,13 +2143,11 @@ function setupEditPostModal() {
     try {
       const { updatePost } = await import('./posts.js');
       await updatePost(currentEditingPostId, newContent);
-
       const postCard = document.querySelector(`.post-card[data-post-id="${currentEditingPostId}"]`);
       if (postCard) {
         const textEl = postCard.querySelector('.post-text');
         if (textEl) textEl.textContent = newContent;
       }
-
       showNotification('Post atualizado! ✏️');
       closeModal();
     } catch (err) {
@@ -2520,11 +2181,8 @@ function setupTemas() {
   themeOptions.forEach(opcao => {
     opcao.addEventListener('click', () => {
       const temaEscolhido = opcao.getAttribute('data-theme');
-      if (temaEscolhido === 'padrao') {
-        document.documentElement.removeAttribute('data-theme');
-      } else {
-        document.documentElement.setAttribute('data-theme', temaEscolhido);
-      }
+      if (temaEscolhido === 'padrao') document.documentElement.removeAttribute('data-theme');
+      else document.documentElement.setAttribute('data-theme', temaEscolhido);
       localStorage.setItem('vazaPucTheme', temaEscolhido);
       themeOptions.forEach(opt => opt.style.borderColor = 'transparent');
       opcao.style.borderColor = '#ffffff';
@@ -2551,23 +2209,14 @@ function setupSearch() {
       el = document.createElement('div');
       el.id = 'searchResultsDropdown';
       el.style.cssText = `
-        position: absolute;
-        top: calc(100% + 6px);
-        left: 0; right: 0;
-        background: var(--dark-bg-secondary);
-        border: 1px solid var(--border);
-        border-radius: 14px;
-        z-index: 9000;
-        max-height: 420px;
-        overflow-y: auto;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-        display: none;
+        position:absolute;top:calc(100% + 6px);left:0;right:0;
+        background:var(--dark-bg-secondary);border:1px solid var(--border);
+        border-radius:14px;z-index:9000;max-height:420px;overflow-y:auto;
+        box-shadow:0 8px 32px rgba(0,0,0,0.4);display:none;
       `;
       const searchBox = searchInput.closest('.search-box');
       if (searchBox) {
-        if (getComputedStyle(searchBox).position === 'static') {
-          searchBox.style.position = 'relative';
-        }
+        if (getComputedStyle(searchBox).position === 'static') searchBox.style.position = 'relative';
         searchBox.appendChild(el);
       }
     }
@@ -2584,11 +2233,10 @@ function setupSearch() {
     dropdown.style.display = 'block';
 
     if (users.length === 0) {
-      dropdown.innerHTML = `
-        <div style="padding:24px;text-align:center;color:var(--text-secondary);">
-          <div style="font-size:32px;margin-bottom:8px;">🔍</div>
-          <p style="font-size:14px;">Nenhuma conta para "<strong>${escapeHtml(query)}</strong>"</p>
-        </div>`;
+      dropdown.innerHTML = `<div style="padding:24px;text-align:center;color:var(--text-secondary);">
+        <div style="font-size:32px;margin-bottom:8px;">🔍</div>
+        <p style="font-size:14px;">Nenhuma conta para "<strong>${escapeHtml(query)}</strong>"</p>
+      </div>`;
       return;
     }
 
@@ -2597,28 +2245,13 @@ function setupSearch() {
         Contas encontradas
       </div>
       ${users.map(user => {
-        const avatar = user.avatar_url
-          || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.handle}`;
-        const seguidores = user.followers_count != null ? user.followers_count : '—';
+        const avatar = user.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.handle}`;
         return `
-          <div class="search-result-item" data-handle="${escapeHtml(user.handle)}" style="
-            display:flex;align-items:center;gap:12px;
-            padding:10px 16px;cursor:pointer;
-            transition:background 0.15s;
-          ">
-            <img src="${avatar}"
-                 style="width:42px;height:42px;border-radius:50%;object-fit:cover;flex-shrink:0;"
-                 loading="lazy"
-                 onerror="this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${escapeHtml(user.handle)}'">
+          <div class="search-result-item" data-handle="${escapeHtml(user.handle)}" style="display:flex;align-items:center;gap:12px;padding:10px 16px;cursor:pointer;transition:background 0.15s;">
+            <img src="${avatar}" style="width:42px;height:42px;border-radius:50%;object-fit:cover;flex-shrink:0;" loading="lazy">
             <div style="flex:1;min-width:0;">
-              <div style="font-weight:700;font-size:14px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                ${escapeHtml(user.name)}
-              </div>
+              <div style="font-weight:700;font-size:14px;color:var(--text-primary);">${escapeHtml(user.name)}</div>
               <div style="color:var(--text-secondary);font-size:13px;">@${escapeHtml(user.handle)}</div>
-              ${user.bio ? `<div style="color:var(--text-secondary);font-size:12px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(user.bio)}</div>` : ''}
-            </div>
-            <div style="flex-shrink:0;">
-              <div style="font-size:12px;color:var(--text-secondary);">👥 ${seguidores}</div>
             </div>
           </div>`;
       }).join('')}
@@ -2632,12 +2265,10 @@ function setupSearch() {
         hideResults();
         searchInput.value = '';
         if (!handle) return;
-
         document.querySelectorAll('.page-container').forEach(p => p.classList.remove('active'));
         document.getElementById('profile-page')?.classList.add('active');
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.querySelector('.nav-item[data-page="profile"]')?.classList.add('active');
-
         viewingProfile = null;
         loadProfileByHandle(handle);
       });
@@ -2646,25 +2277,18 @@ function setupSearch() {
 
   const performSearch = async (query) => {
     if (!query || query.length < 2) { hideResults(); return; }
-
     const dropdown = getOrCreateDropdown();
     dropdown.style.display = 'block';
-    dropdown.innerHTML = `
-      <div style="padding:20px;text-align:center;color:var(--text-secondary);font-size:14px;">
-        🔍 Buscando...
-      </div>`;
+    dropdown.innerHTML = `<div style="padding:20px;text-align:center;color:var(--text-secondary);font-size:14px;">🔍 Buscando...</div>`;
 
     try {
-      let data, error;
-
-      ({ data, error } = await supabase
+      let { data, error } = await supabase
         .from('profiles')
         .select('id, name, handle, avatar_url, bio, followers_count')
         .or(`name.ilike.%${query}%,handle.ilike.%${query}%`)
         .order('followers_count', { ascending: false })
-        .limit(10));
+        .limit(10);
 
-      // Fallback se followers_count não existir
       if (error && (error.code === '42703' || error.message?.includes('followers_count'))) {
         ({ data, error } = await supabase
           .from('profiles')
@@ -2674,17 +2298,10 @@ function setupSearch() {
       }
 
       if (error) throw error;
-
       showResults(data || [], query);
     } catch (err) {
-      console.error('Erro na busca:', err);
       const dd = document.getElementById('searchResultsDropdown');
-      if (dd) {
-        dd.innerHTML = `
-          <div style="padding:20px;text-align:center;color:var(--danger);font-size:14px;">
-            Erro ao buscar. Tente novamente.
-          </div>`;
-      }
+      if (dd) dd.innerHTML = `<div style="padding:20px;text-align:center;color:var(--danger);font-size:14px;">Erro ao buscar. Tente novamente.</div>`;
     }
   };
 
@@ -2696,96 +2313,12 @@ function setupSearch() {
   });
 
   searchInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      clearTimeout(searchTimeout);
-      performSearch(e.target.value.trim());
-    }
-    if (e.key === 'Escape') {
-      hideResults();
-      searchInput.value = '';
-    }
+    if (e.key === 'Enter') { clearTimeout(searchTimeout); performSearch(e.target.value.trim()); }
+    if (e.key === 'Escape') { hideResults(); searchInput.value = ''; }
   });
 
   document.addEventListener('click', (e) => {
     const dropdown = document.getElementById('searchResultsDropdown');
-    if (dropdown && !searchInput.contains(e.target) && !dropdown.contains(e.target)) {
-      hideResults();
-    }
+    if (dropdown && !searchInput.contains(e.target) && !dropdown.contains(e.target)) hideResults();
   });
 }
-
-let arquivoSelecionadoModal = null;
-
-// Mostrar preview da imagem quando selecionada
-inputImagem.addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (file) {
-        arquivoSelecionadoModal = file;
-        const reader = new FileReader();
-        reader.onload = function(evento) {
-            imagemPreview.src = evento.target.result;
-            previewContainer.style.display = 'block';
-        }
-        reader.readAsDataURL(file);
-    }
-});
-
-// Remover a imagem do preview
-removerImagem.addEventListener('click', () => {
-    inputImagem.value = '';
-    arquivoSelecionadoModal = null;
-    previewContainer.style.display = 'none';
-});
-
-// Abrir/Fechar emojis (adicione aqui a lógica da sua biblioteca de emojis, como o Emoji Button ou Emoji Mart)
-btnEmoji.addEventListener('click', () => {
-    if (emojiPickerContainer.style.display === 'none') {
-        emojiPickerContainer.style.display = 'block';
-    } else {
-        emojiPickerContainer.style.display = 'none';
-    }
-});
-
-// Limpar ao fechar o modal (procure onde você já fecha o modal e adicione isso)
-document.getElementById('closePostModal').addEventListener('click', limparModalImagem);
-document.getElementById('cancelPostBtn').addEventListener('click', limparModalImagem);
-
-function limparModalImagem() {
-    inputImagem.value = '';
-    arquivoSelecionadoModal = null;
-    previewContainer.style.display = 'none';
-    emojiPickerContainer.style.display = 'none';
-}
-// ── EMOJI FIX: garante listeners após DOM pronto ──
-document.addEventListener('DOMContentLoaded', () => {
-  const btnModal  = document.getElementById('btnEmojiModal');
-  const pkrModal  = document.getElementById('pickerEmojiModal');
-  const btnFeed   = document.getElementById('btnEmojiFeed');
-  const pkrFeed   = document.getElementById('pickerEmojiFeed');
-
-  const toggle = (picker, outro) => {
-    if (!picker) return;
-    picker.classList.toggle('active');
-    outro?.classList.remove('active');
-  };
-
-  btnModal?.addEventListener('click', e => {
-    e.stopPropagation();
-    toggle(pkrModal, pkrFeed);
-  });
-
-  btnFeed?.addEventListener('click', e => {
-    e.stopPropagation();
-    toggle(pkrFeed, pkrModal);
-  });
-
-  // fecha ao clicar fora
-  document.addEventListener('click', e => {
-    if (!e.target.closest('.emoji-picker-container') &&
-        !e.target.closest('#btnEmojiModal') &&
-        !e.target.closest('#btnEmojiFeed')) {
-      pkrModal?.classList.remove('active');
-      pkrFeed?.classList.remove('active');
-    }
-  });
-});
