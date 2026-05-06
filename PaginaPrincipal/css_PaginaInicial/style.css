@@ -927,8 +927,9 @@ body {
               padding 0.3s ease;
 }
 
+/* Painel quando está ativo */
 .theme-nav-panel.active {
-  max-height: 100px;
+  max-height: 200px; /* AUMENTE de 100px para 200px (ou mais) para caber as 2 linhas */
   padding: 10px 14px;
   opacity: 1;
   pointer-events: all;
@@ -963,4 +964,129 @@ body {
   background: rgba(150, 150, 150, 0.3);
   border-radius: 2px;
   flex-shrink: 0;
+}
+/* =========================================
+   TEMAS CLAROS (LIGHT MODE)
+   ========================================= */
+
+/* 1. TEMA VINHO CLARO (Padrão Claro) */
+[data-theme="padrao-claro"] {
+    --primary: #a31f4b;         
+    --primary-rgb: 163, 31, 75; 
+    --primary-dark: #7a1738;    
+    --secondary: #d45b7e;       
+    --secondary-rgb: 212, 91, 126;
+    --dark-bg: #f4f6f8;             
+    --dark-bg-secondary: #ffffff;   
+    --dark-bg-tertiary: #e9ecef;    
+    --text-primary: #1a1a1a;        
+    --text-secondary: #5c6c7c;      
+    --border: #dce0e4;              
+    --hover: rgba(0, 0, 0, 0.05);   
+}
+
+/* 2. TEMA AZUL CLARO */
+[data-theme="azul-claro"] {
+    --primary: #1f5aa3;         
+    --primary-rgb: 31, 90, 163;
+    --primary-dark: #143e75;    
+    --secondary: #5b92d4;       
+    --secondary-rgb: 91, 146, 212;
+    --dark-bg: #f0f4f8;         
+    --dark-bg-secondary: #ffffff; 
+    --dark-bg-tertiary: #e1e8ef;  
+    --text-primary: #0f1c2b;    
+    --text-secondary: #5a6e82;  
+    --border: #d7e2ea;          
+    --hover: rgba(0, 0, 0, 0.05);
+}
+
+/* 3. TEMA CINZA CLARO */
+[data-theme="cinza-claro"] {
+    --primary: #555555;         
+    --primary-rgb: 85, 85, 85;
+    --primary-dark: #333333;    
+    --secondary: #999999;       
+    --secondary-rgb: 153, 153, 153;
+    --dark-bg: #f5f5f5;         
+    --dark-bg-secondary: #ffffff; 
+    --dark-bg-tertiary: #ebebeb;  
+    --text-primary: #111111;    
+    --text-secondary: #666666;  
+    --border: #e0e0e0;          
+    --hover: rgba(0, 0, 0, 0.05);
+}
+
+/* 4. TEMA AMARELO CLARO */
+[data-theme="amarelo-claro"] {
+    --primary: #b8860b;         
+    --primary-rgb: 184, 134, 11;
+    --primary-dark: #8b6508;    
+    --secondary: #d4af37;       
+    --secondary-rgb: 212, 175, 55;
+    --dark-bg: #fcfbf7;         
+    --dark-bg-secondary: #ffffff; 
+    --dark-bg-tertiary: #f2efe4;  
+    --text-primary: #1f1c0d;    
+    --text-secondary: #7a7051;  
+    --border: #e8e4d3;          
+    --hover: rgba(0, 0, 0, 0.05);
+}
+
+/* =========================================
+   AJUSTES DE INTERFACE PARA TEMAS CLAROS
+   (Garante que textos e botões fiquem legíveis no fundo branco)
+   ========================================= */
+
+/* Corrige o título Vaza Puc na Sidebar */
+[data-theme$="-claro"] .logo h1 {
+    color: var(--text-primary) !important;
+    -webkit-text-fill-color: var(--text-primary) !important;
+}
+
+/* Corrige o texto dos posts (que estava travado em branco) */
+[data-theme$="-claro"] .post-text {
+    color: var(--text-primary) !important;
+}
+
+/* Ajusta as caixas de comentários e busca */
+[data-theme$="-claro"] .reply-input-wrapper,
+[data-theme$="-claro"] .search-input {
+    background: rgba(0,0,0,0.03);
+    border: 1px solid var(--border);
+}
+
+/* Ajusta os botões de ação (curtir, comentar) */
+[data-theme$="-claro"] .post-action {
+    background: rgba(0,0,0,0.03);
+}
+
+[data-theme$="-claro"] .post-action:hover,
+[data-theme$="-claro"] .notice-item:hover,
+[data-theme$="-claro"] .conversation-item:hover {
+    background: rgba(0,0,0,0.08);
+}
+
+/* Textareas (Caixa de novo post e edição) */
+[data-theme$="-claro"] .composer-input,
+[data-theme$="-claro"] .modal-body textarea,
+[data-theme$="-claro"] .form-group input,
+[data-theme$="-claro"] .form-group textarea {
+    background: rgba(0,0,0,0.02);
+    color: var(--text-primary);
+}
+
+[data-theme$="-claro"] .composer-input:focus,
+[data-theme$="-claro"] .modal-body textarea:focus,
+[data-theme$="-claro"] .form-group input:focus,
+[data-theme$="-claro"] .form-group textarea:focus {
+    background: var(--dark-bg-secondary);
+}
+
+/* Menus Popups (Login e Temas) */
+[data-theme$="-claro"] .theme-nav-panel,
+[data-theme$="-claro"] .user-login-popup,
+[data-theme$="-claro"] .post-options-menu {
+    background: var(--dark-bg-secondary);
+    border: 1px solid var(--border);
 }

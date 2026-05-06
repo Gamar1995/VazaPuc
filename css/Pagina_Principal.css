@@ -40,6 +40,127 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
 }
+/* =========================================
+   4. TEMAS CLAROS (Modo Light)
+   ========================================= */
+
+/* PADRÃO CLARO (Vinho Light) */
+[data-theme="padrao-claro"] {
+    --primary: #a31f4b;
+    --primary-rgb: 163, 31, 75;
+    --primary-dark: #7a1738;
+    --secondary: #d45b7e;
+    --secondary-rgb: 212, 91, 126;
+    --danger: #E74C3C;
+    --dark-bg: #f4f6f8;             /* Fundo da página (Cinza bem claro) */
+    --dark-bg-secondary: #ffffff;   /* Fundo dos cards e modais (Branco) */
+    --dark-bg-tertiary: #e9ecef;    /* Hover de elementos (Cinza claro) */
+    --text-primary: #1a1a1a;        /* Texto principal (Quase preto) */
+    --text-secondary: #5c6c7c;      /* Texto secundário (Cinza azulado) */
+    --border: #dce0e4;              /* Linhas e bordas */
+    --hover: rgba(0, 0, 0, 0.05);   /* Efeito hover escurecido */
+    --shadow: 0 8px 32px rgba(0, 0, 0, 0.08); /* Sombra mais leve */
+}
+
+/* AZUL CLARO */
+[data-theme="azul-claro"] {
+    --primary: #1f5aa3;
+    --primary-rgb: 31, 90, 163;
+    --primary-dark: #143e75;
+    --secondary: #5b92d4;
+    --secondary-rgb: 91, 146, 212;
+    --danger: #E74C3C;
+    --dark-bg: #f0f4f8;
+    --dark-bg-secondary: #ffffff;
+    --dark-bg-tertiary: #e1e8ef;
+    --text-primary: #0f1c2b;
+    --text-secondary: #5a6e82;
+    --border: #d7e2ea;
+    --hover: rgba(0, 0, 0, 0.05);
+    --shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+}
+
+/* CINZA CLARO */
+[data-theme="cinza-claro"] {
+    --primary: #555555;
+    --primary-rgb: 85, 85, 85;
+    --primary-dark: #333333;
+    --secondary: #999999;
+    --secondary-rgb: 153, 153, 153;
+    --danger: #E74C3C;
+    --dark-bg: #f5f5f5;
+    --dark-bg-secondary: #ffffff;
+    --dark-bg-tertiary: #ebebeb;
+    --text-primary: #111111;
+    --text-secondary: #666666;
+    --border: #e0e0e0;
+    --hover: rgba(0, 0, 0, 0.05);
+    --shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+}
+
+/* AMARELO CLARO */
+[data-theme="amarelo-claro"] {
+    --primary: #b8860b;
+    --primary-rgb: 184, 134, 11;
+    --primary-dark: #8b6508;
+    --secondary: #d4af37;
+    --secondary-rgb: 212, 175, 55;
+    --danger: #E74C3C;
+    --dark-bg: #fcfbf7;
+    --dark-bg-secondary: #ffffff;
+    --dark-bg-tertiary: #f2efe4;
+    --text-primary: #1f1c0d;
+    --text-secondary: #7a7051;
+    --border: #e8e4d3;
+    --hover: rgba(0, 0, 0, 0.05);
+    --shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+}
+
+/* =========================================
+   AJUSTES DE INTERFACE PARA TEMAS CLAROS
+   (Corrige textos e botões que estavam brancos fixos)
+   ========================================= */
+
+/* Corrige a cor do texto das postagens para o tema atual */
+[data-theme$="-claro"] .post-text {
+    color: var(--text-primary) !important;
+}
+
+/* Corrige fundos semi-transparentes que ficariam invisíveis no claro */
+[data-theme$="-claro"] .post-action {
+    background: rgba(0, 0, 0, 0.03);
+}
+
+[data-theme$="-claro"] .tab-btn:hover,
+[data-theme$="-claro"] .post-options-btn:hover,
+[data-theme$="-claro"] .notice-item,
+[data-theme$="-claro"] .post-action:hover {
+    background: rgba(0, 0, 0, 0.06);
+}
+
+/* Ajusta as caixas de resposta e inputs no claro */
+[data-theme$="-claro"] .reply-input-wrapper {
+    background: rgba(0, 0, 0, 0.03);
+}
+
+/* Menu popup de temas e login */
+[data-theme$="-claro"] .theme-nav-panel,
+[data-theme$="-claro"] .user-login-popup {
+    background: var(--dark-bg-secondary);
+    border: 1px solid var(--border);
+}
+
+[data-theme$="-claro"] .user-login-popup::after {
+    background: var(--dark-bg-secondary);
+}
+
+/* Divisores internos (linhas separadoras) */
+[data-theme$="-claro"] .theme-nav-divider,
+[data-theme$="-claro"] .explore-context,
+[data-theme$="-claro"] .post-replies-section,
+[data-theme$="-claro"] .reply-toolbar {
+    border-color: var(--border);
+}
 
 /* ── NOISE OVERLAY ── */
 body::before {
