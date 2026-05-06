@@ -1727,13 +1727,26 @@ async function loadMessagesPage() {
   }
 }
 
+// ============================================================
+// SUBSTITUA o início de openChat() em home.js por isso
+// Remove a dependência do Realtime e usa polling confiável
+// ============================================================
+
+// Variável de controle do polling — coloque junto com as outras no topo do home.js:
+// let pollingInterval = null;
+
 async function openChat(convId, otherUser) {
   const chatArea = document.getElementById('chatArea');
   if (!chatArea) return;
 
+  // Para tudo que estava rodando antes
   if (unsubscribeCurrentChat) {
     unsubscribeCurrentChat();
     unsubscribeCurrentChat = null;
+  }
+  if (window._chatPolling) {
+    clearInterval(window._chatPolling);
+    window._chatPolling = null;
   }
 
   renderedMessageIds.clear();
@@ -1758,31 +1771,67 @@ async function openChat(convId, otherUser) {
     </div>
   `;
 
-   unsubscribeCurrentChat = subscribeToMessages(convId, (newMsg) => {
-    // Se já existe no Set E não é otimista, ignora (duplicata real)
-    if (renderedMessageIds.has(newMsg.id) && !String(newMsg.id).startsWith('optimistic-')) {
+  // Tenta conectar Realtime (best-effort)
+  try {
+    unsubscribeCurrentChat = subscribeToMessages(convId, (newMsg) => {
+      if (renderedMessageIds.has(newMsg.id)) return;
+
+      // Mensagem própria recente já foi renderizada de forma otimista
+      if (currentProfile && newMsg.sender_id === currentProfile.id) {
+        const ehRecente = Math.abs(Date.now() - new Date(newMsg.created_at).getTime()) < 10000;
+        if (ehRecente) {
+          renderedMessageIds.add(newMsg.id);
+          return;
+        }
+      }
+
+      renderedMessageIds.add(newMsg.id);
+      appendMessageToUI(newMsg);
+      updateConversationPreview(convId, newMsg.content);
+    });
+  } catch (e) {
+    console.warn('[chat] Realtime falhou, usando só polling:', e);
+  }
+
+  // ── POLLING GARANTIDO a cada 3 segundos ──────────────────
+  // Isso garante que mensagens chegam MESMO se o Realtime falhar
+  window._chatPolling = setInterval(async () => {
+    // Só roda se este chat ainda estiver aberto
+    if (currentOpenConvId !== convId) {
+      clearInterval(window._chatPolling);
       return;
     }
- 
-    // Remove o placeholder otimista se o servidor confirmar a mesma mensagem
-    // (identifica pelo content + sender + proximidade de tempo)
-    if (currentProfile && newMsg.sender_id === currentProfile.id) {
-      const agora = Date.now();
-      const msgTime = new Date(newMsg.created_at).getTime();
-      const ehRecente = Math.abs(agora - msgTime) < 10000; // 10 segundos
- 
-      if (ehRecente) {
-        // Já foi renderizado de forma otimista, só registra o ID real
-        renderedMessageIds.add(newMsg.id);
-        return;
-      }
-    }
- 
-    renderedMessageIds.add(newMsg.id);
-    appendMessageToUI(newMsg);
-    updateConversationPreview(convId, newMsg.content);
-  });
 
+    try {
+      const msgs = await getMessages(convId);
+      let temNova = false;
+
+      msgs.forEach(msg => {
+        if (!renderedMessageIds.has(msg.id)) {
+          // Mensagem própria recente = otimista já renderizou
+          if (currentProfile && msg.sender_id === currentProfile.id) {
+            const ehRecente = Math.abs(Date.now() - new Date(msg.created_at).getTime()) < 10000;
+            if (ehRecente) {
+              renderedMessageIds.add(msg.id);
+              return;
+            }
+          }
+
+          renderedMessageIds.add(msg.id);
+          appendMessageToUI(msg);
+          temNova = true;
+        }
+      });
+
+      if (temNova) {
+        updateConversationPreview(convId, msgs[msgs.length - 1]?.content ?? '');
+      }
+    } catch (e) {
+      // Silencia erros de polling para não poluir o console
+    }
+  }, 3000); // verifica a cada 3 segundos
+
+  // ── CARREGA HISTÓRICO INICIAL ────────────────────────────
   try {
     const msgs = await getMessages(convId);
     document.getElementById('chatLoadingMsg')?.remove();
@@ -1801,6 +1850,7 @@ async function openChat(convId, otherUser) {
     if (chatMessages) chatMessages.innerHTML = '<p style="color:var(--danger);text-align:center;padding:20px;">Erro ao carregar mensagens.</p>';
   }
 
+  // ── ENVIO DE MENSAGEM ────────────────────────────────────
   const input = document.getElementById('msgInput');
   const btn = document.getElementById('sendMsgBtn');
   if (!input || !btn) return;
@@ -1812,19 +1862,21 @@ async function openChat(convId, otherUser) {
     input.value = '';
     input.focus();
 
+    const optimisticId = `optimistic-${Date.now()}`;
     const optimisticMsg = {
-      id: `optimistic-${Date.now()}`,
+      id: optimisticId,
       content,
       sender_id: currentProfile.id,
       conversation_id: convId,
       created_at: new Date().toISOString(),
     };
-    renderedMessageIds.add(optimisticMsg.id);
+    renderedMessageIds.add(optimisticId);
     appendMessageToUI(optimisticMsg);
     updateConversationPreview(convId, content);
 
     try {
       const saved = await sendMessage(convId, content);
+      // Registra o ID real para o polling/realtime não duplicar
       renderedMessageIds.add(saved.id);
     } catch (err) {
       console.error('Erro ao enviar mensagem:', err);
