@@ -1758,8 +1758,26 @@ async function openChat(convId, otherUser) {
     </div>
   `;
 
-  unsubscribeCurrentChat = subscribeToMessages(convId, (newMsg) => {
-    if (renderedMessageIds.has(newMsg.id)) return;
+   unsubscribeCurrentChat = subscribeToMessages(convId, (newMsg) => {
+    // Se já existe no Set E não é otimista, ignora (duplicata real)
+    if (renderedMessageIds.has(newMsg.id) && !String(newMsg.id).startsWith('optimistic-')) {
+      return;
+    }
+ 
+    // Remove o placeholder otimista se o servidor confirmar a mesma mensagem
+    // (identifica pelo content + sender + proximidade de tempo)
+    if (currentProfile && newMsg.sender_id === currentProfile.id) {
+      const agora = Date.now();
+      const msgTime = new Date(newMsg.created_at).getTime();
+      const ehRecente = Math.abs(agora - msgTime) < 10000; // 10 segundos
+ 
+      if (ehRecente) {
+        // Já foi renderizado de forma otimista, só registra o ID real
+        renderedMessageIds.add(newMsg.id);
+        return;
+      }
+    }
+ 
     renderedMessageIds.add(newMsg.id);
     appendMessageToUI(newMsg);
     updateConversationPreview(convId, newMsg.content);

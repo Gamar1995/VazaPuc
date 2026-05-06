@@ -108,9 +108,16 @@ export async function sendMessage(conversationId, content) {
 // ============================================================
 // REALTIME — escuta novas mensagens com deduplicação
 // ============================================================
+// ============================================================
+// TRECHO PARA SUBSTITUIR no seu js/messages.js
+// Substitua a função subscribeToMessages inteira por esta:
+// ============================================================
+
 export function subscribeToMessages(conversationId, callback) {
+  const channelName = `messages-conv-${conversationId}-${Date.now()}`;
+
   const channel = supabase
-    .channel(`messages-conv-${conversationId}-${Date.now()}`)
+    .channel(channelName)
     .on(
       'postgres_changes',
       {
@@ -119,18 +126,38 @@ export function subscribeToMessages(conversationId, callback) {
         table: 'messages',
         filter: `conversation_id=eq.${conversationId}`
       },
-      (payload) => {
-        // Entrega imediatamente, sem fetch extra
-        // O home.js sabe quem é o currentProfile e filtra pelo sender_id
-        callback(payload.new);
+      async (payload) => {
+        try {
+          // Busca a mensagem completa com dados do sender
+          // (o payload do realtime não inclui os joins)
+          const { data, error } = await supabase
+            .from('messages')
+            .select(`
+              *,
+              sender:profiles(id, name, handle, avatar_url)
+            `)
+            .eq('id', payload.new.id)
+            .single();
+
+          if (!error && data) {
+            callback(data);
+          }
+        } catch (err) {
+          console.error('[realtime] Erro ao buscar mensagem completa:', err);
+          // Fallback: entrega o payload cru mesmo (sem sender)
+          callback(payload.new);
+        }
       }
     )
     .subscribe((status) => {
       if (status === 'SUBSCRIBED') {
         console.log('[messages] Realtime conectado para conversa', conversationId);
       }
+      if (status === 'CHANNEL_ERROR') {
+        console.error('[messages] Erro no canal realtime para conversa', conversationId);
+      }
     });
- 
+
   return () => {
     supabase.removeChannel(channel);
   };
