@@ -1090,3 +1090,100 @@ body {
     background: var(--dark-bg-secondary);
     border: 1px solid var(--border);
 }
+/* =========================================
+   CORREÇÃO DE DESIGN - BORDAS E RESPONSIVIDADE
+   Mantendo a estética limpa, elegante e adaptável
+   ========================================= */
+
+/* 1. Suavização das bordas globais do Feed */
+/* Substitui as bordas fixas por transparências elegantes que funcionam em qualquer tema */
+.feed-header, 
+.post-composer, 
+.post-card, 
+.trending-widget, 
+.official-notices-widget {
+    border: 1px solid rgba(150, 150, 150, 0.15) !important;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03) !important;
+    background-clip: padding-box; /* Evita que o fundo vaze pelas bordas arredondadas */
+}
+
+/* Efeito de hover refinado nos posts */
+.post-card:hover {
+    border-color: rgba(var(--primary-rgb), 0.4) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08) !important;
+    transform: translateY(-2px) !important;
+}
+
+/* 2. Ajuste fino para os Temas Claros (Light Mode) */
+[data-theme$="-claro"] .feed-header, 
+[data-theme$="-claro"] .post-composer, 
+[data-theme$="-claro"] .post-card,
+[data-theme$="-claro"] .trending-widget,
+[data-theme$="-claro"] .official-notices-widget {
+    border: 1px solid rgba(0, 0, 0, 0.06) !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02) !important;
+}
+
+[data-theme$="-claro"] .post-card:hover {
+    border-color: rgba(var(--primary-rgb), 0.3) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* 3. Correção das bordas escuras nas Imagens e Mídia */
+.media-grid, 
+.media-preview-area > div,
+.post-internal-border,
+.quote-card {
+    border: 1px solid rgba(150, 150, 150, 0.15) !important;
+    border-radius: 16px !important;
+    overflow: hidden;
+}
+
+[data-theme$="-claro"] .media-grid, 
+[data-theme$="-claro"] .media-preview-area > div,
+[data-theme$="-claro"] .quote-card {
+    border: 1px solid rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Garante que a tag de imagem em si não puxe contornos nativos do navegador */
+.media-photo, .profile-avatar, .post-avatar {
+    border: none !important;
+    outline: none !important;
+}
+
+/* 4. Responsividade Elegante - Feed "Edge-to-Edge" no Mobile */
+/* Remove as bordas laterais em telas menores para um visual fluido como o do X/Twitter */
+@media (max-width: 650px) {
+    .feed-header, 
+    .post-composer, 
+    .post-card {
+        border-left: none !important;
+        border-right: none !important;
+        border-radius: 0 !important;
+    }
+    
+    /* Remove o gap entre os cards para formar uma linha contínua */
+    .posts-container {
+        gap: 0 !important; 
+    }
+    
+    .post-card {
+        border-bottom: 1px solid rgba(150, 150, 150, 0.15) !important;
+        border-top: none !important;
+        margin-bottom: 0 !important;
+    }
+
+    [data-theme$="-claro"] .post-card {
+        border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+    }
+    
+    /* O composer ganha uma barra de separação mais grossa para dividir do resto do feed */
+    .post-composer {
+        margin-bottom: 0 !important;
+        border-bottom: 8px solid rgba(150, 150, 150, 0.05) !important;
+    }
+    
+    [data-theme$="-claro"] .post-composer {
+        border-bottom: 8px solid rgba(0, 0, 0, 0.03) !important;
+    }
+}
