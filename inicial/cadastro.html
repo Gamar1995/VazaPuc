@@ -14,21 +14,68 @@
   <title>Vaza PUC — Criar Conta</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --primary:       #a31f4b;
-      --primary-dark:  #7a1738;
-      --primary-glow:  rgba(163, 31, 75, 0.35);
-      --accent:        #e8547a;
-      --bg:            #0f0509;
-      --bg-input:      #261018;
-      --bg-input-focus:#301420;
-      --text:          #fceef2;
-      --text-muted:    #9e7885;
-      --text-label:    #c9a0b0;
-      --border:        #3d1426;
-      --success:       #2ecc71;
-      --error:         #e74c3c;
-    }
+:root {
+  --primary:       #a31f4b;
+  --primary-rgb:   163, 31, 75;
+  --primary-dark:  #7a1738;
+  --primary-glow:  rgba(163, 31, 75, 0.35);
+  --accent:        #e8547a;
+  --bg:            #0f0509;
+  --bg-input:      #261018;
+  --bg-input-focus:#301420;
+  --text:          #fceef2;
+  --text-muted:    #9e7885;
+  --text-label:    #c9a0b0;
+  --border:        #3d1426;
+  --success:       #2ecc71;
+  --error:         #e74c3c;
+}
+
+/* ===== TEMAS ESCUROS ===== */
+[data-theme="azul"] {
+  --primary: #1f5aa3; --primary-rgb: 31, 90, 163; --primary-dark: #143e75;
+  --primary-glow: rgba(31, 90, 163, 0.35); --accent: #5b92d4;
+  --bg: #070a16; --bg-input: #0d1326; --bg-input-focus: #151e38;
+  --border: #1a274a; --text-muted: #5a6e82; --text-label: #8da4bc;
+}
+[data-theme="cinza"] {
+  --primary: #888888; --primary-rgb: 136, 136, 136; --primary-dark: #555555;
+  --primary-glow: rgba(136, 136, 136, 0.35); --accent: #b3b3b3;
+  --bg: #0a0a0a; --bg-input: #141414; --bg-input-focus: #1f1f1f;
+  --border: #2a2a2a; --text-muted: #666666; --text-label: #a0a0a0;
+}
+[data-theme="amarelo"] {
+  --primary: #b8860b; --primary-rgb: 184, 134, 11; --primary-dark: #8b6508;
+  --primary-glow: rgba(184, 134, 11, 0.35); --accent: #d4af37;
+  --bg: #121008; --bg-input: #1f1c0d; --bg-input-focus: #2e2913;
+  --border: #3d3618; --text-muted: #7a7051; --text-label: #a39569;
+}
+
+/* ===== TEMAS CLAROS ===== */
+[data-theme="padrao-claro"] {
+  --primary: #a31f4b; --primary-rgb: 163, 31, 75; --primary-dark: #7a1738;
+  --primary-glow: rgba(163, 31, 75, 0.15); --accent: #d45b7e;
+  --bg: #f4f6f8; --bg-input: #ffffff; --bg-input-focus: #fcfcfc;
+  --border: #dce0e4; --text: #1a1a1a; --text-muted: #5c6c7c; --text-label: #344759;
+}
+[data-theme="azul-claro"] {
+  --primary: #1f5aa3; --primary-rgb: 31, 90, 163; --primary-dark: #143e75;
+  --primary-glow: rgba(31, 90, 163, 0.15); --accent: #5b92d4;
+  --bg: #f0f4f8; --bg-input: #ffffff; --bg-input-focus: #f7f9fb;
+  --border: #d7e2ea; --text: #0f1c2b; --text-muted: #5a6e82; --text-label: #3a4b5c;
+}
+[data-theme="cinza-claro"] {
+  --primary: #555555; --primary-rgb: 85, 85, 85; --primary-dark: #333333;
+  --primary-glow: rgba(85, 85, 85, 0.15); --accent: #999999;
+  --bg: #f5f5f5; --bg-input: #ffffff; --bg-input-focus: #fafafa;
+  --border: #e0e0e0; --text: #111111; --text-muted: #666666; --text-label: #444444;
+}
+[data-theme="amarelo-claro"] {
+  --primary: #b8860b; --primary-rgb: 184, 134, 11; --primary-dark: #8b6508;
+  --primary-glow: rgba(184, 134, 11, 0.15); --accent: #d4af37;
+  --bg: #fcfbf7; --bg-input: #ffffff; --bg-input-focus: #fefdfb;
+  --border: #e8e4d3; --text: #1f1c0d; --text-muted: #7a7051; --text-label: #524b36;
+}
 
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     html { scroll-behavior: smooth; }
@@ -54,15 +101,17 @@
       padding: 48px;
       overflow: hidden;
     }
-    .visual-panel::before {
-      content: '';
-      position: absolute; inset: 0;
-      background:
-        radial-gradient(ellipse 80% 60% at 30% 20%, rgba(163,31,75,0.45) 0%, transparent 60%),
-        radial-gradient(ellipse 60% 80% at 80% 80%, rgba(100,10,40,0.6) 0%, transparent 55%),
-        linear-gradient(160deg, #1a0810 0%, #0a0308 100%);
-      z-index: 0;
-    }
+   .visual-panel::before {
+  content: '';
+  position: absolute; inset: 0;
+  /* Agora as luzes usam --primary-rgb e o fundo usa --bg */
+  background:
+    radial-gradient(ellipse 80% 60% at 30% 20%, rgba(var(--primary-rgb), 0.45) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 80% at 80% 80%, rgba(var(--primary-rgb), 0.25) 0%, transparent 55%),
+    linear-gradient(160deg, var(--bg-input) 0%, var(--bg) 100%);
+  z-index: 0;
+}
+
     .visual-panel::after {
       content: '';
       position: absolute; inset: 0;
@@ -105,13 +154,16 @@
     .feature-dot { width:8px; height:8px; border-radius:50%; background:var(--primary); flex-shrink:0; box-shadow:0 0 8px var(--primary-glow); }
 
     .floating-cards { position: absolute; bottom: 60px; right: -20px; z-index: 1; }
-    .mini-card {
-      background: rgba(28,11,18,0.85); border: 1px solid var(--border);
-      border-radius: 16px; padding: 14px 18px;
-      display: flex; align-items: center; gap: 10px;
-      backdrop-filter: blur(12px); width: 220px;
-      animation: floatCard 4s ease-in-out infinite;
-    }
+.mini-card {
+  background: var(--bg-input); /* Adapta-se perfeitamente aos modos claro e escuro */
+  border: 1px solid var(--border);
+  border-radius: 16px; padding: 14px 18px;
+  display: flex; align-items: center; gap: 10px;
+  backdrop-filter: blur(12px); width: 220px;
+  animation: floatCard 4s ease-in-out infinite;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15); /* Adicionado para destacar sobre o fundo claro */
+}
+
     .mini-card:nth-child(2) { margin-top:-8px; margin-left:24px; animation-delay:.8s; animation-direction:reverse; }
     @keyframes floatCard { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-8px); } }
     .mini-card-avatar { width:32px; height:32px; border-radius:50%; overflow:hidden; flex-shrink:0; }

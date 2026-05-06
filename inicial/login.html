@@ -16,13 +16,50 @@
 
 <style>
 :root {
-  --primary:#a31f4b;
-  --primary-dark:#7a1738;
-  --bg:#0f0509;
-  --bg-input:#261018;
-  --border:#3d1426;
-  --text:#fceef2;
-  --text-muted:#9e7885;
+  --primary: #a31f4b;
+  --primary-rgb: 163, 31, 75; /* Adicionado para permitir brilhos e transparências */
+  --primary-dark: #7a1738;
+  --bg: #0f0509;
+  --bg-input: #261018;
+  --border: #3d1426;
+  --text: #fceef2;
+  --text-muted: #9e7885;
+}
+
+/* ===== TEMAS ESCUROS ===== */
+[data-theme="azul"] {
+  --primary: #1f5aa3; --primary-rgb: 31, 90, 163; --primary-dark: #143e75;
+  --bg: #070a16; --bg-input: #0d1326; --border: #1a274a;
+}
+[data-theme="cinza"] {
+  --primary: #888888; --primary-rgb: 136, 136, 136; --primary-dark: #555555;
+  --bg: #0a0a0a; --bg-input: #141414; --border: #2a2a2a;
+}
+[data-theme="amarelo"] {
+  --primary: #b8860b; --primary-rgb: 184, 134, 11; --primary-dark: #8b6508;
+  --bg: #121008; --bg-input: #1f1c0d; --border: #3d3618;
+}
+
+/* ===== TEMAS CLAROS ===== */
+[data-theme="padrao-claro"] {
+  --primary: #a31f4b; --primary-rgb: 163, 31, 75; --primary-dark: #7a1738;
+  --bg: #f4f6f8; --bg-input: #ffffff; --border: #dce0e4;
+  --text: #1a1a1a; --text-muted: #5c6c7c;
+}
+[data-theme="azul-claro"] {
+  --primary: #1f5aa3; --primary-rgb: 31, 90, 163; --primary-dark: #143e75;
+  --bg: #f0f4f8; --bg-input: #ffffff; --border: #d7e2ea;
+  --text: #0f1c2b; --text-muted: #5a6e82;
+}
+[data-theme="cinza-claro"] {
+  --primary: #555555; --primary-rgb: 85, 85, 85; --primary-dark: #333333;
+  --bg: #f5f5f5; --bg-input: #ffffff; --border: #e0e0e0;
+  --text: #111111; --text-muted: #666666;
+}
+[data-theme="amarelo-claro"] {
+  --primary: #b8860b; --primary-rgb: 184, 134, 11; --primary-dark: #8b6508;
+  --bg: #fcfbf7; --bg-input: #ffffff; --border: #e8e4d3;
+  --text: #1f1c0d; --text-muted: #7a7051;
 }
 
 body {
@@ -35,15 +72,16 @@ body {
 
 /* ===== ESQUERDA (IGUAL CADASTRO) ===== */
 .visual {
-  width:45%;
-  height:100vh;
-  position:fixed;
-  background: radial-gradient(circle at top, #a31f4b33, transparent),
-              linear-gradient(160deg,#1a0810,#0a0308);
-  padding:48px;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
+  width: 45%;
+  height: 100vh;
+  position: fixed;
+  /* Agora usa variáveis dinâmicas em vez de cores fixas */
+  background: radial-gradient(circle at top, rgba(var(--primary-rgb), 0.2), transparent),
+              linear-gradient(160deg, var(--bg-input), var(--bg));
+  padding: 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .visual h1 {
