@@ -52,31 +52,24 @@
           <span class="nav-label">Notificações</span>
           <span class="notif-badge" id="notifBadge">0</span>
         </a>
-      </nav>
-      <!-- SELETOR DE TEMAS (SIDEBAR) -->
-<div class="theme-switcher-wrapper sidebar-theme-switcher">
-  <button class="theme-switcher-btn" id="themeSwitcherBtnSidebar" title="Alterar Tema">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-    </svg>
-    <span class="nav-label">Tema</span>
-  </button>
+<div class="nav-item-theme" id="themeNavBtn">
+  <span class="nav-icon">🎨</span>
+  <span class="nav-label">Tema</span>
 
-  <div class="theme-slider-glass" id="themeSwitcherDropdownSidebar">
-    <div class="theme-indicator" id="themeIndicatorSidebar"></div>
-    <div class="theme-opt" data-theme="padrao"        style="background: #a31f4b;" title="Vinho (Escuro)"></div>
-    <div class="theme-opt" data-theme="azul"          style="background: #1f5aa3;" title="Azul (Escuro)"></div>
-    <div class="theme-opt" data-theme="cinza"         style="background: #888888;" title="Cinza (Escuro)"></div>
-    <div class="theme-opt" data-theme="amarelo"       style="background: #b8860b;" title="Amarelo (Escuro)"></div>
-
-    <div style="width:2px;height:24px;background:rgba(150,150,150,0.3);margin:0 6px;border-radius:2px;"></div>
-
-    <div class="theme-opt" data-theme="padrao-claro"  style="background:linear-gradient(135deg,#a31f4b 50%,#f4f6f8 50%);border:1px solid #dce0e4!important;" title="Vinho (Claro)"></div>
-    <div class="theme-opt" data-theme="azul-claro"    style="background:linear-gradient(135deg,#1f5aa3 50%,#f0f4f8 50%);border:1px solid #d7e2ea!important;" title="Azul (Claro)"></div>
-    <div class="theme-opt" data-theme="cinza-claro"   style="background:linear-gradient(135deg,#555555 50%,#f5f5f5 50%);border:1px solid #e0e0e0!important;" title="Cinza (Claro)"></div>
-    <div class="theme-opt" data-theme="amarelo-claro" style="background:linear-gradient(135deg,#b8860b 50%,#fcfbf7 50%);border:1px solid #e8e4d3!important;" title="Amarelo (Claro)"></div>
+  <div class="theme-nav-panel" id="themeNavPanel">
+    <div class="theme-nav-indicator" id="themeNavIndicator"></div>
+    <div class="theme-opt" data-theme="padrao"        style="background:#a31f4b;"  title="Vinho"></div>
+    <div class="theme-opt" data-theme="azul"          style="background:#1f5aa3;"  title="Azul"></div>
+    <div class="theme-opt" data-theme="cinza"         style="background:#888888;"  title="Cinza"></div>
+    <div class="theme-opt" data-theme="amarelo"       style="background:#b8860b;"  title="Amarelo"></div>
+    <div class="theme-nav-divider"></div>
+    <div class="theme-opt" data-theme="padrao-claro"  style="background:linear-gradient(135deg,#a31f4b 50%,#f4f6f8 50%);border:1px solid #dce0e4!important;" title="Vinho Claro"></div>
+    <div class="theme-opt" data-theme="azul-claro"    style="background:linear-gradient(135deg,#1f5aa3 50%,#f0f4f8 50%);border:1px solid #d7e2ea!important;" title="Azul Claro"></div>
+    <div class="theme-opt" data-theme="cinza-claro"   style="background:linear-gradient(135deg,#555555 50%,#f5f5f5 50%);border:1px solid #e0e0e0!important;" title="Cinza Claro"></div>
+    <div class="theme-opt" data-theme="amarelo-claro" style="background:linear-gradient(135deg,#b8860b 50%,#fcfbf7 50%);border:1px solid #e8e4d3!important;" title="Amarelo Claro"></div>
   </div>
 </div>
+      </nav>
 
       <button class="post-btn" id="postBtnSidebar">
         <span>Novo Post</span>
@@ -333,61 +326,51 @@
   </div>
 
   <script type="module" src="../js/home.js"></script>
-  <script type="module" src="../js/home.js"></script>
 
-  <!-- ✅ ADICIONE AQUI, logo abaixo do home.js -->
-  <script>
-    (function () {
-      const btn       = document.getElementById('themeSwitcherBtnSidebar');
-      const dropdown  = document.getElementById('themeSwitcherDropdownSidebar');
-      const indicator = document.getElementById('themeIndicatorSidebar');
-      const options   = dropdown ? dropdown.querySelectorAll('.theme-opt') : [];
+<script>
+  (function () {
+    var navBtn = document.getElementById('themeNavBtn');
+    var panel  = document.getElementById('themeNavPanel');
+    if (!navBtn || !panel) return;
 
-      if (!btn || !dropdown) return;
+    var opts = panel.querySelectorAll('.theme-opt');
 
-      btn.addEventListener('click', (e) => {
+    navBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      panel.classList.toggle('active');
+    });
+
+    document.addEventListener('click', function (e) {
+      if (!navBtn.contains(e.target)) {
+        panel.classList.remove('active');
+      }
+    });
+
+    opts.forEach(function (opt) {
+      opt.addEventListener('click', function (e) {
         e.stopPropagation();
-        dropdown.classList.toggle('active');
-        atualizarIndicador();
-      });
+        var theme = opt.getAttribute('data-theme');
 
-      document.addEventListener('click', (e) => {
-        if (!dropdown.contains(e.target) && e.target !== btn) {
-          dropdown.classList.remove('active');
+        if (theme === 'padrao') {
+          document.documentElement.removeAttribute('data-theme');
+        } else {
+          document.documentElement.setAttribute('data-theme', theme);
         }
+        localStorage.setItem('vazaPucTheme', theme);
+
+        opts.forEach(function (o) { o.classList.remove('ativo'); });
+        opt.classList.add('ativo');
+
+        setTimeout(function () { panel.classList.remove('active'); }, 600);
       });
+    });
 
-      function atualizarIndicador(alvo) {
-        if (!indicator) return;
-        const ref = alvo || dropdown.querySelector('.theme-opt.ativo') || options[0];
-        if (ref) indicator.style.left = (ref.offsetLeft - 4) + 'px';
-      }
-
-      options.forEach(opt => {
-        opt.addEventListener('click', () => {
-          const theme = opt.getAttribute('data-theme');
-          if (theme === 'padrao') {
-            document.documentElement.removeAttribute('data-theme');
-          } else {
-            document.documentElement.setAttribute('data-theme', theme);
-          }
-          localStorage.setItem('vazaPucTheme', theme);
-          options.forEach(o => o.classList.remove('ativo'));
-          opt.classList.add('ativo');
-          atualizarIndicador(opt);
-          setTimeout(() => dropdown.classList.remove('active'), 800);
-        });
-      });
-
-      const saved = localStorage.getItem('vazaPucTheme') || 'padrao';
-      const activeOpt = dropdown.querySelector(`.theme-opt[data-theme="${saved}"]`);
-      if (activeOpt) {
-        activeOpt.classList.add('ativo');
-        setTimeout(() => atualizarIndicador(activeOpt), 50);
-      }
-    })();
-  </script>
-
+    /* Marca a cor ativa ao carregar */
+    var saved = localStorage.getItem('vazaPucTheme') || 'padrao';
+    var activeOpt = panel.querySelector('.theme-opt[data-theme="' + saved + '"]');
+    if (activeOpt) activeOpt.classList.add('ativo');
+  })();
+</script>
 </body>
 </body>
 </html>
