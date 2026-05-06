@@ -879,3 +879,94 @@ body {
   border-color: var(--border);
   transform: scale(1.25);
 }
+/* ── TEMA SWITCHER NA SIDEBAR ── */
+.sidebar-theme-switcher {
+  padding: 0 16px;
+  margin-bottom: 8px;
+}
+
+.sidebar-theme-switcher .theme-switcher-btn {
+  width: 100%;
+  height: 44px;
+  border-radius: 10px;
+  background: transparent;
+  border: 1px solid var(--border, #2a2a2a);
+  color: var(--text-secondary, #888);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 14px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.25s ease;
+}
+
+.sidebar-theme-switcher .theme-switcher-btn:hover {
+  background: rgba(var(--accent-rgb, 232,50,90), 0.08);
+  border-color: var(--accent, #e8325a);
+  color: var(--accent, #e8325a);
+}
+
+/* Painel abre para a DIREITA da sidebar */
+.sidebar-theme-switcher .theme-slider-glass {
+  position: absolute;
+  top: 50%;
+  left: calc(100% + 12px);
+  transform: translateY(-50%) scale(0.9);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 40px;
+  background: rgba(20, 20, 20, 0.85);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  z-index: 200;
+  white-space: nowrap;
+}
+
+.sidebar-theme-switcher .theme-slider-glass.active {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) scale(1);
+}
+
+/* Modo claro */
+:root[data-theme$="-claro"] .sidebar-theme-switcher .theme-slider-glass {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+.sidebar-theme-switcher .theme-opt {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  position: relative;
+  z-index: 2;
+  transition: transform 0.2s ease;
+  border: none !important;
+  flex-shrink: 0;
+}
+.sidebar-theme-switcher .theme-opt:hover { transform: scale(1.15); }
+
+.sidebar-theme-switcher .theme-indicator {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transform: translateY(-50%);
+  transition: left 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+  z-index: 1;
+  pointer-events: none;
+}
