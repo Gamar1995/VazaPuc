@@ -191,8 +191,19 @@ export async function searchPosts(query) {
 // ============================================================
 
 export async function updatePost(postId, newContent) {
-  const { data, error } = await supabase.from('posts').update({ content: newContent }).eq('id', postId).select().single();
+  const user = await getCurrentUser();
+  if (!user) throw new Error('Você precisa estar logado.');
+
+  const { data, error } = await supabase
+    .from('posts')
+    .update({ content: newContent })
+    .eq('id', postId)
+    .eq('author_id', user.id)   // <-- garante que só o dono edita
+    .select()
+    .single();
+
   if (error) throw error;
+  if (!data) throw new Error('Post não encontrado ou sem permissão para editar.');
   return data;
 }
 

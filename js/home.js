@@ -2132,32 +2132,33 @@ function setupEditPostModal() {
   cancelBtn?.addEventListener('click', closeModal);
   modal?.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 
-  saveBtn?.addEventListener('click', async () => {
-    if (!currentEditingPostId) return;
-    const newContent = input?.value.trim();
-    if (!newContent) return;
+ saveBtn?.addEventListener('click', async () => {
+  if (!currentEditingPostId) return;
+  const newContent = input?.value.trim();
+  if (!newContent) return;
 
-    saveBtn.disabled = true;
-    saveBtn.textContent = 'Salvando...';
+  saveBtn.disabled = true;
+  saveBtn.textContent = 'Salvando...';
 
-    try {
-      const { updatePost } = await import('./posts.js');
-      await updatePost(currentEditingPostId, newContent);
-      const postCard = document.querySelector(`.post-card[data-post-id="${currentEditingPostId}"]`);
-      if (postCard) {
-        const textEl = postCard.querySelector('.post-text');
-        if (textEl) textEl.textContent = newContent;
-      }
-      showNotification('Post atualizado! ✏️');
-      closeModal();
-    } catch (err) {
-      console.error(err);
-      showNotification('Erro ao editar post. Tente novamente.');
-    } finally {
-      saveBtn.disabled = false;
-      saveBtn.textContent = 'Salvar Alterações';
-    }
-  });
+  try {
+    const { updatePost } = await import('./posts.js');
+    const updated = await updatePost(currentEditingPostId, newContent); // aguarda resultado
+
+    // Só atualiza a tela APÓS confirmação do banco
+    document.querySelectorAll(`.post-card[data-post-id="${currentEditingPostId}"] .post-text`)
+      .forEach(el => { el.textContent = updated.content; });
+
+    showNotification('Post atualizado! ✏️');
+    closeModal();
+  } catch (err) {
+    console.error(err);
+    // Mostra a mensagem real do erro
+    showNotification(`Erro: ${err.message}`);
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'Salvar Alterações';
+  }
+});
 }
 
 // ============================================================
