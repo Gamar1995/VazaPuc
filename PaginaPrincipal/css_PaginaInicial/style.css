@@ -1385,3 +1385,136 @@ body {
     .bloco-sidebar-btn.ativo {
       box-shadow: inset 0 0 0 1.5px currentColor;
     }
+    /* ===== CONFIGURAÇÕES (Estilo App) ===== */
+.config-view {
+  display: none;
+  flex-direction: column;
+  animation: slideInConfig 0.25s ease;
+}
+.config-view.active {
+  display: flex;
+}
+
+@keyframes slideInConfig {
+  from { opacity: 0; transform: translateX(10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.config-option {
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-color);
+  transition: background 0.2s;
+}
+.config-option:hover {
+  background: var(--hover-color);
+}
+.config-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.config-title {
+  font-size: 0.95rem;
+  font-weight: bold;
+  color: var(--text-color);
+}
+.config-desc {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+.config-chevron {
+  font-size: 1.5rem;
+  color: var(--text-muted);
+  font-family: monospace;
+}
+.text-danger {
+  color: #e74c3c !important;
+}
+
+.config-form-wrapper {
+  padding: 20px;
+  max-width: 500px;
+}
+.config-help-text {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-bottom: 25px;
+}
+/* ESTILOS DA PÁGINA DE CONFIGURAÇÃO */
+.config-view {
+    display: none;
+    flex-direction: column;
+    animation: fadeInConfig 0.2s ease;
+}
+.config-view.active { display: flex; }
+
+@keyframes fadeInConfig {
+    from { opacity: 0; transform: translateX(10px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+.config-option {
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border-color);
+    transition: background 0.2s;
+}
+.config-option:hover { background: var(--hover-color); }
+
+.config-info { display: flex; flex-direction: column; gap: 2px; }
+.config-title { font-weight: 700; color: var(--text-color); font-size: 0.95rem; }
+.config-desc { color: var(--text-muted); font-size: 0.85rem; }
+.config-chevron { color: var(--text-muted); font-size: 1.2rem; }
+
+.config-form-wrapper { padding: 20px; }
+.config-help-text { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px; }
+.form-group-config { margin-bottom: 15px; }
+.form-group-config label { 
+    display: block; 
+    font-size: 0.75rem; 
+    color: var(--red2); 
+    margin-bottom: 5px; 
+    text-transform: uppercase; 
+    font-weight: 700;
+}
+/* ============================================================
+   ANIMAÇÕES DAS CONFIGURAÇÕES E ABAS
+============================================================ */
+/* Animação para as abas laterais (Conta, Privacidade, Notificações) */
+.settings-section {
+    display: none !important;
+    opacity: 0;
+    animation: slideFadeInSettings 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.settings-section.active {
+    display: block !important;
+}
+
+/* Animação para as sub-telas de Sua Conta (Menu, Informações, Senha) */
+.config-view {
+    display: none !important;
+    opacity: 0;
+    animation: slideFadeInSettings 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.config-view.active {
+    display: block !important;
+}
+
+/* Keyframe de deslize e opacidade suave */
+@keyframes slideFadeInSettings {
+    0% {
+        opacity: 0;
+        transform: translateY(15px) scale(0.98);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}

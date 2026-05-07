@@ -2785,3 +2785,94 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   } catch (_) { /* sem posts ainda */ }
 });
+// ============================================================
+// LÓGICA DAS CONFIGURAÇÕES DE CONTA (COM ANIMAÇÕES)
+// ============================================================
+
+window.mudarTelaConfig = function(idTela) {
+    // Remove a classe active de todas as sub-telas
+    document.querySelectorAll('.config-view').forEach(v => v.classList.remove('active'));
+    
+    // Ativa apenas a tela pretendida
+    const telaAlvo = document.getElementById(idTela);
+    if(telaAlvo) telaAlvo.classList.add('active');
+    
+    const btnVoltar = document.getElementById('btnVoltarConfig');
+    const titulo = document.getElementById('configTitulo');
+
+    // Lógica para alterar o cabeçalho
+    if (idTela === 'config-lista') {
+        btnVoltar.style.display = 'none';
+        titulo.innerText = 'Informações gerais'; 
+    } else {
+        btnVoltar.style.display = 'block';
+        if (idTela === 'config-info') {
+            titulo.innerText = 'Informações da conta';
+            carregarMeusDadosConfig(); // Chama os dados do utilizador
+        } else if (idTela === 'config-senha') {
+            titulo.innerText = 'Alterar senha';
+        }
+    }
+};
+
+// Função à prova de falhas para carregar o E-mail e o Handle
+window.carregarMeusDadosConfig = async function() {
+    try {
+        const emailInput = document.getElementById('configEmail');
+        const handleInput = document.getElementById('configHandle');
+        
+        // Estado de carregamento visual
+        if(emailInput) emailInput.value = 'A procurar e-mail...';
+        if(handleInput) handleInput.value = 'A procurar utilizador...';
+
+        // Puxa o utilizador logado usando a instância importada do Supabase
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (userError) throw userError;
+
+        if (user) {
+            // Insere o E-mail
+            if(emailInput) emailInput.value = user.email || 'E-mail não encontrado';
+            
+            // Puxa o @ (handle) da tabela de perfis
+            const { data: profile, error: profileError } = await supabase
+                .from('profiles')
+                .select('handle')
+                .eq('id', user.id)
+                .single();
+                
+            if (profileError) throw profileError;
+
+            // Insere o Handle
+            if(handleInput) handleInput.value = '@' + (profile?.handle || 'anonimo');
+        }
+    } catch (err) {
+        console.error("Erro ao carregar dados das configurações:", err);
+        const emailInput = document.getElementById('configEmail');
+        const handleInput = document.getElementById('configHandle');
+        if(emailInput) emailInput.value = 'Erro ao carregar';
+        if(handleInput) handleInput.value = 'Erro ao carregar';
+    }
+};
+
+window.atualizarSenhaSupabase = async function() {
+    const nova = document.getElementById('configNewPassword').value;
+    const confirma = document.getElementById('configConfirmPassword').value;
+
+    if (!nova || nova.length < 6) return alert("A senha tem de ter pelo menos 6 caracteres.");
+    if (nova !== confirma) return alert("As senhas não coincidem. Tente novamente.");
+
+    try {
+        const { error } = await supabase.auth.updateUser({ password: nova });
+        if (error) {
+            alert("Erro ao atualizar: " + error.message);
+        } else {
+            alert("Senha atualizada com sucesso! ✅");
+            document.getElementById('configNewPassword').value = '';
+            document.getElementById('configConfirmPassword').value = '';
+            mudarTelaConfig('config-lista'); // Volta para o menu
+        }
+    } catch (err) {
+        console.error(err);
+        alert("Erro de ligação ao alterar a senha.");
+    }
+};
