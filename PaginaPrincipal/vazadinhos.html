@@ -130,40 +130,7 @@
         </header>
 
         <!-- Composer de post no feed -->
-        <div class="post-composer" id="feedComposer" style="padding:16px;border-bottom:1px solid var(--border,#2a2a3e);display:flex;gap:12px;">
-          <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=currentuser"
-               class="composer-avatar"
-               style="width:44px;height:44px;border-radius:50%;object-fit:cover;flex-shrink:0;">
-          <div style="flex:1;min-width:0;">
-            <textarea
-              id="postInput"
-              placeholder="O que está vazando na PUC? Use #bloco 01 a #bloco 10 para categorizar!"
-              rows="2"
-              style="width:100%;resize:none;background:transparent;border:none;
-                     color:var(--text-primary,#fff);font-size:16px;outline:none;
-                     font-family:inherit;line-height:1.5;"></textarea>
-
-            <!-- Dica de blocos ao digitar # -->
-            <div id="blocoComposerHint">
-              <span class="hint-label">🏷️ Blocos:</span>
-              <!-- chips injetados pelo JS -->
-            </div>
-
-            <!-- Preview de imagens -->
-            <div id="feedImgPreview"
-                 style="display:none;flex-wrap:wrap;gap:8px;margin:8px 0;"></div>
-
-            <div style="display:flex;align-items:center;gap:8px;padding-top:10px;border-top:1px solid var(--border,#2a2a3e);margin-top:8px;">
-              <button id="btnEmojiFeed"  class="toolbar-btn" title="Emoji" type="button">😊</button>
-              <button id="btnImgFeed"    class="toolbar-btn" title="Foto"  type="button">📷</button>
-              <input  id="feedFileInput" type="file" accept="image/*" multiple style="display:none">
-              <button id="postSubmitBtn" class="btn-primary" style="margin-left:auto;padding:8px 22px;border-radius:20px;font-size:14px;font-weight:700;" type="button">
-                Postar
-              </button>
-            </div>
-            <div id="pickerEmojiFeed" class="emoji-picker-container"></div>
-          </div>
-        </div>
+        
 
         <div class="feed">
           <div class="posts-container" id="postsContainer"></div>
@@ -328,11 +295,16 @@
         <div id="modalImgPreview"
              style="display:none;flex-wrap:wrap;gap:8px;margin:10px 0;"></div>
 
-        <div class="composer-toolbar-subbox">
-          <button type="button" class="toolbar-btn" id="btnEmojiModal" title="Adicionar Emoji">😊</button>
-          <label for="modalFileInput" class="toolbar-btn" title="Adicionar Foto" style="cursor:pointer;">📷</label>
-          <input type="file" id="modalFileInput" accept="image/*" multiple style="display:none">
-        </div>
+       <div class="composer-toolbar-subbox">
+  <button type="button" class="toolbar-btn" id="btnEmojiModal" title="Adicionar Emoji">😊</button>
+  
+  <label for="modalFileInput" class="toolbar-btn" title="Adicionar Foto" style="cursor:pointer;">
+    📷
+     
+  </label>
+  
+  <input type="file" id="modalFileInput" accept="image/*" multiple style="display:none">
+</div>
 
         <div id="pickerEmojiModal" class="emoji-picker-container"></div>
       </div>

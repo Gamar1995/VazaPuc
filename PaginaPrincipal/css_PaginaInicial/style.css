@@ -203,6 +203,22 @@ body {
     margin-bottom: 20px;
     box-shadow: 0 6px 16px rgba(var(--primary-rgb), 0.5);
 }
+.composer-toolbar-subbox {
+  display: flex;         /* Coloca os itens lado a lado */
+  align-items: center;   /* Centraliza verticalmente (caso tenham alturas diferentes) */
+  gap: 8px;              /* O "espaço curto" entre os ícones (ajuste como preferir) */
+}
+
+/* Opcional: Garante que os botões não tenham bordas ou fundos estranhos */
+.toolbar-btn {
+  background: none;
+  border: none;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem; /* Tamanho dos emojis */
+}
 
 .post-btn:hover {
     transform: translateY(-3px);
