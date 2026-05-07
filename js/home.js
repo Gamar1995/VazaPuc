@@ -1,5 +1,5 @@
 // ============================================================
-// js/home.js — Versão COMPLETA CORRIGIDA
+// js/home.js — Com Sistema de Blocos (#bloco 01 a #bloco 10)
 // ============================================================
 
 import { supabase, getCurrentUser } from './supabase.js';
@@ -78,6 +78,298 @@ let profileListenersController = new AbortController();
 let profileBtnControllers = [];
 
 window.renderPostPage = (postId) => openPostDetailModal(postId);
+
+// ============================================================
+// ██████╗ ██╗      ██████╗  ██████╗ ██████╗ ███████╗
+// ██╔══██╗██║     ██╔═══██╗██╔════╝██╔═══██╗██╔════╝
+// ██████╔╝██║     ██║   ██║██║     ██║   ██║███████╗
+// ██╔══██╗██║     ██║   ██║██║     ██║   ██║╚════██║
+// ██████╔╝███████╗╚██████╔╝╚██████╗╚██████╔╝███████║
+// ╚═════╝ ╚══════╝ ╚═════╝  ╚═════╝ ╚═════╝ ╚══════╝
+// Sistema de Blocos — #bloco 01 até #bloco 10
+// ============================================================
+
+const BLOCOS = [
+  { id: 'bloco-01', label: '#bloco 01', emoji: '🟥', cor: '#e0245e' },
+  { id: 'bloco-02', label: '#bloco 02', emoji: '🟧', cor: '#f4700f' },
+  { id: 'bloco-03', label: '#bloco 03', emoji: '🟨', cor: '#f5b700' },
+  { id: 'bloco-04', label: '#bloco 04', emoji: '🟩', cor: '#17bf63' },
+  { id: 'bloco-05', label: '#bloco 05', emoji: '🟦', cor: '#1d9bf0' },
+  { id: 'bloco-06', label: '#bloco 06', emoji: '🟪', cor: '#7856ff' },
+  { id: 'bloco-07', label: '#bloco 07', emoji: '🩷', cor: '#ff5eab' },
+  { id: 'bloco-08', label: '#bloco 08', emoji: '🤎', cor: '#a0522d' },
+  { id: 'bloco-09', label: '#bloco 09', emoji: '🩶', cor: '#8899aa' },
+  { id: 'bloco-10', label: '#bloco 10', emoji: '🖤', cor: '#dddddd' },
+];
+
+// Detecta variações: #bloco01, #bloco 01, #Bloco 01, etc.
+const BLOCO_REGEX = /#[Bb]loco\s*(0?[1-9]|10)\b/g;
+
+function normalizarBloco(match) {
+  const num = match.replace(/#[Bb]loco\s*/i, '').trim().padStart(2, '0');
+  return `bloco-${num}`;
+}
+
+function getBlocoById(id) {
+  return BLOCOS.find(b => b.id === id) || null;
+}
+
+function detectarBlocosNoPost(content) {
+  if (!content) return [];
+  const matches = [...content.matchAll(BLOCO_REGEX)];
+  const ids = [...new Set(matches.map(m => normalizarBloco(m[0])))];
+  return ids.map(id => getBlocoById(id)).filter(Boolean);
+}
+
+// Renderiza texto com hashtags de bloco destacadas e clicáveis
+function renderizarTextoComBlocos(content) {
+  if (!content) return '';
+  const div = document.createElement('div');
+  div.textContent = content;
+  let escaped = div.innerHTML;
+
+  escaped = escaped.replace(/#[Bb]loco\s*(0?[1-9]|10)\b/g, (match) => {
+    const id = normalizarBloco(match);
+    const bloco = getBlocoById(id);
+    if (!bloco) return match;
+    return `<span class="hashtag-bloco" data-bloco-id="${bloco.id}" style="color:${bloco.cor};font-weight:700;cursor:pointer;transition:opacity 0.15s;" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">${match}</span>`;
+  });
+
+  return escaped;
+}
+
+function contarPostsPorBloco(posts) {
+  const contagem = {};
+  BLOCOS.forEach(b => { contagem[b.id] = 0; });
+  posts.forEach(post => {
+    const blocos = detectarBlocosNoPost(post.content);
+    blocos.forEach(b => { contagem[b.id] = (contagem[b.id] || 0) + 1; });
+  });
+  return contagem;
+}
+
+function renderBlocosWidget(contagem) {
+  const items = BLOCOS.map(b => {
+    const qty = contagem[b.id] || 0;
+    return `
+      <button class="bloco-tag-btn" data-bloco-id="${b.id}" title="${qty} post${qty !== 1 ? 's' : ''}" style="
+        display:inline-flex;align-items:center;gap:6px;
+        padding:7px 14px;border-radius:20px;
+        border:2px solid ${b.cor}44;
+        background:${b.cor}12;color:${b.cor};
+        font-size:13px;font-weight:700;cursor:pointer;
+        transition:all 0.18s;white-space:nowrap;font-family:inherit;
+      "
+      onmouseover="this.style.background='${b.cor}2e';this.style.borderColor='${b.cor}'"
+      onmouseout="if(!this.classList.contains('bloco-ativo')){this.style.background='${b.cor}12';this.style.borderColor='${b.cor}44'}"
+      >
+        ${b.emoji} ${b.label}
+        <span style="
+          background:${b.cor}2e;border-radius:10px;
+          padding:1px 7px;font-size:11px;margin-left:2px;
+          min-width:20px;text-align:center;
+        ">${qty}</span>
+      </button>`;
+  }).join('');
+
+  return `
+    <section id="blocosWidgetSection" style="margin-bottom:4px;">
+      <h3 class="explore-section-title" style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        🏷️ Blocos em destaque
+        <span style="font-size:12px;font-weight:400;color:var(--text-secondary);">clique para filtrar posts</span>
+      </h3>
+      <div id="blocosTagsRow" style="display:flex;flex-wrap:wrap;gap:8px;padding:4px 0 20px;">
+        ${items}
+      </div>
+      <div id="blocoFeedContainer" style="display:none;"></div>
+    </section>`;
+}
+
+function attachBlocosListeners(exploreContent, allPosts) {
+  exploreContent.querySelectorAll('.bloco-tag-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const blocoId = btn.dataset.blocoId;
+      const bloco = getBlocoById(blocoId);
+      if (!bloco) return;
+
+      const jaAtivo = btn.classList.contains('bloco-ativo');
+
+      // Remove estado ativo de todos
+      exploreContent.querySelectorAll('.bloco-tag-btn').forEach(b => {
+        b.classList.remove('bloco-ativo');
+        b.style.boxShadow = '';
+        b.style.background = `${getBlocoById(b.dataset.blocoId)?.cor || '#fff'}12`;
+        b.style.borderColor = `${getBlocoById(b.dataset.blocoId)?.cor || '#fff'}44`;
+      });
+
+      const feedContainer = document.getElementById('blocoFeedContainer');
+      if (jaAtivo) {
+        feedContainer.style.display = 'none';
+        feedContainer.innerHTML = '';
+        return;
+      }
+
+      btn.classList.add('bloco-ativo');
+      btn.style.boxShadow = `0 0 0 2px ${bloco.cor}`;
+      btn.style.background = `${bloco.cor}2e`;
+      btn.style.borderColor = bloco.cor;
+
+      const postsFiltrados = allPosts.filter(post =>
+        detectarBlocosNoPost(post.content).some(b => b.id === blocoId)
+      );
+
+      feedContainer.style.display = 'block';
+      feedContainer.innerHTML = renderBlocoFeed(postsFiltrados, bloco);
+
+      // Listeners nos cards filtrados
+      feedContainer.querySelectorAll('.bloco-mini-card').forEach(card => {
+        card.addEventListener('click', (e) => {
+          if (e.target.closest('.explore-avatar-clickable') || e.target.closest('.hashtag-bloco')) return;
+          const postId = card.dataset.postId;
+          if (postId) openPostDetailModal(postId);
+        });
+      });
+
+      feedContainer.querySelectorAll('.explore-avatar-clickable').forEach(el => {
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const handle = el.dataset.handle;
+          if (!handle) return;
+          document.querySelectorAll('.page-container').forEach(p => p.classList.remove('active'));
+          document.getElementById('profile-page').classList.add('active');
+          loadProfileByHandle(handle);
+        });
+      });
+
+      // Hashtag dentro do bloco feed → troca de bloco
+      feedContainer.querySelectorAll('.hashtag-bloco').forEach(tag => {
+        tag.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const outroId = tag.dataset.blocoId;
+          const outroBtn = exploreContent.querySelector(`.bloco-tag-btn[data-bloco-id="${outroId}"]`);
+          if (outroBtn && outroId !== blocoId) outroBtn.click();
+        });
+      });
+
+      feedContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+
+  // Clique em hashtag dentro dos mini-posts do explorar
+  exploreContent.addEventListener('click', (e) => {
+    const hashtag = e.target.closest('.hashtag-bloco');
+    if (!hashtag) return;
+    e.stopPropagation();
+    const blocoId = hashtag.dataset.blocoId;
+    const btn = exploreContent.querySelector(`.bloco-tag-btn[data-bloco-id="${blocoId}"]`);
+    if (btn) btn.click();
+  });
+}
+
+function renderBlocoFeed(posts, bloco) {
+  if (posts.length === 0) {
+    return `
+      <div style="
+        padding:36px;text-align:center;
+        border:2px dashed ${bloco.cor}55;border-radius:16px;
+        margin-bottom:24px;color:var(--text-secondary);
+      ">
+        <div style="font-size:40px;margin-bottom:12px;">${bloco.emoji}</div>
+        <p style="font-size:15px;font-weight:700;color:${bloco.cor};margin:0 0 6px;">
+          Nenhum post em ${bloco.label} ainda
+        </p>
+        <p style="font-size:13px;margin:0;color:var(--text-secondary);">
+          Use <strong style="color:${bloco.cor};">${bloco.label}</strong> em um post para aparecer aqui!
+        </p>
+      </div>`;
+  }
+
+  const header = `
+    <div style="
+      display:flex;align-items:center;gap:12px;
+      padding:12px 16px;margin-bottom:14px;
+      background:${bloco.cor}12;border-radius:14px;
+      border-left:4px solid ${bloco.cor};
+    ">
+      <span style="font-size:26px;line-height:1;">${bloco.emoji}</span>
+      <div>
+        <p style="margin:0;font-weight:800;font-size:15px;color:${bloco.cor};">${bloco.label}</p>
+        <p style="margin:2px 0 0;font-size:12px;color:var(--text-secondary);">
+          ${posts.length} post${posts.length !== 1 ? 's' : ''} encontrado${posts.length !== 1 ? 's' : ''}
+        </p>
+      </div>
+    </div>`;
+
+  const cards = posts.map(post => {
+    const avatar = post.author?.avatar_url
+      || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author?.handle}`;
+    const mediaThumb = post.media_urls?.length
+      ? `<img src="${post.media_urls[0]}" style="width:100%;height:90px;object-fit:cover;border-radius:8px;margin-top:8px;" loading="lazy">`
+      : '';
+    const textoDestacado = renderizarTextoComBlocos(post.content);
+    const diffMin = Math.floor((Date.now() - new Date(post.created_at)) / 60000);
+    const timeStr = diffMin < 1 ? 'agora' : diffMin < 60 ? `${diffMin}min` : diffMin < 1440 ? `${Math.floor(diffMin/60)}h` : `${Math.floor(diffMin/1440)}d`;
+
+    return `
+      <div class="bloco-mini-card" data-post-id="${post.id}" style="
+        background:var(--dark-bg-secondary);
+        border:1px solid var(--border);
+        border-top:3px solid ${bloco.cor};
+        border-radius:14px;padding:14px;
+        cursor:pointer;
+        transition:transform 0.15s,border-color 0.18s;
+      "
+      onmouseover="this.style.transform='translateY(-2px)';this.style.borderColor='${bloco.cor}'"
+      onmouseout="this.style.transform='';this.style.borderColor='var(--border)';this.style.borderTopColor='${bloco.cor}'">
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px;">
+          <img src="${avatar}" class="explore-avatar-clickable" data-handle="${post.author?.handle ?? ''}"
+            style="width:34px;height:34px;border-radius:50%;object-fit:cover;cursor:pointer;flex-shrink:0;" loading="lazy">
+          <div style="min-width:0;flex:1;">
+            <div style="font-weight:700;font-size:13px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              ${escapeHtml(post.author?.name ?? 'Usuário')}
+            </div>
+            <div style="color:var(--text-secondary);font-size:12px;">@${escapeHtml(post.author?.handle ?? '')}</div>
+          </div>
+        </div>
+        <p style="
+          font-size:13.5px;color:var(--text-primary);line-height:1.5;margin:0;
+          display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;
+        ">${textoDestacado}</p>
+        ${mediaThumb}
+        <div style="display:flex;gap:14px;margin-top:10px;font-size:12px;color:var(--text-secondary);align-items:center;">
+          <span>❤️ ${post.likes_count || 0}</span>
+          <span>💬 ${post.replies_count || 0}</span>
+          <span style="margin-left:auto;">${timeStr} atrás</span>
+        </div>
+      </div>`;
+  }).join('');
+
+  return `
+    ${header}
+    <div style="
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
+      gap:12px;margin-bottom:28px;
+    ">
+      ${cards}
+    </div>`;
+}
+
+// Navega para o explorar e ativa um bloco (chamado ao clicar em hashtag no feed)
+async function navegarParaBloco(blocoId) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelector('.nav-item[data-page="explore"]')?.classList.add('active');
+  document.querySelectorAll('.page-container').forEach(p => p.classList.remove('active'));
+  document.getElementById('explore-page')?.classList.add('active');
+
+  await loadExplorePage();
+
+  // Aguarda o widget renderizar
+  requestAnimationFrame(() => {
+    const btn = document.querySelector(`.bloco-tag-btn[data-bloco-id="${blocoId}"]`);
+    if (btn) btn.click();
+  });
+}
 
 // ============================================================
 // INICIALIZAÇÃO
@@ -426,7 +718,7 @@ function renderPosts(posts, containerElement, context = 'feed') {
 }
 
 // ============================================================
-// CRIA HTML DO POST
+// CRIA HTML DO POST — com suporte a blocos
 // ============================================================
 function createPostHTML(post) {
   const isLiked = likedPostIds.has(post.id);
@@ -466,6 +758,28 @@ function createPostHTML(post) {
        </div>`
     : '';
 
+  // ── Detecta blocos para mostrar badges no card ──
+  const blocosDoPost = detectarBlocosNoPost(post.content);
+  const blocosBadges = blocosDoPost.length > 0
+    ? `<div class="post-blocos-badges" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">
+        ${blocosDoPost.map(b => `
+          <span class="bloco-badge-post" data-bloco-id="${b.id}" style="
+            display:inline-flex;align-items:center;gap:3px;
+            background:${b.cor}18;color:${b.cor};
+            border:1px solid ${b.cor}44;
+            border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700;
+            cursor:pointer;transition:background 0.15s;
+          "
+          onmouseover="this.style.background='${b.cor}33'"
+          onmouseout="this.style.background='${b.cor}18'"
+          >${b.emoji} ${b.label}</span>
+        `).join('')}
+       </div>`
+    : '';
+
+  // ── Texto com hashtags destacadas ──
+  const textoPost = renderizarTextoComBlocos(post.content);
+
   return `
     <div class="post-card" data-post-id="${post.id}" data-author-id="${post.author?.id ?? ''}" style="flex-direction:column;cursor:pointer;">
       ${repostIndicator}
@@ -482,7 +796,8 @@ function createPostHTML(post) {
               ${optionsMenu}
             </div>
           </div>
-          <p class="post-text post-clickable-body" data-post-id="${post.id}">${escapeHtml(post.content)}</p>
+          <p class="post-text post-clickable-body" data-post-id="${post.id}">${textoPost}</p>
+          ${blocosBadges}
           ${mediaGrid}
           ${quoteCard}
           <div class="post-actions">
@@ -526,6 +841,24 @@ function attachPostEventListeners(container = document, context = 'feed') {
   const signal = context === 'feed'
     ? feedListenersController.signal
     : profileListenersController.signal;
+
+  // ── BADGES DE BLOCO NOS POSTS → navega para explorar filtrado
+  container.querySelectorAll('.bloco-badge-post').forEach(badge => {
+    badge.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const blocoId = badge.dataset.blocoId;
+      if (blocoId) navegarParaBloco(blocoId);
+    }, { signal });
+  });
+
+  // ── HASHTAG NO TEXTO DO POST → navega para explorar filtrado
+  container.querySelectorAll('.hashtag-bloco').forEach(tag => {
+    tag.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const blocoId = tag.dataset.blocoId;
+      if (blocoId) navegarParaBloco(blocoId);
+    }, { signal });
+  });
 
   // ── MENU DE OPÇÕES
   container.querySelectorAll('.post-options-btn').forEach(btn => {
@@ -688,7 +1021,9 @@ function attachPostEventListeners(container = document, context = 'feed') {
         e.target.closest('.post-options-wrapper') ||
         e.target.closest('.post-replies-section') ||
         e.target.closest('.media-grid') ||
-        e.target.closest('.quote-card')
+        e.target.closest('.quote-card') ||
+        e.target.closest('.bloco-badge-post') ||
+        e.target.closest('.hashtag-bloco')
       ) return;
       const postId = card.dataset.postId;
       if (postId) openPostDetailModal(postId);
@@ -846,6 +1181,27 @@ async function openPostDetailModal(postId) {
     const userAvatar = currentProfile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=anon`;
     const handle = authorHandle.replace('@', '');
 
+    // Blocos detectados no post
+    const blocosDoPost = detectarBlocosNoPost(postText);
+    const blocosBadgesModal = blocosDoPost.length > 0
+      ? `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;">
+          ${blocosDoPost.map(b => `
+            <span class="bloco-badge-modal" data-bloco-id="${b.id}" style="
+              display:inline-flex;align-items:center;gap:4px;
+              background:${b.cor}18;color:${b.cor};
+              border:1px solid ${b.cor}55;border-radius:12px;
+              padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer;
+              transition:background 0.15s;
+            "
+            onmouseover="this.style.background='${b.cor}33'"
+            onmouseout="this.style.background='${b.cor}18'"
+            >${b.emoji} ${b.label}</span>
+          `).join('')}
+         </div>`
+      : '';
+
+    const textoDestacado = renderizarTextoComBlocos(postText);
+
     content.innerHTML = `
       <div style="display:flex;gap:14px;margin-bottom:20px;">
         <img src="${authorAvatar}" class="detail-clickable-avatar" data-handle="${handle}"
@@ -859,8 +1215,9 @@ async function openPostDetailModal(postId) {
             <span style="color:var(--text-secondary);font-size:14px;">${escapeHtml(authorHandle)}</span>
           </div>
           <p style="font-size:20px;color:var(--text-primary);line-height:1.5;margin-top:12px;word-break:break-word;white-space:pre-wrap;">
-            ${escapeHtml(postText)}
+            ${textoDestacado}
           </p>
+          ${blocosBadgesModal}
           ${mediaHtml}
           ${quoteCardHtml}
           <p style="color:var(--text-secondary);font-size:13px;margin-top:12px;">${postTime}</p>
@@ -909,6 +1266,30 @@ async function openPostDetailModal(postId) {
       const modalContent = document.getElementById('postDetailContent');
       if (modalContent) attachMedia(modalContent, new AbortController().signal);
     }
+
+    // Badges de bloco no modal → navega para explorar
+    content.querySelectorAll('.bloco-badge-modal').forEach(badge => {
+      badge.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const blocoId = badge.dataset.blocoId;
+        if (blocoId) {
+          closePostDetailModal();
+          navegarParaBloco(blocoId);
+        }
+      });
+    });
+
+    // Hashtag no texto do modal
+    content.querySelectorAll('.hashtag-bloco').forEach(tag => {
+      tag.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const blocoId = tag.dataset.blocoId;
+        if (blocoId) {
+          closePostDetailModal();
+          navegarParaBloco(blocoId);
+        }
+      });
+    });
 
     content.querySelectorAll('.detail-clickable-avatar').forEach(el => {
       el.addEventListener('click', () => {
@@ -1162,7 +1543,6 @@ function setupPostModal() {
   cancelBtn?.addEventListener('click', closeModal);
   modal?.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 
-  // ── BOTÃO DE FOTO NO MODAL ─────────────────────────────────
   const modalFileInput = document.getElementById('modalFileInput');
   const btnImgModal = document.getElementById('btnImgModal');
 
@@ -1175,9 +1555,6 @@ function setupPostModal() {
     if (!mediaComposer) return;
     const files = Array.from(modalFileInput.files || []);
     if (files.length > 0) {
-      // repassa pro mediaComposer via openFilePicker ou direto
-      // Como o setupMediaComposer cria seu próprio fileInput,
-      // vamos acionar o dele:
       mediaComposer.openFilePicker();
     }
     modalFileInput.value = '';
@@ -1584,7 +1961,6 @@ async function openChat(convId, otherUser) {
     </div>
   `;
 
-  // Realtime (best-effort)
   try {
     unsubscribeCurrentChat = subscribeToMessages(convId, (newMsg) => {
       if (renderedMessageIds.has(newMsg.id)) return;
@@ -1600,7 +1976,6 @@ async function openChat(convId, otherUser) {
     console.warn('[chat] Realtime indisponível, usando polling:', e);
   }
 
-  // ── POLLING a cada 3s (garantia) ─────────────────────────
   window._chatPolling = setInterval(async () => {
     if (currentOpenConvId !== convId) { clearInterval(window._chatPolling); return; }
     try {
@@ -1620,7 +1995,6 @@ async function openChat(convId, otherUser) {
     } catch (_) {}
   }, 3000);
 
-  // Carrega histórico
   try {
     const msgs = await getMessages(convId);
     document.getElementById('chatLoadingMsg')?.remove();
@@ -1816,7 +2190,7 @@ function removeToast(toast) {
 }
 
 // ============================================================
-// EXPLORAR
+// EXPLORAR — com sistema de blocos integrado
 // ============================================================
 async function loadExplorePage() {
   const exploreContent = document.getElementById('exploreContent');
@@ -1825,6 +2199,10 @@ async function loadExplorePage() {
 
   try {
     const posts = await getPosts(50);
+
+    // ── Contagem de blocos ───────────────────────────────────
+    const contagemBlocos = contarPostsPorBloco(posts);
+
     let suggestedUsers = [];
 
     if (currentProfile) {
@@ -1858,6 +2236,7 @@ async function loadExplorePage() {
       const mediaThumb = post.media_urls?.length
         ? `<img src="${post.media_urls[0]}" style="width:100%;height:100px;object-fit:cover;border-radius:8px;margin-top:6px;" loading="lazy">`
         : '';
+      const textoDestacado = renderizarTextoComBlocos(post.content);
       return `
         <div class="explore-post-card" data-post-id="${post.id}" style="cursor:pointer;">
           ${contextLabel ? `<div class="explore-context"><span class="explore-context-icon">${contextIcon}</span> ${contextLabel}</div>` : ''}
@@ -1870,7 +2249,7 @@ async function loadExplorePage() {
             </div>
           </div>
           <div style="font-size:14px;color:var(--text-primary);line-height:1.5;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;margin-top:8px;">
-            ${escapeHtml(post.content)}
+            ${textoDestacado}
           </div>
           ${mediaThumb}
           <div style="color:var(--text-secondary);font-size:12px;display:flex;justify-content:space-between;margin-top:auto;padding-top:8px;">
@@ -1890,8 +2269,11 @@ async function loadExplorePage() {
         </div>`;
     };
 
+    // ── Monta HTML com widget de blocos no topo ──────────────
     exploreContent.innerHTML = `
       <div class="explore-sections">
+        ${renderBlocosWidget(contagemBlocos)}
+
         ${suggestedUsers.length > 0 ? `
         <section>
           <h3 class="explore-section-title">✨ Sugestões para você</h3>
@@ -1911,9 +2293,16 @@ async function loadExplorePage() {
         </section>
       </div>`;
 
+    // ── Ativa listeners de blocos ────────────────────────────
+    attachBlocosListeners(exploreContent, posts);
+
     exploreContent.querySelectorAll('.explore-post-card').forEach(card => {
       card.addEventListener('click', (e) => {
-        if (e.target.closest('.explore-follow-btn') || e.target.closest('.explore-avatar-clickable')) return;
+        if (
+          e.target.closest('.explore-follow-btn') ||
+          e.target.closest('.explore-avatar-clickable') ||
+          e.target.closest('.hashtag-bloco')
+        ) return;
         const postId = card.dataset.postId;
         if (postId) openPostDetailModal(postId);
       });
@@ -2132,33 +2521,49 @@ function setupEditPostModal() {
   cancelBtn?.addEventListener('click', closeModal);
   modal?.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 
- saveBtn?.addEventListener('click', async () => {
-  if (!currentEditingPostId) return;
-  const newContent = input?.value.trim();
-  if (!newContent) return;
+  saveBtn?.addEventListener('click', async () => {
+    if (!currentEditingPostId) return;
+    const newContent = input?.value.trim();
+    if (!newContent) return;
 
-  saveBtn.disabled = true;
-  saveBtn.textContent = 'Salvando...';
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Salvando...';
 
-  try {
-    const { updatePost } = await import('./posts.js');
-    const updated = await updatePost(currentEditingPostId, newContent); // aguarda resultado
+    try {
+      const { updatePost } = await import('./posts.js');
+      const updated = await updatePost(currentEditingPostId, newContent);
 
-    // Só atualiza a tela APÓS confirmação do banco
-    document.querySelectorAll(`.post-card[data-post-id="${currentEditingPostId}"] .post-text`)
-      .forEach(el => { el.textContent = updated.content; });
+      document.querySelectorAll(`.post-card[data-post-id="${currentEditingPostId}"] .post-text`)
+        .forEach(el => {
+          el.innerHTML = renderizarTextoComBlocos(updated.content);
+        });
 
-    showNotification('Post atualizado! ✏️');
-    closeModal();
-  } catch (err) {
-    console.error(err);
-    // Mostra a mensagem real do erro
-    showNotification(`Erro: ${err.message}`);
-  } finally {
-    saveBtn.disabled = false;
-    saveBtn.textContent = 'Salvar Alterações';
-  }
-});
+      // Atualiza badges de bloco no card
+      document.querySelectorAll(`.post-card[data-post-id="${currentEditingPostId}"] .post-blocos-badges`)
+        .forEach(badgesEl => {
+          const novos = detectarBlocosNoPost(updated.content);
+          if (novos.length === 0) { badgesEl.remove(); return; }
+          badgesEl.innerHTML = novos.map(b => `
+            <span class="bloco-badge-post" data-bloco-id="${b.id}" style="
+              display:inline-flex;align-items:center;gap:3px;
+              background:${b.cor}18;color:${b.cor};
+              border:1px solid ${b.cor}44;
+              border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700;
+              cursor:pointer;transition:background 0.15s;
+            ">${b.emoji} ${b.label}</span>
+          `).join('');
+        });
+
+      showNotification('Post atualizado! ✏️');
+      closeModal();
+    } catch (err) {
+      console.error(err);
+      showNotification(`Erro: ${err.message}`);
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Salvar Alterações';
+    }
+  });
 }
 
 // ============================================================
@@ -2323,3 +2728,60 @@ function setupSearch() {
     if (dropdown && !searchInput.contains(e.target) && !dropdown.contains(e.target)) hideResults();
   });
 }
+// ============================================================
+// PATCH — Expõe funções globais para integração com o HTML
+// Adicione este bloco ao FINAL do home.js
+// ============================================================
+
+// Expõe navegarParaBloco para o script inline do HTML
+window.navegarParaBloco = navegarParaBloco;
+
+// Hook: depois de carregar o feed/explorar, atualiza a sidebar de blocos
+// Sobrescrevemos loadFeed e loadExplorePage com wrappers finos.
+
+const _loadFeedOriginal    = loadFeed;
+const _loadExploreOriginal = loadExplorePage;
+
+// Após carregar o feed, calcula contagem de blocos e atualiza a sidebar
+async function loadFeedComBlocos() {
+  await _loadFeedOriginal();
+  try {
+    const posts = await getPosts(50);          // já em cache pelo feed
+    const contagem = contarPostsPorBloco(posts);
+    if (typeof window.atualizarBlocosSidebar === 'function') {
+      window.atualizarBlocosSidebar(contagem);
+    }
+  } catch (_) { /* silencioso */ }
+}
+
+// Substitui referência global usada pelos listeners
+// (como loadFeed é chamada internamente via nome, precisamos
+//  chamar loadFeedComBlocos nos pontos de entrada públicos)
+window.loadFeedPublico = loadFeedComBlocos;
+
+// Após carregar o explorar, também atualiza a sidebar
+const _loadExploreWrapped = async function () {
+  await _loadExploreOriginal();
+  // O explorar já chama contarPostsPorBloco internamente;
+  // apenas garante que a sidebar seja sincronizada.
+  try {
+    const posts = await getPosts(50);
+    const contagem = contarPostsPorBloco(posts);
+    if (typeof window.atualizarBlocosSidebar === 'function') {
+      window.atualizarBlocosSidebar(contagem);
+    }
+  } catch (_) { /* silencioso */ }
+};
+
+// Faz a sidebar renderizar assim que o auth resolver
+const _onAuthOriginal = onAuthChange;
+// A sidebar já renderiza vazia pelo HTML; ao autenticar atualizamos
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const posts = await getPosts(50);
+    const contagem = contarPostsPorBloco(posts);
+    if (typeof window.atualizarBlocosSidebar === 'function') {
+      window.atualizarBlocosSidebar(contagem);
+    }
+  } catch (_) { /* sem posts ainda */ }
+});

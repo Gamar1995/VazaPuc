@@ -16,6 +16,9 @@
 <body>
   <div class="app-container">
 
+    <!-- ══════════════════════════════════════════════
+         SIDEBAR ESQUERDA
+    ══════════════════════════════════════════════ -->
     <aside class="sidebar">
       <div class="sidebar-header">
         <div class="logo">
@@ -46,34 +49,37 @@
           <span class="notif-bell-icon">🔔</span>
           <span class="nav-label">Notificações</span>
           <span class="notif-badge" id="notifBadge">0</span>
-        </a> 
-            <a href="#settings" class="nav-item" data-page="settings">
+        </a>
+
+        <a href="#settings" class="nav-item" data-page="settings">
           <span class="nav-icon">⚙️</span>
           <span class="nav-label">Configurações</span>
         </a>
-<div class="nav-item-theme" id="themeNavBtn">
-  <span class="nav-icon">🎨</span>
-  <span class="nav-label">Tema</span>
 
-  <div class="theme-nav-panel" id="themeNavPanel">
-    <div class="theme-nav-indicator" id="themeNavIndicator"></div>
-    <div class="theme-opt" data-theme="padrao"        style="background:#a31f4b;"  title="Vinho"></div>
-    <div class="theme-opt" data-theme="azul"          style="background:#1f5aa3;"  title="Azul"></div>
-    <div class="theme-opt" data-theme="cinza"         style="background:#888888;"  title="Cinza"></div>
-    <div class="theme-opt" data-theme="amarelo"       style="background:#b8860b;"  title="Amarelo"></div>
-    <div class="theme-nav-divider"></div>
-    <div class="theme-opt" data-theme="padrao-claro"  style="background:linear-gradient(135deg,#a31f4b 50%,#f4f6f8 50%);border:1px solid #dce0e4!important;" title="Vinho Claro"></div>
-    <div class="theme-opt" data-theme="azul-claro"    style="background:linear-gradient(135deg,#1f5aa3 50%,#f0f4f8 50%);border:1px solid #d7e2ea!important;" title="Azul Claro"></div>
-    <div class="theme-opt" data-theme="cinza-claro"   style="background:linear-gradient(135deg,#555555 50%,#f5f5f5 50%);border:1px solid #e0e0e0!important;" title="Cinza Claro"></div>
-    <div class="theme-opt" data-theme="amarelo-claro" style="background:linear-gradient(135deg,#b8860b 50%,#fcfbf7 50%);border:1px solid #e8e4d3!important;" title="Amarelo Claro"></div>
-  </div>
-</div>
+        <div class="nav-item-theme" id="themeNavBtn">
+          <span class="nav-icon">🎨</span>
+          <span class="nav-label">Tema</span>
+
+          <div class="theme-nav-panel" id="themeNavPanel">
+            <div class="theme-nav-indicator" id="themeNavIndicator"></div>
+            <div class="theme-opt" data-theme="padrao"        style="background:#a31f4b;"  title="Vinho"></div>
+            <div class="theme-opt" data-theme="azul"          style="background:#1f5aa3;"  title="Azul"></div>
+            <div class="theme-opt" data-theme="cinza"         style="background:#888888;"  title="Cinza"></div>
+            <div class="theme-opt" data-theme="amarelo"       style="background:#b8860b;"  title="Amarelo"></div>
+            <div class="theme-nav-divider"></div>
+            <div class="theme-opt" data-theme="padrao-claro"  style="background:linear-gradient(135deg,#a31f4b 50%,#f4f6f8 50%);border:1px solid #dce0e4!important;" title="Vinho Claro"></div>
+            <div class="theme-opt" data-theme="azul-claro"    style="background:linear-gradient(135deg,#1f5aa3 50%,#f0f4f8 50%);border:1px solid #d7e2ea!important;" title="Azul Claro"></div>
+            <div class="theme-opt" data-theme="cinza-claro"   style="background:linear-gradient(135deg,#555555 50%,#f5f5f5 50%);border:1px solid #e0e0e0!important;" title="Cinza Claro"></div>
+            <div class="theme-opt" data-theme="amarelo-claro" style="background:linear-gradient(135deg,#b8860b 50%,#fcfbf7 50%);border:1px solid #e8e4d3!important;" title="Amarelo Claro"></div>
+          </div>
+        </div>
       </nav>
 
       <button class="post-btn" id="postBtnSidebar">
         <span>Novo Post</span>
       </button>
 
+      <!-- Painel de Notificações -->
       <div class="notif-panel" id="notifPanel">
         <div class="notif-panel-backdrop" id="notifBackdrop"></div>
         <div class="notif-panel-box">
@@ -106,10 +112,14 @@
           </div>
         </div>
       </div>
-    </aside> 
+    </aside>
 
+    <!-- ══════════════════════════════════════════════
+         CONTEÚDO PRINCIPAL
+    ══════════════════════════════════════════════ -->
     <main class="main-content">
-      
+
+      <!-- ── FEED HOME ── -->
       <div class="page-container active" id="home-page">
         <header class="feed-header">
           <h2>Seu Feed</h2>
@@ -118,21 +128,62 @@
             <button class="tab-btn" data-tab="seguindo">Seguindo</button>
           </div>
         </header>
+
+        <!-- Composer de post no feed -->
+        <div class="post-composer" id="feedComposer" style="padding:16px;border-bottom:1px solid var(--border,#2a2a3e);display:flex;gap:12px;">
+          <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=currentuser"
+               class="composer-avatar"
+               style="width:44px;height:44px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+          <div style="flex:1;min-width:0;">
+            <textarea
+              id="postInput"
+              placeholder="O que está vazando na PUC? Use #bloco 01 a #bloco 10 para categorizar!"
+              rows="2"
+              style="width:100%;resize:none;background:transparent;border:none;
+                     color:var(--text-primary,#fff);font-size:16px;outline:none;
+                     font-family:inherit;line-height:1.5;"></textarea>
+
+            <!-- Dica de blocos ao digitar # -->
+            <div id="blocoComposerHint">
+              <span class="hint-label">🏷️ Blocos:</span>
+              <!-- chips injetados pelo JS -->
+            </div>
+
+            <!-- Preview de imagens -->
+            <div id="feedImgPreview"
+                 style="display:none;flex-wrap:wrap;gap:8px;margin:8px 0;"></div>
+
+            <div style="display:flex;align-items:center;gap:8px;padding-top:10px;border-top:1px solid var(--border,#2a2a3e);margin-top:8px;">
+              <button id="btnEmojiFeed"  class="toolbar-btn" title="Emoji" type="button">😊</button>
+              <button id="btnImgFeed"    class="toolbar-btn" title="Foto"  type="button">📷</button>
+              <input  id="feedFileInput" type="file" accept="image/*" multiple style="display:none">
+              <button id="postSubmitBtn" class="btn-primary" style="margin-left:auto;padding:8px 22px;border-radius:20px;font-size:14px;font-weight:700;" type="button">
+                Postar
+              </button>
+            </div>
+            <div id="pickerEmojiFeed" class="emoji-picker-container"></div>
+          </div>
+        </div>
+
         <div class="feed">
           <div class="posts-container" id="postsContainer"></div>
         </div>
       </div>
 
+      <!-- ── EXPLORAR ── -->
       <div class="page-container" id="explore-page">
         <header class="feed-header">
           <div class="search-box">
-            <input type="text" placeholder="Procurar usuários, posts, hashtags..." class="search-input" id="searchInput">
+            <input type="text"
+                   placeholder="Procurar usuários, posts, hashtags..."
+                   class="search-input" id="searchInput">
             <span class="search-icon">🔍</span>
           </div>
         </header>
         <div class="explore-content" id="exploreContent"></div>
       </div>
 
+      <!-- ── MENSAGENS ── -->
       <div class="page-container" id="messages-page">
         <header class="feed-header">
           <h2>Mensagens</h2>
@@ -147,16 +198,18 @@
         </div>
       </div>
 
+      <!-- ── PERFIL ── -->
       <div class="page-container" id="profile-page">
         <div class="profile-container">
           <div class="profile-header">
             <div class="profile-cover"></div>
             <div class="profile-info">
-              <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=currentuser" alt="Avatar" class="profile-avatar">
+              <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=currentuser"
+                   alt="Avatar" class="profile-avatar">
               <div class="profile-details">
                 <h2 id="profileName">Seu Nome</h2>
-                <p id="profileHandle">@seu_handle</p>
-                <p id="profileBio">Bio do seu perfil aqui...</p>
+                <p  id="profileHandle">@seu_handle</p>
+                <p  id="profileBio">Bio do seu perfil aqui...</p>
                 <div class="profile-stats">
                   <div class="stat"><span class="stat-value">0</span><span class="stat-label">Seguindo</span></div>
                   <div class="stat"><span class="stat-value">0</span><span class="stat-label">Seguidores</span></div>
@@ -174,39 +227,35 @@
         </div>
       </div>
 
+      <!-- ── CONFIGURAÇÕES ── -->
       <div class="page-container" id="settings-page">
         <header class="feed-header">
           <h2>Configurações</h2>
         </header>
-        
         <div class="settings-container">
           <div class="settings-sidebar">
             <button class="settings-tab-btn active" data-settings-tab="conta">👤 Sua Conta</button>
             <button class="settings-tab-btn" data-settings-tab="privacidade">🔒 Privacidade</button>
             <button class="settings-tab-btn" data-settings-tab="notificacoes">🔔 Notificações</button>
           </div>
-
           <div class="settings-content">
-            
             <div class="settings-section active" id="settings-conta">
               <h3>Informações da Conta</h3>
-              <p style="color: var(--text-secondary); margin-bottom: 20px;">Gerencie os detalhes da sua conta do Vaza PUC.</p>
+              <p style="color:var(--text-secondary);margin-bottom:20px;">Gerencie os detalhes da sua conta do Vaza PUC.</p>
               <div class="settings-placeholder-box">
                 <p>Em breve: Alterar e-mail, senha e exclusão de conta.</p>
               </div>
             </div>
-
             <div class="settings-section" id="settings-privacidade">
               <h3>Privacidade e Segurança</h3>
-              <p style="color: var(--text-secondary); margin-bottom: 20px;">Controle quem pode ver seus posts e interagir com você.</p>
+              <p style="color:var(--text-secondary);margin-bottom:20px;">Controle quem pode ver seus posts e interagir com você.</p>
               <div class="settings-placeholder-box">
                 <p>Em breve: Conta privada, bloqueios e silenciados.</p>
               </div>
             </div>
-
             <div class="settings-section" id="settings-notificacoes">
               <h3>Notificações Push</h3>
-              <p style="color: var(--text-secondary); margin-bottom: 20px;">Escolha o que você quer receber no seu feed e e-mail.</p>
+              <p style="color:var(--text-secondary);margin-bottom:20px;">Escolha o que você quer receber no seu feed e e-mail.</p>
               <div class="settings-placeholder-box">
                 <p>Em breve: Alertas de menções, curtidas e novos seguidores.</p>
               </div>
@@ -217,22 +266,29 @@
 
     </main>
 
+    <!-- ══════════════════════════════════════════════
+         SIDEBAR DIREITA — Widget de Blocos real
+    ══════════════════════════════════════════════ -->
     <aside class="right-sidebar" id="rightSidebar">
-      <div class="trending-widget" id="trendingWidget">
-        <h3>Explore por blocos:</h3>
-        <div class="trends-list-wrapper">
-          <div class="trends-list">
-            <div class="trend-item"><div class="trend-label">Amarelo</div><div class="trend-title">#Bloco 01</div><div class="trend-count">500 posts recentes</div></div>
-            <div class="trend-item"><div class="trend-label">Azul</div><div class="trend-title">#Bloco 02</div><div class="trend-count">85 posts recentes</div></div>
-            <div class="trend-item"><div class="trend-label">Verde</div><div class="trend-title">#Bloco 03</div><div class="trend-count">278 posts recentes</div></div>
-            <div class="trend-item"><div class="trend-label">Laranja</div><div class="trend-title">#Bloco 04</div><div class="trend-count">394 posts recentes</div></div>
-            <div class="trend-item"><div class="trend-label">Vermelho</div><div class="trend-title">#Bloco 05</div><div class="trend-count">97 posts recentes</div></div>
+
+      <!--
+        Widget de Blocos #01–#10
+        Os dados (contagem) são injetados pelo home.js via
+        window.atualizarBlocosSidebar(contagem), mas já
+        renderizamos a estrutura estática aqui para que o layout
+        nunca apareça vazio antes do JS carregar.
+      -->
+      <div id="blocosWidget">
+        <h3>🏷️ Filtrar por Bloco</h3>
+        <div class="bloco-list" id="blocoListaSidebar">
+          <!-- Renderizado pelo JS; fallback estático abaixo caso JS demore -->
+          <div style="color:var(--text-secondary,#888);font-size:12px;text-align:center;padding:8px 0;">
+            Carregando blocos...
           </div>
-          <div class="trends-fade"></div>
         </div>
-        <button class="toggle-blocks-btn" id="toggleBlocksBtn" title="Expandir/Recolher">︾</button>
       </div>
 
+      <!-- Aviso oficial -->
       <div class="official-notices-widget">
         <h3>📌 Avisos Oficiais</h3>
         <div class="notices-list">
@@ -248,6 +304,11 @@
     </aside>
   </div>
 
+  <!-- ══════════════════════════════════════════════
+       MODAIS
+  ══════════════════════════════════════════════ -->
+
+  <!-- Modal: Novo Post -->
   <div class="modal" id="postModal">
     <div class="modal-content">
       <div class="modal-header">
@@ -255,10 +316,17 @@
         <button class="modal-close" id="closePostModal">✕</button>
       </div>
       <div class="modal-body" id="modalComposerBody">
-        <!-- Dentro de .modal-body do postModal, a ordem deve ser exatamente esta: -->
-        <textarea id="modalPostInput" placeholder="O que está em sua mente?" rows="8"></textarea>
+        <textarea id="modalPostInput"
+                  placeholder="O que está em sua mente? Use #bloco 01 a #bloco 10!"
+                  rows="8"></textarea>
 
-        <div id="modalImgPreview" style="display:none; flex-wrap:wrap; gap:8px; margin:10px 0;"></div>
+        <!-- Dica de blocos no modal -->
+        <div id="blocoModalHint" style="display:none;padding:8px 12px;background:var(--dark-bg,#12121a);border:1px solid var(--border,#2a2a3e);border-radius:10px;margin:8px 0;gap:6px;flex-wrap:wrap;align-items:center;">
+          <span style="font-size:11px;color:var(--text-secondary,#888);margin-right:2px;white-space:nowrap;">🏷️ Blocos:</span>
+        </div>
+
+        <div id="modalImgPreview"
+             style="display:none;flex-wrap:wrap;gap:8px;margin:10px 0;"></div>
 
         <div class="composer-toolbar-subbox">
           <button type="button" class="toolbar-btn" id="btnEmojiModal" title="Adicionar Emoji">😊</button>
@@ -266,17 +334,17 @@
           <input type="file" id="modalFileInput" accept="image/*" multiple style="display:none">
         </div>
 
-        <!-- picker DEVE vir logo após o toolbar, fora dele -->
         <div id="pickerEmojiModal" class="emoji-picker-container"></div>
       </div>
-      
+
       <div class="modal-footer">
         <button class="btn-secondary" id="cancelPostBtn">Cancelar</button>
-        <button class="btn-primary" id="submitPostBtn">Postar</button>
+        <button class="btn-primary"   id="submitPostBtn">Postar</button>
       </div>
     </div>
   </div>
 
+  <!-- Modal: Editar Post -->
   <div class="modal" id="editPostModal">
     <div class="modal-content">
       <div class="modal-header">
@@ -284,15 +352,18 @@
         <button class="modal-close" id="closeEditPostModal">✕</button>
       </div>
       <div class="modal-body">
-        <textarea id="editPostInput" placeholder="Edite o conteúdo do seu post..." rows="6"></textarea>
+        <textarea id="editPostInput"
+                  placeholder="Edite o conteúdo do seu post..."
+                  rows="6"></textarea>
       </div>
       <div class="modal-footer">
         <button class="btn-secondary" id="cancelEditPostBtn">Cancelar</button>
-        <button class="btn-primary" id="saveEditPostBtn">Salvar Alterações</button>
+        <button class="btn-primary"   id="saveEditPostBtn">Salvar Alterações</button>
       </div>
     </div>
   </div>
 
+  <!-- Modal: Editar Perfil -->
   <div class="modal" id="editProfileModal">
     <div class="modal-content">
       <div class="modal-header">
@@ -319,57 +390,246 @@
       </div>
       <div class="modal-footer">
         <button class="btn-secondary" id="cancelEditBtn">Cancelar</button>
-        <button class="btn-primary" id="saveEditBtn">Salvar</button>
+        <button class="btn-primary"   id="saveEditBtn">Salvar</button>
       </div>
     </div>
   </div>
 
+  <!-- ══════════════════════════════════════════════
+       TOAST DE NAVEGAÇÃO DE BLOCO
+       (aparece quando o usuário clica em uma hashtag no feed)
+  ══════════════════════════════════════════════ -->
+  <div class="bloco-nav-toast" id="blocoNavToast"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SCRIPTS
+  ══════════════════════════════════════════════ -->
   <script type="module" src="../js/home.js"></script>
 
-<script>
+  <!--
+    Patch de integração: conecta o sistema de blocos do home.js
+    à sidebar direita e expõe helpers globais que o home.js usa.
+
+    Este bloco não usa módulos ES para ficar disponível
+    sincronamente após o módulo home.js inicializar.
+  -->
+  <script>
   (function () {
+
+    /* ── Definição local dos blocos (espelho do home.js) ────── */
+    var BLOCOS = [
+      { id: 'bloco-01', label: '#bloco 01', emoji: '🟥', cor: '#e0245e' },
+      { id: 'bloco-02', label: '#bloco 02', emoji: '🟧', cor: '#f4700f' },
+      { id: 'bloco-03', label: '#bloco 03', emoji: '🟨', cor: '#f5b700' },
+      { id: 'bloco-04', label: '#bloco 04', emoji: '🟩', cor: '#17bf63' },
+      { id: 'bloco-05', label: '#bloco 05', emoji: '🟦', cor: '#1d9bf0' },
+      { id: 'bloco-06', label: '#bloco 06', emoji: '🟪', cor: '#7856ff' },
+      { id: 'bloco-07', label: '#bloco 07', emoji: '🩷', cor: '#ff5eab' },
+      { id: 'bloco-08', label: '#bloco 08', emoji: '🤎', cor: '#a0522d' },
+      { id: 'bloco-09', label: '#bloco 09', emoji: '🩶', cor: '#8899aa' },
+      { id: 'bloco-10', label: '#bloco 10', emoji: '🖤', cor: '#dddddd' },
+    ];
+
+    /* ── Toast de navegação ─────────────────────────────────── */
+    function showBlocoNavToast(bloco) {
+      var toast = document.getElementById('blocoNavToast');
+      if (!toast) return;
+      toast.textContent = bloco.emoji + ' Indo para ' + bloco.label + '…';
+      toast.style.borderColor = bloco.cor;
+      toast.style.color = bloco.cor;
+      toast.classList.add('show');
+      setTimeout(function () { toast.classList.remove('show'); }, 1800);
+    }
+
+    /* ── Renderiza sidebar de blocos ────────────────────────── */
+    function renderBlocosSidebar(contagem) {
+      var lista = document.getElementById('blocoListaSidebar');
+      if (!lista) return;
+
+      lista.innerHTML = BLOCOS.map(function (b) {
+        var qty = (contagem && contagem[b.id]) || 0;
+        return [
+          '<button class="bloco-sidebar-btn" data-bloco-id="', b.id, '"',
+          ' style="color:', b.cor, ';border-color:', b.cor, '18;background:', b.cor, '0d;"',
+          ' title="', qty, ' post', qty !== 1 ? 's' : '', '">',
+            b.emoji, ' ', b.label,
+            '<span class="bloco-sidebar-count" style="background:', b.cor, '22;color:', b.cor, ';">',
+              qty,
+            '</span>',
+          '</button>'
+        ].join('');
+      }).join('');
+
+      /* Listeners nos botões da sidebar */
+      lista.querySelectorAll('.bloco-sidebar-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var blocoId = btn.dataset.blocoId;
+          var bloco = BLOCOS.find(function (b) { return b.id === blocoId; });
+          if (!bloco) return;
+
+          showBlocoNavToast(bloco);
+
+          /* Usa a função global exposta pelo home.js */
+          if (typeof window.navegarParaBloco === 'function') {
+            window.navegarParaBloco(blocoId);
+          } else {
+            /* Fallback: navega manualmente para o explorar */
+            document.querySelectorAll('.nav-item').forEach(function (n) {
+              n.classList.remove('active');
+            });
+            var exploreNav = document.querySelector('.nav-item[data-page="explore"]');
+            if (exploreNav) exploreNav.classList.add('active');
+
+            document.querySelectorAll('.page-container').forEach(function (p) {
+              p.classList.remove('active');
+            });
+            var explorePage = document.getElementById('explore-page');
+            if (explorePage) explorePage.classList.add('active');
+          }
+
+          /* Realça o botão ativo */
+          lista.querySelectorAll('.bloco-sidebar-btn').forEach(function (b) {
+            b.classList.remove('ativo');
+            b.style.background = getBlocoById(b.dataset.blocoId).cor + '0d';
+          });
+          btn.classList.add('ativo');
+          btn.style.background = bloco.cor + '22';
+        });
+      });
+    }
+
+    function getBlocoById(id) {
+      return BLOCOS.find(function (b) { return b.id === id; }) || BLOCOS[0];
+    }
+
+    /* ── Expõe helper para home.js atualizar a sidebar ──────── */
+    window.atualizarBlocosSidebar = function (contagem) {
+      renderBlocosSidebar(contagem);
+    };
+
+    /* Renderiza imediatamente sem contagem (esqueleto) */
+    renderBlocosSidebar({});
+
+    /* ── Autocomplete de blocos no composer ─────────────────── */
+    function setupBlocoAutocomplete(textareaId, hintId) {
+      var ta   = document.getElementById(textareaId);
+      var hint = document.getElementById(hintId);
+      if (!ta || !hint) return;
+
+      /* Injeta os chips de blocos no hint, se ainda não tiver */
+      if (!hint.querySelector('.bloco-autocomplete-chip')) {
+        BLOCOS.forEach(function (b) {
+          var chip = document.createElement('button');
+          chip.type = 'button';
+          chip.className = 'bloco-autocomplete-chip';
+          chip.dataset.blocoTag = b.label;
+          chip.style.cssText = [
+            'background:', b.cor, '18;',
+            'color:', b.cor, ';',
+            'border-color:', b.cor, '44;',
+          ].join('');
+          chip.innerHTML = b.emoji + ' ' + b.label;
+          chip.addEventListener('click', function () {
+            insertBlocoTag(ta, b.label);
+            hint.style.display = 'none';
+          });
+          hint.appendChild(chip);
+        });
+      }
+
+      ta.addEventListener('input', function () {
+        var val = ta.value;
+        var cursor = ta.selectionStart;
+        /* Mostra dica se o usuário acabou de digitar # */
+        var beforeCursor = val.slice(0, cursor);
+        var hashMatch = beforeCursor.match(/#([Bb]loco)?\s*(\d*)$/);
+        if (hashMatch) {
+          hint.style.display = 'flex';
+        } else {
+          hint.style.display = 'none';
+        }
+      });
+
+      ta.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') hint.style.display = 'none';
+      });
+
+      document.addEventListener('click', function (e) {
+        if (!ta.contains(e.target) && !hint.contains(e.target)) {
+          hint.style.display = 'none';
+        }
+      });
+    }
+
+    function insertBlocoTag(textarea, tag) {
+      var start = textarea.selectionStart;
+      var end   = textarea.selectionEnd;
+      var val   = textarea.value;
+
+      /* Remove fragmento de # que o usuário já digitou */
+      var before = val.slice(0, start);
+      var after  = val.slice(end);
+      var cleaned = before.replace(/#([Bb]loco)?\s*\d*$/, '');
+
+      textarea.value = cleaned + tag + ' ' + after;
+      var pos = cleaned.length + tag.length + 1;
+      textarea.selectionStart = textarea.selectionEnd = pos;
+      textarea.focus();
+      textarea.dispatchEvent(new Event('input'));
+    }
+
+    /* Inicializa autocomplete nos dois composers */
+    setupBlocoAutocomplete('postInput',      'blocoComposerHint');
+    setupBlocoAutocomplete('modalPostInput', 'blocoModalHint');
+
+    /* Garante que o hint do modal também aparece como flex */
+    var modalHint = document.getElementById('blocoModalHint');
+    if (modalHint) {
+      /* o display é controlado pelo evento input — só ajusta o default */
+      modalHint.style.flexWrap = 'wrap';
+      modalHint.style.gap = '6px';
+      modalHint.style.alignItems = 'center';
+    }
+
+    /* ══════════════════════════════════════════════
+       Tema — troca via sidebar
+    ══════════════════════════════════════════════ */
     var navBtn = document.getElementById('themeNavBtn');
     var panel  = document.getElementById('themeNavPanel');
-    if (!navBtn || !panel) return;
+    if (navBtn && panel) {
+      var opts = panel.querySelectorAll('.theme-opt');
 
-    var opts = panel.querySelectorAll('.theme-opt');
-
-    navBtn.addEventListener('click', function (e) {
-      e.stopPropagation();
-      panel.classList.toggle('active');
-    });
-
-    document.addEventListener('click', function (e) {
-      if (!navBtn.contains(e.target)) {
-        panel.classList.remove('active');
-      }
-    });
-
-    opts.forEach(function (opt) {
-      opt.addEventListener('click', function (e) {
+      navBtn.addEventListener('click', function (e) {
         e.stopPropagation();
-        var theme = opt.getAttribute('data-theme');
-
-        if (theme === 'padrao') {
-          document.documentElement.removeAttribute('data-theme');
-        } else {
-          document.documentElement.setAttribute('data-theme', theme);
-        }
-        localStorage.setItem('vazaPucTheme', theme);
-
-        opts.forEach(function (o) { o.classList.remove('ativo'); });
-        opt.classList.add('ativo');
-
-        setTimeout(function () { panel.classList.remove('active'); }, 600);
+        panel.classList.toggle('active');
       });
-    });
 
-    /* Marca a cor ativa ao carregar */
-    var saved = localStorage.getItem('vazaPucTheme') || 'padrao';
-    var activeOpt = panel.querySelector('.theme-opt[data-theme="' + saved + '"]');
-    if (activeOpt) activeOpt.classList.add('ativo');
+      document.addEventListener('click', function (e) {
+        if (!navBtn.contains(e.target)) panel.classList.remove('active');
+      });
+
+      opts.forEach(function (opt) {
+        opt.addEventListener('click', function (e) {
+          e.stopPropagation();
+          var theme = opt.getAttribute('data-theme');
+          if (theme === 'padrao') {
+            document.documentElement.removeAttribute('data-theme');
+          } else {
+            document.documentElement.setAttribute('data-theme', theme);
+          }
+          localStorage.setItem('vazaPucTheme', theme);
+          opts.forEach(function (o) { o.classList.remove('ativo'); });
+          opt.classList.add('ativo');
+          setTimeout(function () { panel.classList.remove('active'); }, 600);
+        });
+      });
+
+      var saved = localStorage.getItem('vazaPucTheme') || 'padrao';
+      var activeOpt = panel.querySelector('.theme-opt[data-theme="' + saved + '"]');
+      if (activeOpt) activeOpt.classList.add('ativo');
+    }
+
   })();
-</script>
-</body>
+  </script>
 </body>
 </html>
