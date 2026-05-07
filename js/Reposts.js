@@ -498,7 +498,7 @@ function showRepostMenu(triggerBtn, postId, authorId, wasReposted, currentProfil
       // Reverte
       allBtns.forEach(b => {
         b.dataset.reposted = 'false';
-        b.style.color = '';
+       b.style.color = 'var(--text-secondary)';
         const c = b.querySelector('.repost-count');
         if (c) c.textContent = Math.max(0, parseInt(c.textContent || '0') - 1);
       });
@@ -514,7 +514,7 @@ function showRepostMenu(triggerBtn, postId, authorId, wasReposted, currentProfil
     const allBtns = document.querySelectorAll(`.repost-action[data-post-id="${postId}"]`);
     allBtns.forEach(b => {
       b.dataset.reposted = 'false';
-      b.style.color = '';
+      b.style.color = 'var(--text-secondary)';
       const c = b.querySelector('.repost-count');
       if (c) c.textContent = Math.max(0, parseInt(c.textContent || '0') - 1);
     });

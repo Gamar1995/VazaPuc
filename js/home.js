@@ -1166,7 +1166,7 @@ async function openPostDetailModal(postId) {
     const postCard = document.querySelector(`.post-card[data-post-id="${postId}"]`);
     const authorName = postCard?.querySelector('.post-author')?.textContent?.trim() ?? 'Usuário';
     const authorHandle = postCard?.querySelector('.post-handle')?.textContent?.trim() ?? '';
-    const postText = postCard?.querySelector('.post-text')?.textContent?.trim() ?? '';
+   const postText = (postCard?.querySelector('.post-text')?.textContent ?? '').replace(/\s+/g, ' ').trim();
     const postTime = postCard?.querySelector('.post-time')?.textContent?.trim() ?? '';
     const authorAvatar = postCard?.querySelector('.avatar')?.src ?? '';
     const likeBtn = postCard?.querySelector('.like-action');
@@ -1214,7 +1214,7 @@ async function openPostDetailModal(postId) {
             </span>
             <span style="color:var(--text-secondary);font-size:14px;">${escapeHtml(authorHandle)}</span>
           </div>
-          <p style="font-size:20px;color:var(--text-primary);line-height:1.5;margin-top:12px;word-break:break-word;white-space:pre-wrap;">
+         <p style="font-size:20px;color:var(--text-primary);line-height:1.5;margin-top:12px;word-break:break-word;">
             ${textoDestacado}
           </p>
           ${blocosBadgesModal}
