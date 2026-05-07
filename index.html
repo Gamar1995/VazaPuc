@@ -757,6 +757,45 @@
       .hero-stats { gap: 2rem; }
       .sobre-visual { min-height: 360px; }
     }
+    /* =========================================
+       CORREÇÕES DE CORES E BRILHOS (MODO CLARO)
+       ========================================= */
+
+    /* 1. Sincroniza a "borda de luz" (sombra) dos botões com a cor do tema */
+    :root[data-theme$="-claro"] .btn-primary,
+    :root[data-theme$="-claro"] .btn-cta {
+        box-shadow: 0 8px 25px rgba(var(--primary-rgb), 0.3) !important;
+    }
+    
+    :root[data-theme$="-claro"] .btn-primary:hover,
+    :root[data-theme$="-claro"] .btn-cta:hover {
+        box-shadow: 0 12px 35px rgba(var(--primary-rgb), 0.5) !important;
+    }
+
+    /* 2. Restaura o gradiente colorido na frase "Quem Somos" */
+    :root[data-theme$="-claro"] .titulo-destaque {
+        background: linear-gradient(135deg, var(--secondary) 0%, var(--primary) 100%) !important;
+        -webkit-background-clip: text !important;
+        -webkit-text-fill-color: transparent !important;
+    }
+
+    /* 3. Restaura as cores nos subtítulos (ex: "O que andam falando por aí") */
+    :root[data-theme$="-claro"] .section-label {
+        color: var(--primary) !important;
+        -webkit-text-fill-color: var(--primary) !important;
+    }
+
+    /* 4. Traz de volta o brilho no texto central "Vazadinhos da PUC" */
+    :root[data-theme$="-claro"] h1 em {
+        text-shadow: 0 4px 20px rgba(var(--primary-rgb), 0.3) !important;
+    }
+
+    /* 5. Corrige o hover do botão "Fale Conosco" */
+    :root[data-theme$="-claro"] .btn-ghost:hover,
+    :root[data-theme$="-claro"] .custom-border-btn:hover {
+        background-color: rgba(var(--primary-rgb), 0.1) !important;
+        box-shadow: inset 0 0 0 2px var(--primary) !important; 
+    }
   </style>
 </head>
 <body>
