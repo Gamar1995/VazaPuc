@@ -824,6 +824,10 @@ function createPostHTML(post) {
           <div class="reply-input-wrapper">
             <textarea class="reply-input" id="reply-input-${post.id}" placeholder="Postar sua resposta..." rows="1"></textarea>
             <div class="reply-toolbar">
+            <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);cursor:pointer;">
+    <input type="checkbox" class="reply-private-toggle" style="accent-color:var(--primary);">
+    🔒 Só o autor vê
+  </label>
               <button class="reply-submit-btn" data-post-id="${post.id}" data-author-id="${post.author?.id ?? ''}">Responder</button>
             </div>
           </div>
@@ -1067,7 +1071,8 @@ function attachPostEventListeners(container = document, context = 'feed') {
       btn.textContent = '...';
 
       try {
-        await addReply(postId, content);
+        const isPrivate = btn.closest('.reply-toolbar')?.querySelector('.reply-private-toggle')?.checked ?? false;
+await addReply(postId, content, isPrivate); // passa o flag
 
         const userAvatar = currentProfile.avatar_url
           || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentProfile.handle}`;
@@ -1234,6 +1239,7 @@ async function openPostDetailModal(postId) {
                  color:${isLiked ? 'var(--danger,#e0245e)' : 'var(--text-secondary)'};font-size:15px;font-weight:600;padding:0;">
           ${isLiked ? '❤️' : '🤍'} <span class="like-count">${likeCount}</span>
         </button>
+
         <button id="detailReplyToggle" style="background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;color:var(--text-secondary);font-size:15px;font-weight:600;">
           💬 Responder
         </button>
@@ -1246,7 +1252,11 @@ async function openPostDetailModal(postId) {
               style="width:100%;resize:none;background:var(--dark-bg);border:1px solid var(--border);
                      border-radius:12px;padding:10px 14px;color:var(--text-primary);font-size:14px;
                      outline:none;font-family:inherit;"></textarea>
-            <div style="display:flex;justify-content:flex-end;margin-top:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+  <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);cursor:pointer;">
+    <input type="checkbox" id="detailReplyPrivate" style="accent-color:var(--primary);">
+    🔒 Só o autor vê
+  </label>
               <button id="detailReplySubmit" data-post-id="${postId}" data-author-id="${authorId}"
                 style="background:var(--primary);color:white;border:none;border-radius:20px;
                        padding:8px 20px;font-size:14px;font-weight:600;cursor:pointer;">
@@ -1368,36 +1378,39 @@ async function openPostDetailModal(postId) {
     });
 
     document.getElementById('detailReplySubmit')?.addEventListener('click', async (e) => {
-      if (!currentProfile) { showNotification('Faça login para comentar! 🔐'); return; }
-      const btn = e.currentTarget;
-      const pid = btn.dataset.postId;
-      const aid = btn.dataset.authorId;
-      const input = document.getElementById('detailReplyInput');
-      const text = input?.value.trim();
-      if (!text) return;
+  if (!currentProfile) { showNotification('Faça login para comentar! 🔐'); return; }
+  const btn = e.currentTarget;
+  const pid = btn.dataset.postId;
+  const aid = btn.dataset.authorId;
+  const input = document.getElementById('detailReplyInput');
+  const text = input?.value.trim();
+  if (!text) return;
 
-      btn.disabled = true;
-      btn.textContent = '...';
+  const isPrivate = document.getElementById('detailReplyPrivate')?.checked ?? false;
 
-      try {
-        await addReply(pid, text);
-        if (input) input.value = '';
-        document.getElementById('detailReplyComposer').style.display = 'none';
-        showNotification('Resposta enviada! 💬');
-        document.querySelectorAll(`.reply-action[data-post-id="${pid}"] .reply-count`).forEach(el => {
-          el.textContent = parseInt(el.textContent || '0') + 1;
-        });
-        if (aid && aid !== currentProfile.id) {
-          await createNotification({ toUserId: aid, actorId: currentProfile.id, type: NOTIF_TYPES.REPLY, postId: pid });
-        }
-        await loadDetailReplies(pid);
-      } catch (err) {
-        showNotification('Erro ao enviar resposta.');
-      } finally {
-        btn.disabled = false;
-        btn.textContent = 'Responder';
-      }
+  btn.disabled = true;
+  btn.textContent = '...';
+
+  try {
+    await addReply(pid, text, isPrivate);
+    if (input) input.value = '';
+    document.getElementById('detailReplyComposer').style.display = 'none';
+    showNotification('Resposta enviada! 💬');
+    document.querySelectorAll(`.reply-action[data-post-id="${pid}"] .reply-count`).forEach(el => {
+      el.textContent = parseInt(el.textContent || '0') + 1;
     });
+    if (aid && aid !== currentProfile.id) {
+      await createNotification({ toUserId: aid, actorId: currentProfile.id, type: NOTIF_TYPES.REPLY, postId: pid });
+    }
+    await loadDetailReplies(pid);
+  } catch (err) {
+    console.error('Erro ao enviar resposta:', err);
+    showNotification('Erro ao enviar resposta.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Responder';
+  }
+});
 
     await loadDetailReplies(postId);
   } catch (err) {
@@ -1411,13 +1424,22 @@ async function loadDetailReplies(postId) {
   if (!container) return;
   container.innerHTML = '<p style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Carregando...</p>';
 
-  try {
+   try {
     const replies = await getReplies(postId, currentProfile?.id);
-    if (replies.length === 0) {
-      container.innerHTML = '<p style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Nenhuma resposta ainda. Seja o primeiro! 💬</p>';
-      return;
-    }
-    container.innerHTML = replies.map(r => {
+    const authorId = document.querySelector(`.post-card[data-post-id="${postId}"]`)?.dataset.authorId ?? '';
+
+    // ── ADICIONE ESTE FILTRO ──
+    const repliesFiltradas = replies.filter(r => {
+      if (!r.is_private) return true;
+      if (!currentProfile) return false;
+      return currentProfile.id === authorId || currentProfile.id === r.author?.id;
+    });
+
+   if (repliesFiltradas.length === 0) {
+  container.innerHTML = '<p style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Nenhuma resposta ainda. Seja o primeiro! 💬</p>';
+  return;
+}
+container.innerHTML = repliesFiltradas.map(r => {
       const avatar = r.author?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${r.author?.handle}`;
       return `
         <div style="display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);">
