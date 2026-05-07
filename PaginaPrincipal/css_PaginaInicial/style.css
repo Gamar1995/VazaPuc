@@ -83,6 +83,55 @@ body {
     overflow: hidden;
 }
 
+/* ===== LUZES DE FUNDO ANIMADAS ===== */
+.ambient-light {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(120px);
+    opacity: 0.45;
+    pointer-events: none;
+    z-index: 0;
+    animation: floatLight 18s infinite alternate ease-in-out;
+}
+
+.light-1 {
+    top: -15%;
+    left: -10%;
+    width: 60vw;
+    height: 60vw;
+    background: radial-gradient(circle, rgba(var(--primary-rgb), 0.4) 0%, rgba(var(--primary-rgb), 0) 70%);
+}
+
+.light-2 {
+    bottom: -15%;
+    right: -10%;
+    width: 50vw;
+    height: 50vw;
+    background: radial-gradient(circle, rgba(var(--secondary-rgb), 0.3) 0%, rgba(var(--secondary-rgb), 0) 70%);
+    animation-delay: -9s;
+    animation-duration: 22s;
+    animation-direction: alternate-reverse;
+}
+
+@keyframes floatLight {
+    0% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(6%, 6%) scale(1.05); }
+    66% { transform: translate(-3%, 9%) scale(0.95); }
+    100% { transform: translate(-6%, -6%) scale(1); }
+}
+
+[data-theme$="-claro"] .ambient-light {
+    opacity: 0.7;
+    filter: blur(140px);
+}
+[data-theme$="-claro"] .light-1 {
+    background: radial-gradient(circle, rgba(var(--primary-rgb), 0.25) 0%, rgba(var(--primary-rgb), 0) 70%);
+}
+[data-theme$="-claro"] .light-2 {
+    background: radial-gradient(circle, rgba(var(--secondary-rgb), 0.2) 0%, rgba(var(--secondary-rgb), 0) 70%);
+}
+
+/* ===== LAYOUT PRINCIPAL ===== */
 /* ===== LAYOUT PRINCIPAL ===== */
 .app-container {
     display: grid;
@@ -90,7 +139,12 @@ body {
     justify-content: center;
     height: 100vh;
     gap: 30px; 
-    background-color: var(--dark-bg);
+    
+    /* AS 3 LINHAS ABAIXO FORAM ALTERADAS PARA AS LUZES APARECEREM */
+    background-color: transparent; 
+    position: relative;
+    z-index: 1;
+    
     max-width: 1400px;
     margin: 0 auto;
 }

@@ -224,6 +224,8 @@
       cursor: pointer; border: 2px solid transparent !important;
       transition: transform 0.2s, box-shadow 0.2s;
       flex-shrink: 0;
+      overflow: hidden;
+      background-clip: padding-box;
     }
     .theme-opt-nav:hover { transform: scale(1.2); }
     .theme-opt-nav.ativo { box-shadow: 0 0 0 2px white; }
@@ -781,10 +783,10 @@
           <div class="theme-opt-nav" data-theme="cinza"         style="background:#888888" title="Cinza Escuro"></div>
           <div class="theme-opt-nav" data-theme="amarelo"       style="background:#b8860b" title="Amarelo Escuro"></div>
           <div class="theme-nav-sep"></div>
-          <div class="theme-opt-nav" data-theme="padrao-claro"  style="background:linear-gradient(135deg,#a31f4b 50%,#f4f6f8 50%)" title="Vinho Claro"></div>
-          <div class="theme-opt-nav" data-theme="azul-claro"    style="background:linear-gradient(135deg,#1f5aa3 50%,#f0f4f8 50%)" title="Azul Claro"></div>
-          <div class="theme-opt-nav" data-theme="cinza-claro"   style="background:linear-gradient(135deg,#555 50%,#f5f5f5 50%)"   title="Cinza Claro"></div>
-          <div class="theme-opt-nav" data-theme="amarelo-claro" style="background:linear-gradient(135deg,#b8860b 50%,#fcfbf7 50%)" title="Amarelo Claro"></div>
+          <div class="theme-opt-nav" data-theme="padrao-claro"  style="background:linear-gradient(135deg,#a31f4b 50%,#f4f6f8 50%); border: 1px solid rgba(255,255,255,0.2) !important;" title="Vinho Claro"></div>
+          <div class="theme-opt-nav" data-theme="azul-claro"    style="background:linear-gradient(135deg,#1f5aa3 50%,#f0f4f8 50%); border: 1px solid rgba(255,255,255,0.2) !important;" title="Azul Claro"></div>
+          <div class="theme-opt-nav" data-theme="cinza-claro"   style="background:linear-gradient(135deg,#555 50%,#f5f5f5 50%); border: 1px solid rgba(255,255,255,0.2) !important;" title="Cinza Claro"></div>
+          <div class="theme-opt-nav" data-theme="amarelo-claro" style="background:linear-gradient(135deg,#b8860b 50%,#fcfbf7 50%); border: 1px solid rgba(255,255,255,0.2) !important;" title="Amarelo Claro"></div>
         </div>
       </div>
       <a class="btn-nav" href="inicial/cadastro.html">Entrar 👤</a>
