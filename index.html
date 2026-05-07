@@ -15,7 +15,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 
   <style>
-    /* ===== TOKENS ===== */
+    /* ===== TOKENS — padrão (vinho escuro) ===== */
     :root {
       --ink:    #0d0007;
       --paper:  #f5eff0;
@@ -26,6 +26,73 @@
       --border: rgba(192,24,42,0.18);
       --card:   rgba(255,255,255,0.055);
       --radius: 16px;
+    }
+
+    /* ===== TEMAS ESCUROS ===== */
+    [data-theme="azul"] {
+      --ink:   #070a16;
+      --paper: #e8edf5;
+      --red:   #143e75;
+      --red2:  #1f5aa3;
+      --muted: #5a7090;
+      --border: rgba(31,90,163,0.25);
+      --card:  rgba(31,90,163,0.07);
+    }
+    [data-theme="cinza"] {
+      --ink:   #0a0a0a;
+      --paper: #ffffff;
+      --red:   #555555;
+      --red2:  #888888;
+      --muted: #666666;
+      --border: rgba(136,136,136,0.2);
+      --card:  rgba(255,255,255,0.05);
+    }
+    [data-theme="amarelo"] {
+      --ink:   #121008;
+      --paper: #f5f0e8;
+      --red:   #8b6508;
+      --red2:  #b8860b;
+      --muted: #7a6a40;
+      --border: rgba(184,134,11,0.25);
+      --card:  rgba(184,134,11,0.07);
+    }
+
+    /* ===== TEMAS CLAROS ===== */
+    [data-theme="padrao-claro"] {
+      --ink:   #f4f6f8;
+      --paper: #1a1a1a;
+      --red:   #7a1738;
+      --red2:  #a31f4b;
+      --muted: #5c6c7c;
+      --border: rgba(163,31,75,0.15);
+      --card:  rgba(163,31,75,0.05);
+    }
+    [data-theme="azul-claro"] {
+      --ink:   #f0f4f8;
+      --paper: #0f1c2b;
+      --red:   #143e75;
+      --red2:  #1f5aa3;
+      --muted: #5a6e82;
+      --border: rgba(31,90,163,0.15);
+      --card:  rgba(31,90,163,0.05);
+    }
+    [data-theme="cinza-claro"] {
+      --ink:   #f5f5f5;
+      --paper: #111111;
+      --red:   #333333;
+      --red2:  #555555;
+      --muted: #666666;
+      --border: rgba(85,85,85,0.15);
+      --card:  rgba(85,85,85,0.05);
+    }
+    [data-theme="amarelo-claro"] {
+      --ink:   #fcfbf7;
+      --paper: #1f1c0d;
+      --red:   #8b6508;
+      --red2:  #b8860b;
+      --muted: #7a7051;
+      --border: rgba(184,134,11,0.15);
+      --card:  rgba(184,134,11,0.05);
     }
 
     /* ===== RESET ===== */
