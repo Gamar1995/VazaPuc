@@ -39,7 +39,6 @@ import {
   formatTimeAgoNotif,
   NOTIF_TYPES,
 } from './notifications.js';
-
 import {
   getPosts,
   createPost,
@@ -53,7 +52,15 @@ import {
   getReplies,
 } from './posts.js';
 
-import { updateProfile, getProfileByHandle, isFollowing, followUser, unfollowUser } from './profile.js';
+
+import { 
+  updateProfile, getProfileByHandle, isFollowing, followUser, unfollowUser,
+  isProfilePrivate, setAccountPrivacy,
+  requestFollow, cancelFollowRequest,
+  acceptFollowRequest, rejectFollowRequest,
+  getPendingFollowRequests, getPendingRequestsCount,
+  getFollowRequestStatus, canViewProfile,
+} from './profile.js';
 import { getConversations, getMessages, sendMessage, subscribeToMessages, getOrCreateConversation } from './messages.js';
 import { getFollowingFeed, getFollowingIds, subscribeToFollowingFeed, followUserAndSync, unfollowUserAndSync, syncProfileCounts } from './seguindo.js';
 
@@ -391,24 +398,30 @@ try {
   setupMediaInModal();
   setupSearch();
   setupTemas();
+    setupPrivacySettings();
 } catch (erroInterface) {
   console.error('Erro ao carregar interface:', erroInterface);
 }
 
 try {
   onAuthChange(async (session) => {
-    if (session) {
-      currentProfile = await getCurrentProfile();
-      updateUserUI();
-      await initNotifications();
-      await loadFeed();
-      startRealtimeFeed();
-    } else {
-      currentProfile = null;
-      updateUserUI();
-      await loadFeed();
-    }
-  });
+  if (session) {
+    currentProfile = await getCurrentProfile();
+    window.currentProfile = currentProfile; // ← ADICIONE
+    updateUserUI();
+    await initNotifications();
+    await loadFeed();
+    startRealtimeFeed();
+  } else {
+    currentProfile = null;
+    window.currentProfile = null; // ← ADICIONE
+    updateUserUI();
+    await loadFeed();
+  }
+});
+
+// Também exponha refreshPendingBadge globalmente (no final do arquivo)
+window.refreshPendingBadge = refreshPendingBadge;
 } catch (erroBanco) {
   console.error('Erro ao conectar com banco:', erroBanco);
 }
@@ -1699,10 +1712,10 @@ async function loadProfileTabContent(tabType) {
 async function loadProfilePage() {
   profileBtnControllers.forEach(ctrl => ctrl.abort());
   profileBtnControllers = [];
-
+ 
   const editBtn = document.getElementById('editProfileBtn');
   const profile = viewingProfile || currentProfile;
-
+ 
   if (!profile) {
     document.getElementById('profileName').textContent = 'Visitante';
     document.getElementById('profileHandle').textContent = '@anonimo';
@@ -1717,22 +1730,22 @@ async function loadProfilePage() {
       '<p style="padding:40px;text-align:center;color:var(--text-secondary);">Faça login para visualizar seus posts. 🚀</p>';
     return;
   }
-
+ 
   document.getElementById('profileName').textContent = profile.name;
   document.getElementById('profileHandle').textContent = `@${profile.handle}`;
   document.getElementById('profileBio').textContent = profile.bio || 'Sem bio.';
-
+ 
   const profileAvatar = document.querySelector('.profile-avatar');
   if (profileAvatar) {
     profileAvatar.src = profile.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.handle}`;
   }
-
+ 
   const statValues = document.querySelectorAll('.stat-value');
   if (statValues.length >= 2) {
     statValues[0].textContent = profile.following_count || 0;
     statValues[1].textContent = profile.followers_count || 0;
   }
-
+ 
   syncProfileCounts(profile.id).then(counts => {
     if (!counts) return;
     const vals = document.querySelectorAll('.stat-value');
@@ -1741,23 +1754,58 @@ async function loadProfilePage() {
       vals[1].textContent = counts.followers_count;
     }
   });
-
+ 
   document.getElementById('msgProfileBtn')?.remove();
   document.getElementById('followProfileBtn')?.remove();
-
+  document.getElementById('privateProfileBanner')?.remove();
+ 
   const profileInfo = document.querySelector('.profile-info');
   const isOwnProfile = currentProfile && profile.id === currentProfile.id;
-
+ 
   if (isOwnProfile) {
     if (editBtn) { editBtn.textContent = 'Editar Perfil'; editBtn.style.display = 'block'; }
+ 
+    // Badge de conta privada no perfil próprio
+    let privacyBadge = document.getElementById('ownPrivacyBadge');
+    if (!privacyBadge) {
+      privacyBadge = document.createElement('span');
+      privacyBadge.id = 'ownPrivacyBadge';
+      privacyBadge.style.cssText = `
+        display:inline-flex;align-items:center;gap:4px;
+        font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;
+        margin-left:8px;
+      `;
+      document.getElementById('profileHandle').insertAdjacentElement('afterend', privacyBadge);
+    }
+    const isPrivate = profile.is_private ?? false;
+    privacyBadge.textContent = isPrivate ? '🔒 Conta privada' : '🌐 Conta pública';
+    privacyBadge.style.background = isPrivate ? 'var(--primary)22' : '#17bf6322';
+    privacyBadge.style.color = isPrivate ? 'var(--primary)' : '#17bf63';
+ 
+    // Carrega aba de posts normalmente
+    const tabs = document.querySelectorAll('.profile-tab-btn');
+    tabs.forEach(t => t.classList.remove('active'));
+    document.querySelector('.profile-tab-btn[data-tab="posts"]')?.classList.add('active');
+    loadProfileTabContent('posts');
+ 
   } else {
     if (editBtn) editBtn.style.display = 'none';
-
+ 
+    // ── Verifica se visitante pode ver o perfil ──────────────
+    const podeVer = await canViewProfile(profile.id);
+ 
+    if (!podeVer) {
+      // ── PERFIL BLOQUEADO ─────────────────────────────────
+      renderProfileLocked(profile, profileInfo);
+      return;
+    }
+ 
+    // ── Perfil visível — botões normais ──────────────────────
     if (currentProfile) {
       const controller = new AbortController();
       profileBtnControllers.push(controller);
       const signal = controller.signal;
-
+ 
       const msgBtn = document.createElement('button');
       msgBtn.id = 'msgProfileBtn';
       msgBtn.className = 'edit-profile-btn';
@@ -1773,51 +1821,303 @@ async function loadProfilePage() {
         } catch (err) { showNotification('Erro ao abrir conversa.'); }
       }, { signal });
       profileInfo.appendChild(msgBtn);
-
-      const followBtn = document.createElement('button');
-      followBtn.id = 'followProfileBtn';
-      followBtn.className = 'edit-profile-btn';
-      followBtn.style.cssText = 'margin-left:8px;';
-
-      let alreadyFollowing = false;
-      try { alreadyFollowing = await isFollowing(profile.id); } catch (_) {}
-
-      const setFollowState = (following) => {
-        followBtn.textContent = following ? '✓ Seguindo' : '+ Seguir';
-        followBtn.style.background = following ? 'var(--primary)' : '';
-        followBtn.style.color = following ? 'white' : '';
-      };
-      setFollowState(alreadyFollowing);
-
-      followBtn.addEventListener('click', async () => {
-        followBtn.disabled = true;
-        try {
-          const currentlyFollowing = followBtn.textContent.includes('Seguindo');
-          if (currentlyFollowing) {
-            await unfollowUserAndSync(currentProfile.id, profile.id);
-            setFollowState(false);
-            const statVals = document.querySelectorAll('.stat-value');
-            if (statVals.length >= 2) statVals[1].textContent = Math.max(0, parseInt(statVals[1].textContent) - 1);
-          } else {
-            await followUserAndSync(currentProfile.id, profile.id);
-            setFollowState(true);
-            const statVals = document.querySelectorAll('.stat-value');
-            if (statVals.length >= 2) statVals[1].textContent = parseInt(statVals[1].textContent) + 1;
-            await createNotification({ toUserId: profile.id, actorId: currentProfile.id, type: NOTIF_TYPES.FOLLOW });
-          }
-        } catch (err) { showNotification('Erro ao seguir/deixar de seguir.'); }
-        finally { followBtn.disabled = false; }
-      }, { signal });
-
-      profileInfo.appendChild(followBtn);
+ 
+      // Botão seguir — versão com suporte a conta privada
+      await renderFollowButton(profile, profileInfo, signal);
     }
+ 
+    const tabs = document.querySelectorAll('.profile-tab-btn');
+    tabs.forEach(t => t.classList.remove('active'));
+    document.querySelector('.profile-tab-btn[data-tab="posts"]')?.classList.add('active');
+    loadProfileTabContent('posts');
   }
-
-  const tabs = document.querySelectorAll('.profile-tab-btn');
-  tabs.forEach(t => t.classList.remove('active'));
-  document.querySelector('.profile-tab-btn[data-tab="posts"]')?.classList.add('active');
-  loadProfileTabContent('posts');
 }
+ 
+// ── Renderiza o perfil bloqueado para visitantes ─────────────
+async function renderProfileLocked(profile, profileInfo) {
+  // Remove badge de privacidade do próprio perfil se sobrou
+  document.getElementById('ownPrivacyBadge')?.remove();
+ 
+  // Botão de solicitação
+  const controller = new AbortController();
+  profileBtnControllers.push(controller);
+  const signal = controller.signal;
+ 
+  if (currentProfile) {
+    await renderFollowButton(profile, profileInfo, signal);
+  }
+ 
+  // Oculta conteúdo das abas
+  const content = document.getElementById('profileContent');
+  content.innerHTML = `
+    <div id="privateProfileBanner" style="
+      display:flex;flex-direction:column;align-items:center;
+      padding:60px 24px;text-align:center;gap:16px;
+    ">
+      <div style="font-size:56px;opacity:0.6;">🔒</div>
+      <p style="font-size:19px;font-weight:800;color:var(--text-primary);margin:0;">
+        Conta privada
+      </p>
+      <p style="font-size:14px;color:var(--text-secondary);max-width:300px;margin:0;line-height:1.6;">
+        Apenas seguidores aprovados por <strong>@${escapeHtml(profile.handle)}</strong>
+        podem ver os posts desta conta.
+      </p>
+      ${currentProfile
+        ? '<p style="font-size:13px;color:var(--text-secondary);margin:0;">Use o botão acima para solicitar acesso.</p>'
+        : '<p style="font-size:13px;color:var(--text-secondary);margin:0;">Faça login e solicite acesso para ver os posts.</p>'
+      }
+    </div>`;
+}
+ 
+// ── Botão de seguir com estados: Seguir / Solicitado / Seguindo
+async function renderFollowButton(profile, profileInfo, signal) {
+  const followBtn = document.createElement('button');
+  followBtn.id = 'followProfileBtn';
+  followBtn.className = 'edit-profile-btn';
+  followBtn.style.cssText = 'margin-left:8px;';
+ 
+  let alreadyFollowing = false;
+  let requestStatus = 'none';
+  const isPrivate = profile.is_private ?? false;
+ 
+  try { alreadyFollowing = await isFollowing(profile.id); } catch (_) {}
+  if (!alreadyFollowing && isPrivate) {
+    try { requestStatus = await getFollowRequestStatus(profile.id); } catch (_) {}
+  }
+ 
+  const setFollowState = (state) => {
+    // state: 'following' | 'pending' | 'none'
+    if (state === 'following') {
+      followBtn.textContent = '✓ Seguindo';
+      followBtn.style.background = 'var(--primary)';
+      followBtn.style.color = 'white';
+      followBtn.dataset.state = 'following';
+    } else if (state === 'pending') {
+      followBtn.textContent = '⏳ Solicitado';
+      followBtn.style.background = 'var(--dark-bg-secondary,#1e1e2e)';
+      followBtn.style.color = 'var(--text-secondary)';
+      followBtn.style.border = '1px solid var(--border)';
+      followBtn.dataset.state = 'pending';
+    } else {
+      followBtn.textContent = isPrivate ? '🔒 Solicitar' : '+ Seguir';
+      followBtn.style.background = '';
+      followBtn.style.color = '';
+      followBtn.dataset.state = 'none';
+    }
+  };
+ 
+  const initialState = alreadyFollowing ? 'following'
+    : requestStatus === 'pending' ? 'pending'
+    : 'none';
+  setFollowState(initialState);
+ 
+  followBtn.addEventListener('click', async () => {
+    followBtn.disabled = true;
+    const state = followBtn.dataset.state;
+ 
+    try {
+      if (state === 'following') {
+        // Deixar de seguir
+        await unfollowUserAndSync(currentProfile.id, profile.id);
+        setFollowState('none');
+        const statVals = document.querySelectorAll('.stat-value');
+        if (statVals.length >= 2)
+          statVals[1].textContent = Math.max(0, parseInt(statVals[1].textContent) - 1);
+ 
+        // Se era conta privada, mostra perfil bloqueado novamente
+        if (isPrivate) {
+          document.getElementById('msgProfileBtn')?.remove();
+          document.getElementById('followProfileBtn')?.remove();
+          const info = document.querySelector('.profile-info');
+          await renderProfileLocked(profile, info);
+          return;
+        }
+ 
+      } else if (state === 'pending') {
+        // Cancelar solicitação
+        await cancelFollowRequest(profile.id);
+        setFollowState('none');
+        showNotification('Solicitação cancelada.');
+ 
+      } else {
+        // Seguir / Solicitar
+        if (isPrivate) {
+          await requestFollow(profile.id);
+          setFollowState('pending');
+          showNotification('Solicitação enviada! ⏳');
+          await createNotification({
+            toUserId: profile.id,
+            actorId: currentProfile.id,
+            type: NOTIF_TYPES.FOLLOW_REQUEST ?? 'follow_request',
+          });
+        } else {
+          await followUserAndSync(currentProfile.id, profile.id);
+          setFollowState('following');
+          const statVals = document.querySelectorAll('.stat-value');
+          if (statVals.length >= 2)
+            statVals[1].textContent = parseInt(statVals[1].textContent) + 1;
+          await createNotification({
+            toUserId: profile.id,
+            actorId: currentProfile.id,
+            type: NOTIF_TYPES.FOLLOW,
+          });
+        }
+      }
+    } catch (err) {
+      console.error('[followBtn]', err);
+      showNotification('Erro ao processar. Tente novamente.');
+    } finally {
+      followBtn.disabled = false;
+    }
+  }, { signal });
+ 
+  profileInfo.appendChild(followBtn);
+}
+ 
+// ============================================================
+// ── PASSO 3: Adicione esta função e chame no bloco try inicial
+// ── setupPrivacySettings();
+// ============================================================
+ 
+function setupPrivacySettings() {
+  // Delegação de evento — funciona mesmo se o settings-page
+  // for renderizado depois.
+  document.addEventListener('change', async (e) => {
+    const toggle = e.target.closest('#privacyToggle');
+    if (!toggle) return;
+    if (!currentProfile) {
+      showNotification('Faça login para alterar. 🔐');
+      toggle.checked = !toggle.checked;
+      return;
+    }
+    const isPrivate = toggle.checked;
+    try {
+      toggle.disabled = true;
+      const updated = await setAccountPrivacy(isPrivate);
+      currentProfile = { ...currentProfile, is_private: updated.is_private };
+      showNotification(isPrivate
+        ? 'Conta privada ativada 🔒'
+        : 'Conta pública ativada 🌐');
+    } catch (err) {
+      console.error('[privacy]', err);
+      toggle.checked = !isPrivate; // reverte
+      showNotification('Erro ao salvar configuração.');
+    } finally {
+      toggle.disabled = false;
+    }
+  });
+ 
+  // Popula badge de solicitações pendentes na sidebar de settings
+  refreshPendingBadge();
+}
+ 
+async function refreshPendingBadge() {
+  if (!currentProfile) return;
+  try {
+    const count = await getPendingRequestsCount();
+    const badge = document.getElementById('pendingRequestsBadge');
+    if (badge) {
+      badge.textContent = count > 0 ? count : '';
+      badge.style.display = count > 0 ? 'inline-flex' : 'none';
+    }
+  } catch (_) {}
+}
+ 
+// Carrega o painel de solicitações pendentes
+async function loadPendingRequestsPanel() {
+  const panel = document.getElementById('pendingRequestsPanel');
+  if (!panel) return;
+  panel.innerHTML = '<p style="padding:20px;text-align:center;color:var(--text-secondary);">Carregando...</p>';
+ 
+  try {
+    const requests = await getPendingFollowRequests();
+ 
+    if (requests.length === 0) {
+      panel.innerHTML = `
+        <div style="padding:40px;text-align:center;color:var(--text-secondary);">
+          <div style="font-size:36px;margin-bottom:12px;">✅</div>
+          <p style="font-size:15px;font-weight:700;margin:0;">Nenhuma solicitação pendente</p>
+        </div>`;
+      return;
+    }
+ 
+    panel.innerHTML = requests.map(req => {
+      const user = req.requester;
+      const avatar = user?.avatar_url
+        || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.handle}`;
+      return `
+        <div class="pending-request-item" data-from-id="${user?.id}" style="
+          display:flex;align-items:center;gap:12px;
+          padding:12px 16px;border-bottom:1px solid var(--border);
+        ">
+          <img src="${avatar}" style="width:42px;height:42px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:700;font-size:14px;color:var(--text-primary);">
+              ${escapeHtml(user?.name ?? 'Usuário')}
+            </div>
+            <div style="font-size:12px;color:var(--text-secondary);">@${escapeHtml(user?.handle ?? '')}</div>
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0;">
+            <button class="accept-request-btn" data-from-id="${user?.id}" style="
+              background:var(--primary);color:white;border:none;
+              border-radius:16px;padding:6px 14px;font-size:13px;
+              font-weight:700;cursor:pointer;
+            ">✓ Aceitar</button>
+            <button class="reject-request-btn" data-from-id="${user?.id}" style="
+              background:var(--dark-bg-secondary);color:var(--text-secondary);
+              border:1px solid var(--border);border-radius:16px;
+              padding:6px 14px;font-size:13px;font-weight:700;cursor:pointer;
+            ">✕</button>
+          </div>
+        </div>`;
+    }).join('');
+ 
+    // Listeners
+    panel.querySelectorAll('.accept-request-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const fromId = btn.dataset.fromId;
+        btn.disabled = true;
+        try {
+          await acceptFollowRequest(fromId);
+          btn.closest('.pending-request-item')?.remove();
+          showNotification('Solicitação aceita! ✅');
+          refreshPendingBadge();
+          if (panel.querySelectorAll('.pending-request-item').length === 0) {
+            panel.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text-secondary);">
+              <div style="font-size:36px;margin-bottom:12px;">✅</div>
+              <p style="font-size:15px;font-weight:700;margin:0;">Nenhuma solicitação pendente</p>
+            </div>`;
+          }
+        } catch (err) {
+          showNotification('Erro ao aceitar.');
+          btn.disabled = false;
+        }
+      });
+    });
+ 
+    panel.querySelectorAll('.reject-request-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const fromId = btn.dataset.fromId;
+        btn.disabled = true;
+        try {
+          await rejectFollowRequest(fromId);
+          btn.closest('.pending-request-item')?.remove();
+          showNotification('Solicitação recusada.');
+          refreshPendingBadge();
+        } catch (err) {
+          showNotification('Erro ao recusar.');
+          btn.disabled = false;
+        }
+      });
+    });
+ 
+  } catch (err) {
+    panel.innerHTML = '<p style="color:var(--danger);padding:20px;text-align:center;">Erro ao carregar.</p>';
+  }
+}
+ 
+// Expõe para o HTML
+window.loadPendingRequestsPanel = loadPendingRequestsPanel;
 
 // ============================================================
 // MODAL DE EDITAR PERFIL
@@ -1861,7 +2161,9 @@ function setupProfileModal() {
       });
 
       currentProfile = updated;
+      window.currentProfile = updated;
       updateUserUI();
+
       loadProfilePage();
       showNotification('Perfil atualizado com sucesso! ✅');
       closeModal();

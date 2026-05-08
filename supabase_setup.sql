@@ -367,3 +367,82 @@ CREATE OR REPLACE FUNCTION decrement_reposts_count(post_id uuid)
 RETURNS void AS $$
   UPDATE posts SET reposts_count = GREATEST(COALESCE(reposts_count, 0) - 1, 0) WHERE id = post_id;
 $$ LANGUAGE sql SECURITY DEFINER;
+
+-- ============================================================
+-- MIGRAÇÃO: Sistema de Conta Privada — VazaPUC
+-- Execute este script no SQL Editor do Supabase
+-- ============================================================
+
+-- 1. Adiciona coluna is_private na tabela profiles
+ALTER TABLE profiles
+  ADD COLUMN IF NOT EXISTS is_private BOOLEAN NOT NULL DEFAULT false;
+
+-- 2. Cria tabela de solicitações de seguimento
+CREATE TABLE IF NOT EXISTS follow_requests (
+  id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  from_user   UUID        NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  to_user     UUID        NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  status      TEXT        NOT NULL DEFAULT 'pending'
+                          CHECK (status IN ('pending', 'accepted', 'rejected')),
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (from_user, to_user)
+);
+
+-- 3. Índices para performance
+CREATE INDEX IF NOT EXISTS idx_follow_requests_to_user
+  ON follow_requests (to_user, status);
+
+CREATE INDEX IF NOT EXISTS idx_follow_requests_from_user
+  ON follow_requests (from_user, status);
+
+-- 4. RLS (Row Level Security)
+ALTER TABLE follow_requests ENABLE ROW LEVEL SECURITY;
+
+-- Qualquer autenticado pode ver solicitações onde é remetente ou destinatário
+CREATE POLICY "Ver próprias solicitações"
+  ON follow_requests FOR SELECT
+  USING (auth.uid() = from_user OR auth.uid() = to_user);
+
+-- Só pode criar solicitação como remetente
+CREATE POLICY "Criar solicitação"
+  ON follow_requests FOR INSERT
+  WITH CHECK (auth.uid() = from_user);
+
+-- Destinatário pode aceitar/rejeitar; remetente pode cancelar (DELETE)
+CREATE POLICY "Atualizar solicitação"
+  ON follow_requests FOR UPDATE
+  USING (auth.uid() = to_user);
+
+CREATE POLICY "Cancelar solicitação"
+  ON follow_requests FOR DELETE
+  USING (auth.uid() = from_user OR auth.uid() = to_user);
+
+-- 5. Função helper: verifica se usuário pode ver perfil privado
+-- Retorna TRUE se: conta é pública, dono, ou seguidor aceito
+CREATE OR REPLACE FUNCTION can_view_profile(viewer UUID, profile_owner UUID)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_is_private BOOLEAN;
+  v_is_following BOOLEAN;
+BEGIN
+  -- Dono sempre pode ver
+  IF viewer = profile_owner THEN RETURN TRUE; END IF;
+
+  SELECT is_private INTO v_is_private
+    FROM profiles WHERE id = profile_owner;
+
+  -- Conta pública: todos podem ver
+  IF NOT v_is_private OR v_is_private IS NULL THEN RETURN TRUE; END IF;
+
+  -- Conta privada: verifica se já está na lista de seguidores
+  SELECT EXISTS(
+    SELECT 1 FROM follows
+    WHERE follower_id = viewer AND following_id = profile_owner
+  ) INTO v_is_following;
+
+  RETURN v_is_following;
+END;
+$$;
