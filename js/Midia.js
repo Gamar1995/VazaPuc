@@ -227,44 +227,65 @@ export function createMediaGridHTML(mediaUrls, postId) {
   const count = Math.min(mediaUrls.length, 4);
   const urls = mediaUrls.slice(0, 4);
 
-  const gridStyles = {
-    1: 'grid-template-columns:1fr;',
-    2: 'grid-template-columns:1fr 1fr;',
-    3: 'grid-template-columns:1fr 1fr;grid-template-rows:auto auto;',
-    4: 'grid-template-columns:1fr 1fr;grid-template-rows:auto auto;',
+  // ── Layout responsivo por quantidade de imagens ──
+  const gridConfig = {
+    1: { cols: '1fr',        rows: 'auto',             maxH: '510px' },
+    2: { cols: '1fr 1fr',    rows: '280px',            maxH: '280px' },
+    3: { cols: '1fr 1fr',    rows: '200px 200px',      maxH: '404px' },
+    4: { cols: '1fr 1fr',    rows: '200px 200px',      maxH: '404px' },
   };
 
-  const imgStyle = 'width:100%;height:200px;object-fit:cover;cursor:pointer;transition:opacity 0.2s;';
-  const firstImgStyle = count === 3 ? 'width:100%;height:100%;object-fit:cover;cursor:pointer;transition:opacity 0.2s;' : imgStyle;
+  const cfg = gridConfig[count];
 
   let innerHTML = '';
   urls.forEach((url, i) => {
-    const isFirst = i === 0 && count === 3;
-    const spanStyle = isFirst ? 'grid-row:span 2;' : '';
-    const isLast = i === count - 1 && mediaUrls.length > 4;
+    const isFirstOf3 = i === 0 && count === 3;
+    const isLast     = i === count - 1 && mediaUrls.length > 4;
+
+    // A primeira imagem de um layout de 3 ocupa toda a coluna esquerda
+    const spanStyle  = isFirstOf3 ? 'grid-row: span 2;' : '';
+
+    // Altura da célula
+    const cellHeight = count === 1
+      ? 'auto'
+      : isFirstOf3 ? '100%' : '100%';
 
     innerHTML += `
       <div style="
-        position:relative;overflow:hidden;border-radius:0;
+        position:relative;overflow:hidden;
         ${spanStyle}
+        height:${cellHeight};
+        background:var(--dark-bg-tertiary);
       " data-media-index="${i}" data-post-id="${postId}">
+
         <img
           src="${url}"
-          style="${isFirst ? firstImgStyle : imgStyle}"
           loading="lazy"
-          onmouseover="this.style.opacity='0.85'"
-          onmouseout="this.style.opacity='1'"
           class="media-photo"
           data-media-urls="${encodeURIComponent(JSON.stringify(mediaUrls))}"
           data-index="${i}"
+          style="
+            width:100%;
+            height:100%;
+            ${count === 1 ? 'max-height:510px;' : ''}
+            object-fit:${count === 1 ? 'contain' : 'cover'};
+            display:block;
+            cursor:pointer;
+            background:#000;
+            transition:opacity 0.2s;
+          "
+          onmouseover="this.style.opacity='0.88'"
+          onmouseout="this.style.opacity='1'"
         >
+
         ${isLast ? `
           <div style="
             position:absolute;inset:0;
             background:rgba(0,0,0,0.55);
             display:flex;align-items:center;justify-content:center;
-            font-size:22px;font-weight:700;color:white;
+            font-size:26px;font-weight:800;color:white;
             cursor:pointer;pointer-events:none;
+            letter-spacing:-0.5px;
           ">+${mediaUrls.length - 4}</div>
         ` : ''}
       </div>
@@ -273,10 +294,15 @@ export function createMediaGridHTML(mediaUrls, postId) {
 
   return `
     <div class="media-grid" style="
-      display:grid;${gridStyles[count]}
-      gap:3px;margin-top:10px;
-      border-radius:12px;overflow:hidden;
-      border:1px solid var(--border);
+      display:grid;
+      grid-template-columns:${cfg.cols};
+      grid-template-rows:${cfg.rows};
+      gap:2px;
+      margin-top:12px;
+      border-radius:16px;
+      overflow:hidden;
+      max-height:${cfg.maxH};
+      background:#000;
     ">
       ${innerHTML}
     </div>

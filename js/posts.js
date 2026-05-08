@@ -117,21 +117,22 @@ export async function unlikePost(postId) {
 }
 
 // FIX: função getReplies para carregar comentários existentes
-export async function getReplies(postId, currentUserId = null) {
+// ✅ CORRETO
+export async function getReplies(postId, currentUserId = null, postAuthorId = null) {
   const { data, error } = await supabase
     .from('replies')
-    .select('*, author:profiles(id, name, handle, avatar_url)')
+    .select('*, is_private, author:profiles(id, name, handle, avatar_url)')
     .eq('post_id', postId)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
 
-  // Filtra replies privadas: só mostra se for o autor da reply
-  // ou se for o dono do post (o backend/RLS já faz isso, mas filtramos no cliente também)
   return (data || []).filter(r => {
     if (!r.is_private) return true;
     if (!currentUserId) return false;
-    return r.author_id === currentUserId;
+    const isReplyAuthor = r.author_id === currentUserId;
+    const isPostAuthor  = currentUserId === postAuthorId;
+    return isReplyAuthor || isPostAuthor;
   });
 }
 

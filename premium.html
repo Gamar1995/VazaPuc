@@ -3,288 +3,860 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Vazadinhos da PUC - Premium</title>
-  
+  <title>Vaza PUC — Premium</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Syne:wght@400;700;800&family=DM+Sans:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
-  
-  <link rel="stylesheet" href="css/Pagina_Principal.css">
-  
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Syne:wght@700;800&display=swap" rel="stylesheet">
   <style>
-    
-    /* ===== HERO PREMIUM ===== */
-    .premium-hero {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 10rem 1rem 4rem 1rem;
+    :root {
+      --bg: #0a0010;
+      --surface: #13001f;
+      --surface2: #1c0030;
+      --border: rgba(255,255,255,0.08);
+      --accent: #e8325a;
+      --gold: #ffd700;
+      --gold2: #ff8c00;
+      --text: #f0e6ff;
+      --muted: #9080a8;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── FUNDO ANIMADO ── */
+    .bg-orbs {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    }
+    .orb {
+      position: absolute; border-radius: 50%; filter: blur(120px); opacity: 0.35;
+      animation: drift 12s ease-in-out infinite alternate;
+    }
+    .orb1 { width: 500px; height: 500px; background: #7b00ff; top: -150px; left: -100px; animation-delay: 0s; }
+    .orb2 { width: 400px; height: 400px; background: #e8325a; bottom: -100px; right: -80px; animation-delay: -4s; }
+    .orb3 { width: 300px; height: 300px; background: #ffd700; top: 40%; left: 50%; animation-delay: -8s; opacity: 0.15; }
+    @keyframes drift { from { transform: translate(0,0) scale(1); } to { transform: translate(40px,30px) scale(1.1); } }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.2rem 3rem;
+      background: rgba(10,0,16,0.7);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+    .logo {
+      font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.4rem;
+      background: linear-gradient(90deg, var(--gold), var(--accent));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      text-decoration: none;
+    }
+    .nav-back {
+      color: var(--muted); text-decoration: none; font-size: 0.9rem;
+      display: flex; align-items: center; gap: 6px; transition: color 0.2s;
+    }
+    .nav-back:hover { color: var(--text); }
+
+    /* ── HERO ── */
+    .hero {
+      position: relative; z-index: 1;
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 8rem 1.5rem 4rem;
+    }
+    .crown { font-size: 3.5rem; margin-bottom: 1rem; animation: bob 3s ease-in-out infinite; }
+    @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
+    .badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,140,0,0.15));
+      border: 1px solid rgba(255,215,0,0.4);
+      color: var(--gold); font-weight: 700; font-size: 0.8rem;
+      padding: 0.5rem 1.4rem; border-radius: 50px; letter-spacing: 2px;
+      text-transform: uppercase; margin-bottom: 2rem;
+      animation: fadeUp 0.6s ease forwards 0.2s; opacity: 0;
+    }
+
+    h1 {
+      font-family: 'Syne', sans-serif; font-size: clamp(2.8rem, 7vw, 5.5rem);
+      font-weight: 800; line-height: 1.05; margin-bottom: 1.5rem;
+      animation: fadeUp 0.6s ease forwards 0.4s; opacity: 0;
+    }
+    h1 em {
+      font-style: normal;
+      background: linear-gradient(135deg, var(--gold), var(--gold2), var(--accent));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+
+    .hero-sub {
+      max-width: 560px; color: var(--muted); font-size: 1.1rem; line-height: 1.7;
+      margin-bottom: 3.5rem;
+      animation: fadeUp 0.6s ease forwards 0.6s; opacity: 0;
+    }
+
+    /* ── CARD ÚNICO ── */
+    .card-wrap {
+      animation: fadeUp 0.7s ease forwards 0.8s; opacity: 0;
       position: relative;
     }
-    
-    .premium-badge {
-      display: inline-block;
-      background: linear-gradient(135deg, #ffd700, #ff8c00);
-      color: #1a0008;
-      font-weight: 800;
-      padding: 0.5rem 1.5rem;
-      border-radius: 50px;
-      font-size: 0.9rem;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      margin-bottom: 2rem;
-      box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
-      opacity: 0;
-      animation: fadeUp 0.7s ease forwards 0.2s;
-    }
-
-    .premium-hero h1 {
-      opacity: 0;
-      animation: fadeUp 0.7s ease forwards 0.4s;
-    }
-
-    .premium-hero .hero-sub {
-      margin: 1.5rem auto 0;
-      opacity: 0;
-      animation: fadeUp 0.7s ease forwards 0.6s;
-    }
-
-    /* ===== CARTÕES DE PLANOS ===== */
-    .plans-container {
-      display: flex;
-      justify-content: center;
-      align-items: stretch; /* Faz os cartões terem a mesma altura */
-      gap: 2rem;
-      padding: 2rem 2.5rem 6rem;
-      flex-wrap: wrap;
-      position: relative;
-      z-index: 1;
-      opacity: 0;
-      animation: fadeUp 0.7s ease forwards 0.8s;
-    }
-
     .plan-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 24px;
-      padding: 3rem 2rem;
-      width: 100%;
-      max-width: 350px;
+      background: rgba(28,0,48,0.7);
+      border: 1px solid rgba(255,215,0,0.25);
+      border-radius: 32px;
+      padding: 3rem 2.8rem;
+      width: 100%; max-width: 420px;
       text-align: left;
-      transition: transform 0.3s, box-shadow 0.3s;
-      position: relative;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column; /* Permite empurrar o botão pro fundo */
+      backdrop-filter: blur(20px);
+      box-shadow: 0 20px 80px rgba(255,215,0,0.08), 0 0 0 1px rgba(255,215,0,0.06);
+      position: relative; overflow: hidden;
+    }
+    .plan-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--gold), var(--gold2), var(--accent), transparent);
     }
 
-    .plan-card:hover {
-      transform: translateY(-10px);
+    .popular-tag {
+      position: absolute; top: 20px; right: -32px;
+      background: linear-gradient(135deg, var(--gold), var(--gold2));
+      color: #1a0008; font-size: 0.65rem; font-weight: 800;
+      padding: 5px 42px; transform: rotate(45deg);
+      letter-spacing: 1px; text-transform: uppercase;
     }
 
-    .plan-card.pro {
-      border-color: var(--accent);
-      box-shadow: 0 10px 40px rgba(232, 50, 90, 0.2);
+    .plan-name {
+      font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 700;
+      color: var(--gold); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 0.5rem;
     }
-
-    .plan-card.pro::before {
-      content: 'MAIS POPULAR';
-      position: absolute;
-      top: 20px;
-      right: -35px;
-      background: var(--accent);
-      color: white;
-      font-size: 0.7rem;
-      font-weight: 800;
-      padding: 5px 40px;
-      transform: rotate(45deg);
-    }
+    .plan-desc { color: var(--muted); font-size: 0.88rem; margin-bottom: 1.8rem; }
 
     .plan-price {
-      font-family: 'Syne', sans-serif;
-      font-size: 3rem;
-      font-weight: 800;
-      margin: 1.5rem 0;
-      color: var(--text);
+      display: flex; align-items: flex-end; gap: 4px; margin-bottom: 0.3rem;
+    }
+    .price-currency { font-size: 1.3rem; font-weight: 700; color: var(--muted); margin-bottom: 10px; }
+    .price-value {
+      font-family: 'Syne', sans-serif; font-size: 4.5rem; font-weight: 800; line-height: 1;
+      background: linear-gradient(135deg, var(--gold), var(--gold2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .price-period { color: var(--muted); font-size: 0.9rem; margin-bottom: 10px; }
+    .price-note { color: var(--muted); font-size: 0.78rem; margin-bottom: 2.2rem; }
+
+    .divider-line { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
+
+    .features { list-style: none; margin-bottom: 2.5rem; }
+    .features li {
+      display: flex; align-items: center; gap: 12px;
+      padding: 0.6rem 0; color: var(--text); font-size: 0.93rem;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .features li:last-child { border-bottom: none; }
+    .feat-icon {
+      width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+      background: rgba(255,215,0,0.12); font-size: 0.9rem; flex-shrink: 0;
     }
 
-    .plan-price span {
-      font-size: 1rem;
-      color: var(--muted);
-      font-weight: 400;
+    /* ── BTN ASSINAR ── */
+    .btn-assinar {
+      width: 100%; padding: 1.1rem; border: none; border-radius: 14px; cursor: pointer;
+      font-family: 'Syne', sans-serif; font-size: 1.05rem; font-weight: 800;
+      background: linear-gradient(135deg, var(--gold), var(--gold2), #ff5f40);
+      color: #1a0008;
+      position: relative; overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 8px 30px rgba(255,215,0,0.25);
+      letter-spacing: 0.5px;
     }
+    .btn-assinar::before {
+      content: ''; position: absolute; top: 0; left: -150%; width: 50%; height: 100%;
+      background: linear-gradient(to right, transparent, rgba(255,255,255,0.4), transparent);
+      transform: skewX(-25deg); transition: left 0.5s ease;
+    }
+    .btn-assinar:hover { transform: translateY(-3px); box-shadow: 0 14px 40px rgba(255,215,0,0.4); }
+    .btn-assinar:hover::before { left: 160%; }
+    .btn-assinar:active { transform: translateY(0); }
 
-    /* ===== LISTA DE VANTAGENS ===== */
-    .plan-features {
-      list-style: none;
-      margin-bottom: 2.5rem;
-      flex-grow: 1; /* Preenche o espaço vazio empurrando o botão para baixo */
-    }
+    .guarantee { display: flex; align-items: center; gap: 8px; justify-content: center; margin-top: 1rem; color: var(--muted); font-size: 0.8rem; }
 
-    .plan-features li {
-      margin-bottom: 1rem;
-      color: var(--muted);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 0.95rem;
+    /* ── MODAL OVERLAY ── */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(5,0,10,0.85);
+      backdrop-filter: blur(16px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 1.5rem;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.35s ease;
     }
+    .modal-overlay.active { opacity: 1; pointer-events: all; }
 
-    .plan-features li::before {
-      content: '✓';
-      color: var(--accent2);
-      font-weight: bold;
-      width: 16px;
-      text-align: center;
-    }
-    
-    .plan-features.pro-features li::before {
-      color: var(--accent);
-    }
-
-    /* Itens desabilitados no plano grátis */
-    .plan-features li.disabled-feature {
-      opacity: 0.35;
-    }
-
-    .plan-features li.disabled-feature::before {
-      content: '✕';
-      color: var(--muted);
-    }
-
-    .btn-plan {
-      width: 100%;
-      text-align: center;
-      justify-content: center;
-      margin-top: auto; /* Trava o botão perfeitamente na base do cartão */
-    }
-  </style>
-  <!-- ESTILO DO BOTÃO PREMIUM -->
-  <!-- ESTILO DO BOTÃO PREMIUM CORRIGIDO -->
-  <style>
-    .btn-assinar-premium {
-      position: relative;
-      display: inline-block;
+    .modal {
+      background: var(--surface);
+      border: 1px solid rgba(255,215,0,0.2);
+      border-radius: 28px;
+      width: 100%; max-width: 480px;
       overflow: hidden;
-      padding: 16px 40px;
-      font-family: inherit;
-      font-size: 18px;
-      font-weight: 700;
-      color: #ffffff;
-      text-decoration: none;
-      text-align: center;
-      border-radius: 8px;
-      background: rgba(255, 215, 0, 0.15); 
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      
-      /* CORREÇÃO: Borda fina e uniforme para manter tudo centralizado */
-      border: 1px solid rgba(255, 215, 0, 0.5); 
-      box-shadow: 0 4px 15px rgba(255, 215, 0, 0.15); /* Sombra amarela em volta */
-      
-      transition: all 0.3s ease;
-      cursor: pointer;
+      transform: translateY(30px) scale(0.96);
+      transition: transform 0.35s ease;
+      position: relative;
+    }
+    .modal-overlay.active .modal { transform: translateY(0) scale(1); }
+
+    .modal-header {
+      background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(232,50,90,0.08));
+      padding: 2rem 2.2rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .modal-title { font-family: 'Syne', sans-serif; font-size: 1.4rem; font-weight: 800; }
+    .modal-close {
+      width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--border);
+      background: transparent; color: var(--muted); font-size: 1.1rem;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+    }
+    .modal-close:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+
+    .modal-body { padding: 2rem 2.2rem; }
+
+    /* ── STEPS (abas de progresso) ── */
+    .steps {
+      display: flex; align-items: center; gap: 0; margin-bottom: 2rem;
+    }
+    .step-item {
+      flex: 1; text-align: center;
+      font-size: 0.75rem; font-weight: 600; color: var(--muted);
+      position: relative; padding-bottom: 10px;
+    }
+    .step-item::after {
+      content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 0; height: 2px; background: var(--gold); border-radius: 2px;
+      transition: width 0.4s ease;
+    }
+    .step-item.active { color: var(--gold); }
+    .step-item.active::after { width: 60%; }
+    .step-item.done { color: #4caf50; }
+    .step-item.done::after { width: 60%; background: #4caf50; }
+    .step-dot {
+      width: 28px; height: 28px; border-radius: 50%; margin: 0 auto 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; font-weight: 700;
+      background: var(--surface2); border: 1px solid var(--border);
+      transition: all 0.3s;
+    }
+    .step-item.active .step-dot { background: var(--gold); color: #1a0008; border-color: var(--gold); }
+    .step-item.done .step-dot { background: #4caf50; color: white; border-color: #4caf50; }
+    .step-connector { height: 1px; background: var(--border); flex: 0 0 30px; }
+
+    /* ── FORMULÁRIOS ── */
+    .step-panel { display: none; }
+    .step-panel.active { display: block; animation: fadeUp 0.3s ease; }
+
+    .form-group { margin-bottom: 1.2rem; }
+    label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--muted); margin-bottom: 6px; letter-spacing: 0.5px; text-transform: uppercase; }
+    input, select {
+      width: 100%; padding: 0.85rem 1rem; border-radius: 12px;
+      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+      color: var(--text); font-family: inherit; font-size: 0.95rem;
+      transition: border-color 0.2s, box-shadow 0.2s; outline: none;
+    }
+    input:focus, select:focus {
+      border-color: rgba(255,215,0,0.4);
+      box-shadow: 0 0 0 3px rgba(255,215,0,0.08);
+    }
+    input::placeholder { color: var(--muted); opacity: 0.6; }
+
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+    /* ── MÉTODOS DE PAGAMENTO ── */
+    .pay-methods { display: grid; grid-template-columns: repeat(3,1fr); gap: 0.8rem; margin-bottom: 1.5rem; }
+    .pay-method {
+      border: 1.5px solid var(--border); border-radius: 14px; padding: 0.9rem 0.5rem;
+      text-align: center; cursor: pointer; transition: all 0.2s;
+      background: rgba(255,255,255,0.02);
+    }
+    .pay-method:hover { border-color: rgba(255,215,0,0.3); background: rgba(255,215,0,0.05); }
+    .pay-method.selected { border-color: var(--gold); background: rgba(255,215,0,0.1); box-shadow: 0 0 0 3px rgba(255,215,0,0.08); }
+    .pay-method .pm-icon { font-size: 1.6rem; margin-bottom: 4px; }
+    .pay-method .pm-label { font-size: 0.72rem; font-weight: 600; color: var(--muted); }
+    .pay-method.selected .pm-label { color: var(--gold); }
+
+    /* ── PIX PANEL ── */
+    .pix-panel {
+      text-align: center; padding: 1rem 0;
+      display: none;
+    }
+    .pix-panel.show { display: block; animation: fadeUp 0.3s ease; }
+    .qr-box {
+      width: 160px; height: 160px; background: white; border-radius: 16px;
+      margin: 1rem auto; display: flex; align-items: center; justify-content: center;
+      font-size: 2.5rem; position: relative; overflow: hidden;
+    }
+    .qr-lines {
+      display: grid; grid-template-columns: repeat(10,1fr); gap: 2px;
+      width: 130px; height: 130px;
+    }
+    .qr-cell { border-radius: 2px; }
+
+    .pix-key {
+      background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+      border-radius: 10px; padding: 0.7rem 1rem;
+      font-family: monospace; font-size: 0.78rem; color: var(--muted);
+      word-break: break-all; margin: 0.8rem 0;
+    }
+    .pix-timer { font-size: 0.85rem; color: var(--muted); }
+    .pix-timer span { color: var(--gold); font-weight: 700; }
+
+    /* ── CARD PANEL ── */
+    .card-panel { display: none; }
+    .card-panel.show { display: block; animation: fadeUp 0.3s ease; }
+
+    .virtual-card {
+      background: linear-gradient(135deg, #1c0030, #3d006e);
+      border: 1px solid rgba(255,215,0,0.2);
+      border-radius: 18px; padding: 1.5rem;
+      margin-bottom: 1.5rem; position: relative; overflow: hidden;
+    }
+    .virtual-card::before {
+      content: ''; position: absolute; top: -60px; right: -60px;
+      width: 180px; height: 180px; border-radius: 50%;
+      background: rgba(255,215,0,0.08);
+    }
+    .vc-logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1rem; color: var(--gold); }
+    .vc-number { font-size: 1.1rem; letter-spacing: 4px; color: rgba(255,255,255,0.7); margin: 1.2rem 0 0.5rem; font-family: monospace; }
+    .vc-info { display: flex; gap: 2rem; }
+    .vc-info small { font-size: 0.7rem; color: var(--muted); display: block; }
+    .vc-info span { font-size: 0.85rem; color: var(--text); }
+
+    /* ── BOLETO ── */
+    .boleto-panel { display: none; }
+    .boleto-panel.show { display: block; animation: fadeUp 0.3s ease; }
+    .boleto-barcode {
+      background: white; border-radius: 12px; padding: 1.5rem;
+      display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .barcode-lines { display: flex; gap: 2px; height: 60px; }
+    .barcode-lines span { background: #111; border-radius: 1px; }
+    .boleto-code { font-family: monospace; font-size: 0.7rem; color: #333; margin-top: 0.5rem; }
+
+    /* ── BTN PAGAR ── */
+    .btn-pagar {
+      width: 100%; padding: 1rem; border: none; border-radius: 14px; cursor: pointer;
+      font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 800;
+      background: linear-gradient(135deg, var(--gold), var(--gold2));
+      color: #1a0008;
+      box-shadow: 0 8px 25px rgba(255,215,0,0.25);
+      transition: transform 0.2s, box-shadow 0.2s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-pagar:hover { transform: translateY(-2px); box-shadow: 0 12px 35px rgba(255,215,0,0.4); }
+
+    /* ── LOADING ── */
+    .loading-panel { text-align: center; padding: 2rem 0; display: none; }
+    .loading-panel.active { display: block; animation: fadeUp 0.3s ease; }
+    .spinner {
+      width: 60px; height: 60px; border-radius: 50%;
+      border: 3px solid rgba(255,215,0,0.15);
+      border-top-color: var(--gold);
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 1.5rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── SUCCESS ── */
+    .success-panel { text-align: center; padding: 2rem 0; display: none; }
+    .success-panel.active { display: block; animation: fadeUp 0.4s ease; }
+    .success-icon {
+      width: 90px; height: 90px; border-radius: 50%; margin: 0 auto 1.5rem;
+      background: linear-gradient(135deg, #1a4a1a, #0d3b0d);
+      border: 2px solid #4caf50;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.5rem;
+      animation: popIn 0.5s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
+    .success-panel h2 { font-family: 'Syne', sans-serif; font-size: 1.8rem; margin-bottom: 0.5rem; }
+    .success-panel p { color: var(--muted); font-size: 0.9rem; margin-bottom: 1.5rem; }
+    .confetti-wrap { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+    .confetti-piece {
+      position: absolute; width: 8px; height: 8px; border-radius: 2px;
+      animation: confettiFall linear forwards;
+    }
+    @keyframes confettiFall {
+      from { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+      to { transform: translateY(600px) rotate(720deg); opacity: 0; }
+    }
+    .badges-earned { display: flex; justify-content: center; gap: 0.8rem; flex-wrap: wrap; margin-top: 1rem; }
+    .badge-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(255,215,0,0.12); border: 1px solid rgba(255,215,0,0.3);
+      border-radius: 50px; padding: 0.4rem 1rem; font-size: 0.8rem; color: var(--gold);
     }
 
-    .btn-assinar-premium::before {
-      content: "";
-      position: absolute;
-      top: 0;
-      left: -150%;
-      width: 50%;
-      height: 100%;
-      background: linear-gradient(
-        to right,
-        rgba(255, 255, 255, 0) 0%,
-        rgba(255, 255, 255, 0.6) 50%,
-        rgba(255, 255, 255, 0) 100%
-      );
-      transform: skewX(-25deg);
-      transition: left 0.6s ease;
+    /* ── FOOTER ── */
+    footer {
+      position: relative; z-index: 1; text-align: center;
+      padding: 2rem; color: var(--muted); font-size: 0.8rem;
     }
 
-    .btn-assinar-premium:hover {
-      transform: translateY(-3px);
-      background: rgba(255, 215, 0, 0.25);
-      box-shadow: 0 8px 25px rgba(255, 215, 0, 0.3);
-      border: 1px solid rgba(255, 215, 0, 0.8); /* Borda brilha mais no hover */
-      color: #ffffff;
+    /* ── UTILS ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
     }
+    .secure-badges { display: flex; justify-content: center; gap: 1.2rem; flex-wrap: wrap; margin-top: 1.5rem; }
+    .sec-badge { display: flex; align-items: center; gap: 5px; color: var(--muted); font-size: 0.75rem; }
 
-    .btn-assinar-premium:hover::before {
-      left: 150%;
+    @media(max-width: 500px) {
+      nav { padding: 1rem 1.2rem; }
+      .plan-card { padding: 2rem 1.5rem; }
+      .modal-body { padding: 1.5rem; }
+      .modal-header { padding: 1.5rem 1.5rem 1rem; }
+      .row2 { grid-template-columns: 1fr; }
+      .pay-methods { grid-template-columns: repeat(3,1fr); }
     }
   </style>
 </head>
 <body>
 
-  <nav>
-    <a class="logo" href="index.html">Vaza PUC</a>
-    <ul class="nav-links">
-      <li><a href="index.html">Home</a></li>
-      <li><a href="premium.html" style="color: var(--text); font-weight: 600;">Premium</a></li>
-    </ul>
-    <div class="ms-lg-3">
-      <a class="btn custom-btn custom-border-btn" href="inicial/cadastro.html">
-        Entrar 👤
-      </a>
-    </div>
-  </nav>
+<div class="bg-orbs">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+</div>
 
-  <section class="premium-hero">
-    <div class="hero-glow"></div>
-    <div class="hero-glow2"></div>
-    <div class="premium-badge">Vaza PUC Premium</div>
-    <h1>Eleve sua <em>Experiência</em></h1>
-    <p class="hero-sub">
-      Desbloqueie recursos exclusivos, destaque seu perfil e saiba de tudo antes de todo mundo. Escolha o plano perfeito para você.
-    </p>
-  </section>
+<nav>
+  <a class="logo" href="index.html">Vaza PUC</a>
+  <a class="nav-back" href="index.html">← Voltar</a>
+</nav>
 
-  <section class="plans-container">
+<section class="hero">
+  <div class="crown">👑</div>
+  <div class="badge">✦ &nbsp;Vaza PUC Premium</div>
+  <h1>Eleve sua<br><em>Experiência</em></h1>
+  <p class="hero-sub">Desbloqueie tudo que a PUC tem de mais quente. Modo Ghost, destaque no feed, zero anúncios — só pra quem é elite.</p>
+
+  <div class="card-wrap">
     <div class="plan-card">
-      <h3 style="font-family: 'Syne', sans-serif; font-size: 1.5rem; color: var(--text);">Olheiro</h3>
-      <div class="plan-price">Grátis</div>
-      <ul class="plan-features">
-        <li>Acesso ao feed principal</li>
-        <li>Curtir e comentar</li>
-        <li>Modo anônimo básico</li>
-        <li>Mensagens diretas limitadas</li>
-        <li class="disabled-feature">Sem selo de verificado</li>
-        <li class="disabled-feature">Veja quem visitou seu perfil</li>
-        <li class="disabled-feature">Posts padrão no feed</li>
-        <li class="disabled-feature">Sem modo anônimo avançado</li>
-        <li class="disabled-feature">Contem anúncios</li>
+      <div class="popular-tag">Mais Popular</div>
+      <div class="plan-name">Elite Universitária</div>
+      <p class="plan-desc">Acesso total à experiência premium.</p>
+
+      <div class="plan-price">
+        <span class="price-currency">R$</span>
+        <span class="price-value">9</span>
+        <span class="price-period">,90/mês</span>
+      </div>
+      <p class="price-note">Cancele quando quiser • Sem multa</p>
+
+      <hr class="divider-line">
+
+      <ul class="features">
+        <li><span class="feat-icon">🔥</span>Posts em destaque no feed</li>
+        <li><span class="feat-icon">👻</span>Modo anônimo Ghost avançado</li>
+        <li><span class="feat-icon">✅</span>Selo de verificado Premium</li>
+        <li><span class="feat-icon">👁️</span>Veja quem visitou seu perfil</li>
+        <li><span class="feat-icon">💬</span>Mensagens diretas ilimitadas</li>
+        <li><span class="feat-icon">🚫</span>Zero anúncios, forever</li>
+        <li><span class="feat-icon">⚡</span>Acesso antecipado a novidades</li>
       </ul>
-      <a href="inicial/cadastro.html" class="btn btn-ghost btn-plan">Continuar Grátis</a>
+
+      <button class="btn-assinar" onclick="openModal()">
+        ⚡ Assinar agora — R$ 9,90/mês
+      </button>
+
+      <div class="guarantee">🔒 Pagamento 100% seguro &nbsp;•&nbsp; 7 dias de garantia</div>
     </div>
 
-    <div class="plan-card pro">
-      <h3 style="font-family: 'Syne', sans-serif; font-size: 1.5rem; color: var(--accent);">Elite Universitária</h3>
-      <div class="plan-price">R$ 9<span>,90/mês</span></div>
-      <ul class="plan-features pro-features">
-        <li>Acesso ao feed principal</li>
-        <li>Curtir e comentar</li>
-        <li>Modo anônimo básico</li>
-        <li>Mensagens diretas ilimitadas</li>
-        <li style="color: var(--text);">Selo de verificado Premium</li>
-        <li style="color: var(--text);">Veja quem visitou seu perfil</li>
-        <li style="color: var(--text);">Posts em destaque no feed</li>
-        <li style="color: var(--text);">Modo anônimo avançado (Ghost)</li>
-        <li style="color: var(--text);">Sem anúncios</li>
-      </ul>
-     <a href="#" class="btn-assinar-premium">Assinar agora</a>
+    <div class="secure-badges">
+      <span class="sec-badge">🔐 SSL Criptografado</span>
+      <span class="sec-badge">💳 PCI DSS</span>
+      <span class="sec-badge">🛡️ Dados protegidos</span>
     </div>
-  </section>
+  </div>
+</section>
 
-  <div class="divider"></div>
+<footer>© 2026 Vaza PUC &nbsp;•&nbsp; Por Pedro L. e Pietro G.</footer>
 
-  <footer>
-    <span>© 2026 Vazadinhos da PUC</span>
-    <span>Por Pedro L. e Pietro G.</span>
-  </footer>
+<!-- ══════════ MODAL ══════════ -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modal">
 
+    <div class="modal-header">
+      <div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px;">Assinatura</div>
+        <div class="modal-title">Elite Universitária <span style="color:var(--gold);">R$ 9,90</span></div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+
+    <div class="modal-body">
+
+      <!-- Steps -->
+      <div class="steps" id="steps">
+        <div class="step-item active" id="step1-indicator">
+          <div class="step-dot">1</div>
+          Dados
+        </div>
+        <div class="step-connector"></div>
+        <div class="step-item" id="step2-indicator">
+          <div class="step-dot">2</div>
+          Pagamento
+        </div>
+        <div class="step-connector"></div>
+        <div class="step-item" id="step3-indicator">
+          <div class="step-dot">3</div>
+          Confirmar
+        </div>
+      </div>
+
+      <!-- ── STEP 1: Dados ── -->
+      <div class="step-panel active" id="panel1">
+        <div class="form-group">
+          <label>Nome completo</label>
+          <input type="text" id="inp-nome" placeholder="Seu nome" />
+        </div>
+        <div class="form-group">
+          <label>E-mail universitário</label>
+          <input type="email" id="inp-email" placeholder="voce@pucpr.br" />
+        </div>
+        <div class="form-group">
+          <label>CPF</label>
+          <input type="text" id="inp-cpf" placeholder="000.000.000-00" maxlength="14" />
+        </div>
+        <button class="btn-pagar" onclick="goStep2()">Continuar →</button>
+      </div>
+
+      <!-- ── STEP 2: Pagamento ── -->
+      <div class="step-panel" id="panel2">
+        <div class="pay-methods">
+          <div class="pay-method selected" id="pm-card" onclick="selectPM('card')">
+            <div class="pm-icon">💳</div>
+            <div class="pm-label">Cartão</div>
+          </div>
+          <div class="pay-method" id="pm-pix" onclick="selectPM('pix')">
+            <div class="pm-icon">⚡</div>
+            <div class="pm-label">Pix</div>
+          </div>
+          <div class="pay-method" id="pm-boleto" onclick="selectPM('boleto')">
+            <div class="pm-icon">📄</div>
+            <div class="pm-label">Boleto</div>
+          </div>
+        </div>
+
+        <!-- Cartão -->
+        <div class="card-panel show" id="card-panel">
+          <div class="virtual-card">
+            <div class="vc-logo">Vaza PUC ✦</div>
+            <div class="vc-number" id="vc-number">•••• &nbsp;•••• &nbsp;•••• &nbsp;••••</div>
+            <div class="vc-info">
+              <div><small>Titular</small><span id="vc-name">NOME</span></div>
+              <div><small>Validade</small><span id="vc-exp">MM/AA</span></div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Número do cartão</label>
+            <input type="text" id="inp-card" placeholder="0000 0000 0000 0000" maxlength="19" />
+          </div>
+          <div class="form-group">
+            <label>Nome no cartão</label>
+            <input type="text" id="inp-cardname" placeholder="COMO NO CARTÃO" />
+          </div>
+          <div class="row2">
+            <div class="form-group">
+              <label>Validade</label>
+              <input type="text" id="inp-exp" placeholder="MM/AA" maxlength="5" />
+            </div>
+            <div class="form-group">
+              <label>CVV</label>
+              <input type="text" id="inp-cvv" placeholder="•••" maxlength="3" />
+            </div>
+          </div>
+          <button class="btn-pagar" onclick="goStep3()">💳 &nbsp;Finalizar pagamento</button>
+        </div>
+
+        <!-- Pix -->
+        <div class="pix-panel" id="pix-panel">
+          <p style="color:var(--muted);font-size:0.9rem;margin-bottom:1rem;">Escaneie o QR Code ou copie a chave Pix:</p>
+          <div class="qr-box" id="qr-box"></div>
+          <div class="pix-key" id="pix-key-text">00020126580014BR.GOV.BCB.PIX0136vazapuc@email.com5204000053039865802BR5916Vaza PUC LTDA6009SAO PAULO62070503***6304ABCD</div>
+          <button onclick="copyPix()" class="btn-pagar" style="margin-bottom:1rem;">📋 &nbsp;Copiar chave Pix</button>
+          <div class="pix-timer">Expira em: <span id="pix-countdown">09:59</span></div>
+          <button class="btn-pagar" style="margin-top:1rem;background:linear-gradient(135deg,#4caf50,#2e7d32);color:white;" onclick="simulatePix()">✅ &nbsp;Simular pagamento confirmado</button>
+        </div>
+
+        <!-- Boleto -->
+        <div class="boleto-panel" id="boleto-panel">
+          <p style="color:var(--muted);font-size:0.9rem;margin-bottom:1rem;">Seu boleto vence em 3 dias úteis:</p>
+          <div class="boleto-barcode">
+            <div class="barcode-lines" id="barcode"></div>
+            <div class="boleto-code">34191.09008 61207.727108 21069.481001 1 00000000990</div>
+          </div>
+          <div class="pix-key" style="background:rgba(0,0,0,0.05);color:#333;">Linha digitável: 34191.09008 61207.727108 21069.481001 1 00000000990</div>
+          <button onclick="copyBoleto()" class="btn-pagar" style="margin-bottom:1rem;">📋 &nbsp;Copiar linha digitável</button>
+          <button class="btn-pagar" style="background:linear-gradient(135deg,#4caf50,#2e7d32);color:white;" onclick="goStep3()">✅ &nbsp;Confirmar geração do boleto</button>
+        </div>
+      </div>
+
+      <!-- ── LOADING ── -->
+      <div class="loading-panel" id="loading-panel">
+        <div class="spinner"></div>
+        <p style="font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;margin-bottom:0.5rem;" id="loading-msg">Processando pagamento...</p>
+        <p style="color:var(--muted);font-size:0.85rem;">Aguarde, não feche esta janela</p>
+      </div>
+
+      <!-- ── SUCCESS ── -->
+      <div class="success-panel" id="success-panel">
+        <div class="confetti-wrap" id="confetti-wrap"></div>
+        <div class="success-icon">🎉</div>
+        <h2>Você é Elite! 👑</h2>
+        <p>Sua assinatura foi ativada com sucesso.<br>Aproveite todos os benefícios premium.</p>
+        <div class="badges-earned">
+          <span class="badge-pill">✅ Verificado Premium</span>
+          <span class="badge-pill">👻 Modo Ghost</span>
+          <span class="badge-pill">🚫 Sem anúncios</span>
+          <span class="badge-pill">🔥 Posts em destaque</span>
+        </div>
+        <button class="btn-pagar" style="margin-top:2rem;" onclick="closeModal()">Ir para o feed →</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── OPEN / CLOSE ──
+  function openModal() {
+    document.getElementById('modalOverlay').classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('active');
+    document.body.style.overflow = '';
+    // reset
+    setTimeout(resetModal, 400);
+  }
+  function resetModal() {
+    showPanel('panel1');
+    setStep(1);
+    document.getElementById('loading-panel').classList.remove('active');
+    document.getElementById('success-panel').classList.remove('active');
+    selectPM('card');
+    stopPix();
+  }
+  document.getElementById('modalOverlay').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+
+  // ── STEPS ──
+  function setStep(n) {
+    [1,2,3].forEach(i => {
+      const el = document.getElementById('step'+i+'-indicator');
+      el.className = 'step-item' + (i < n ? ' done' : i === n ? ' active' : '');
+      el.querySelector('.step-dot').textContent = i < n ? '✓' : i;
+    });
+  }
+  function showPanel(id) {
+    ['panel1','panel2'].forEach(p => {
+      document.getElementById(p).classList.remove('active');
+    });
+    const el = document.getElementById(id);
+    if (el) el.classList.add('active');
+  }
+
+  // ── STEP 1 → 2 ──
+  function goStep2() {
+    const nome = document.getElementById('inp-nome').value.trim();
+    const email = document.getElementById('inp-email').value.trim();
+    const cpf = document.getElementById('inp-cpf').value.trim();
+    if (!nome || !email || !cpf) { shake('panel1'); return; }
+    showPanel('panel2'); setStep(2);
+  }
+
+  // ── STEP 2 → 3 (cartão) ──
+  function goStep3() {
+    const pm = document.querySelector('.pay-method.selected').id;
+    if (pm === 'pm-card') {
+      if (!document.getElementById('inp-card').value || !document.getElementById('inp-cardname').value) {
+        shake('panel2'); return;
+      }
+    }
+    setStep(3);
+    showPanel(null);
+    document.getElementById('loading-panel').classList.add('active');
+    const msgs = ['Verificando dados...','Processando pagamento...','Ativando assinatura...'];
+    let i = 0;
+    const el = document.getElementById('loading-msg');
+    const iv = setInterval(() => { el.textContent = msgs[++i] || msgs[2]; }, 900);
+    setTimeout(() => {
+      clearInterval(iv);
+      document.getElementById('loading-panel').classList.remove('active');
+      showSuccess();
+    }, 2800);
+  }
+
+  function simulatePix() {
+    stopPix();
+    setStep(3);
+    showPanel(null);
+    document.getElementById('loading-panel').classList.add('active');
+    document.getElementById('loading-msg').textContent = 'Confirmando pagamento Pix...';
+    setTimeout(() => {
+      document.getElementById('loading-panel').classList.remove('active');
+      showSuccess();
+    }, 2000);
+  }
+
+  function showSuccess() {
+    document.getElementById('success-panel').classList.add('active');
+    launchConfetti();
+  }
+
+  // ── PM SELECT ──
+  function selectPM(pm) {
+    ['card','pix','boleto'].forEach(m => {
+      document.getElementById('pm-'+m).classList.remove('selected');
+      const p = document.getElementById(m+'-panel');
+      if (p) { p.className = p.className.replace(/\s*show/,''); }
+    });
+    document.getElementById('pm-'+pm).classList.add('selected');
+    const panel = document.getElementById(pm+'-panel');
+    if (panel) {
+      panel.classList.add('show');
+      if (pm === 'pix') startPix();
+      else stopPix();
+      if (pm === 'pix') renderQR();
+      if (pm === 'boleto') renderBarcode();
+    }
+  }
+
+  // ── CARD PREVIEW ──
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('inp-card').addEventListener('input', function() {
+      let v = this.value.replace(/\D/g,'').substring(0,16);
+      this.value = v.replace(/(.{4})/g,'$1 ').trim();
+      document.getElementById('vc-number').textContent = this.value || '•••• •••• •••• ••••';
+    });
+    document.getElementById('inp-cardname').addEventListener('input', function() {
+      document.getElementById('vc-name').textContent = this.value.toUpperCase() || 'NOME';
+    });
+    document.getElementById('inp-exp').addEventListener('input', function() {
+      let v = this.value.replace(/\D/g,'');
+      if (v.length >= 3) v = v.substring(0,2)+'/'+v.substring(2);
+      this.value = v;
+      document.getElementById('vc-exp').textContent = this.value || 'MM/AA';
+    });
+    document.getElementById('inp-cpf').addEventListener('input', function() {
+      let v = this.value.replace(/\D/g,'').substring(0,11);
+      if (v.length > 9) v = v.substring(0,3)+'.'+v.substring(3,6)+'.'+v.substring(6,9)+'-'+v.substring(9);
+      else if (v.length > 6) v = v.substring(0,3)+'.'+v.substring(3,6)+'.'+v.substring(6);
+      else if (v.length > 3) v = v.substring(0,3)+'.'+v.substring(3);
+      this.value = v;
+    });
+    renderQR();
+    renderBarcode();
+  });
+
+  // ── PIX TIMER ──
+  let pixInterval;
+  let pixSecs = 599;
+  function startPix() {
+    pixSecs = 599;
+    pixInterval = setInterval(() => {
+      pixSecs--;
+      if (pixSecs < 0) { stopPix(); return; }
+      const m = Math.floor(pixSecs/60), s = pixSecs%60;
+      document.getElementById('pix-countdown').textContent = String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+    }, 1000);
+  }
+  function stopPix() { clearInterval(pixInterval); }
+
+  function copyPix() {
+    navigator.clipboard.writeText(document.getElementById('pix-key-text').textContent).catch(()=>{});
+    const btn = document.querySelector('#pix-panel .btn-pagar');
+    btn.textContent = '✅  Copiado!';
+    setTimeout(() => btn.textContent = '📋  Copiar chave Pix', 2000);
+  }
+  function copyBoleto() {
+    navigator.clipboard.writeText('34191.09008 61207.727108 21069.481001 1 00000000990').catch(()=>{});
+    const btn = document.querySelectorAll('#boleto-panel .btn-pagar')[0];
+    btn.textContent = '✅  Copiado!';
+    setTimeout(() => btn.textContent = '📋  Copiar linha digitável', 2000);
+  }
+
+  // ── QR pseudo ──
+  function renderQR() {
+    const box = document.getElementById('qr-box');
+    box.innerHTML = '';
+    const grid = document.createElement('div');
+    grid.className = 'qr-lines';
+    const pattern = [
+      1,1,1,1,1,1,1,0,1,1,
+      1,0,0,0,0,0,1,0,0,1,
+      1,0,1,1,1,0,1,0,1,0,
+      1,0,1,1,1,0,1,0,1,1,
+      1,0,1,1,1,0,1,0,0,1,
+      1,0,0,0,0,0,1,0,1,0,
+      1,1,1,1,1,1,1,0,0,1,
+      0,0,0,0,0,0,0,0,1,0,
+      1,0,1,1,0,1,1,1,0,1,
+      0,1,1,0,1,0,1,0,1,1,
+    ];
+    pattern.forEach(v => {
+      const c = document.createElement('div');
+      c.className = 'qr-cell';
+      c.style.background = v ? '#111' : 'white';
+      grid.appendChild(c);
+    });
+    box.appendChild(grid);
+  }
+
+  // ── BARCODE pseudo ──
+  function renderBarcode() {
+    const bc = document.getElementById('barcode');
+    bc.innerHTML = '';
+    const widths = [2,1,3,1,2,1,1,2,3,1,2,2,1,1,3,2,1,1,2,1,3,2,1,2,1,1,2,3,1,2,1,2,3,1,1,2,1,2,1,3];
+    widths.forEach((w,i) => {
+      const bar = document.createElement('span');
+      bar.style.width = w+'px';
+      bar.style.background = i%2===0?'#111':'white';
+      bc.appendChild(bar);
+    });
+  }
+
+  // ── SHAKE anim ──
+  function shake(id) {
+    const el = document.getElementById(id);
+    el.style.animation = 'none';
+    el.style.transform = 'translateX(-8px)';
+    setTimeout(() => el.style.transform = 'translateX(8px)', 80);
+    setTimeout(() => el.style.transform = 'translateX(-5px)', 160);
+    setTimeout(() => el.style.transform = 'translateX(0)', 240);
+  }
+
+  // ── CONFETTI ──
+  function launchConfetti() {
+    const wrap = document.getElementById('confetti-wrap');
+    wrap.innerHTML = '';
+    const colors = ['#ffd700','#ff8c00','#e8325a','#a855f7','#22c55e','#60a5fa'];
+    for (let i = 0; i < 60; i++) {
+      const p = document.createElement('div');
+      p.className = 'confetti-piece';
+      p.style.left = Math.random()*100+'%';
+      p.style.background = colors[Math.floor(Math.random()*colors.length)];
+      p.style.width = p.style.height = (6+Math.random()*6)+'px';
+      p.style.animationDuration = (1.5+Math.random()*2)+'s';
+      p.style.animationDelay = Math.random()*0.8+'s';
+      wrap.appendChild(p);
+    }
+  }
+</script>
 </body>
 </html>
