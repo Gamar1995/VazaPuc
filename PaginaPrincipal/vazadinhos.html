@@ -270,14 +270,124 @@
             <button class="btn btn-primary" style="width: 100%; padding: 12px; border-radius: 99px; font-weight: bold; cursor: pointer; border: none; background: var(--primary); color: white;" onclick="atualizarSenhaSupabase()">Salvar Nova Senha</button>
         </div>
       </div>
-
-      <div class="settings-section" id="settings-privacidade" style="display: none; padding: 20px;">
-        <h3>Privacidade e Segurança</h3>
-        <p style="color:var(--text-secondary); margin-bottom:20px; font-size: 0.9rem;">Controle quem pode ver seus posts e interagir com você.</p>
-        <div class="settings-placeholder-box" style="padding: 30px; border: 1px dashed var(--border); border-radius: 12px; text-align: center; color: var(--text-secondary);">
-          <p>Em breve: Conta privada, bloqueios e silenciados.</p>
-        </div>
+<div class="settings-section" id="settings-privacidade">
+ 
+  <!-- Cabeçalho -->
+  <div class="feed-header" style="
+    border-bottom:1px solid var(--border);
+    padding:15px 20px;
+    position:sticky;top:0;
+    background:var(--dark-bg);z-index:10;
+  ">
+    <h3 style="font-size:1.1rem;font-weight:800;margin:0;color:var(--text-primary);">
+      Privacidade e Segurança
+    </h3>
+  </div>
+ 
+  <div style="padding:0;">
+ 
+    <!-- ── Toggle: Conta privada ─────────────────────────── -->
+    <div style="
+      padding:18px 20px;
+      border-bottom:1px solid var(--border);
+      display:flex;justify-content:space-between;align-items:center;gap:16px;
+    ">
+      <div>
+        <p style="font-weight:700;font-size:15px;color:var(--text-primary);margin:0 0 4px;">
+          🔒 Conta privada
+        </p>
+        <p style="font-size:13px;color:var(--text-secondary);margin:0;line-height:1.5;max-width:380px;">
+          Quando ativado, apenas pessoas que você aprovar poderão ver seus posts e seguir você.
+          Solicitações de seguimento aparecem para você aprovar manualmente.
+        </p>
       </div>
+ 
+      <!-- Toggle switch -->
+      <label style="
+        position:relative;display:flex;align-items:center;
+        cursor:pointer;flex-shrink:0;
+      ">
+        <input
+          type="checkbox"
+          id="privacyToggle"
+          style="position:absolute;opacity:0;width:0;height:0;"
+        >
+        <span id="privacyTrack" style="
+          display:inline-block;
+          width:46px;height:26px;
+          background:var(--border);
+          border-radius:13px;
+          transition:background 0.25s;
+          position:relative;
+        ">
+          <span id="privacyThumb" style="
+            position:absolute;top:3px;left:3px;
+            width:20px;height:20px;
+            background:white;
+            border-radius:50%;
+            transition:transform 0.25s;
+            box-shadow:0 1px 3px rgba(0,0,0,0.35);
+          "></span>
+        </span>
+      </label>
+    </div>
+ 
+    <!-- ── Solicitações pendentes ─────────────────────────── -->
+    <div style="
+      padding:16px 20px;
+      border-bottom:1px solid var(--border);
+      display:flex;justify-content:space-between;align-items:center;
+      cursor:pointer;
+    " id="pendingRequestsRow" onclick="togglePendingPanel()">
+      <div>
+        <p style="font-weight:700;font-size:15px;color:var(--text-primary);margin:0 0 3px;">
+          👥 Solicitações de seguimento
+        </p>
+        <p style="font-size:13px;color:var(--text-secondary);margin:0;">
+          Aceite ou recuse quem quer seguir você.
+        </p>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span id="pendingRequestsBadge" style="
+          display:none;
+          background:var(--primary);color:white;
+          font-size:11px;font-weight:800;
+          padding:2px 8px;border-radius:10px;
+          min-width:20px;text-align:center;
+        "></span>
+        <span id="pendingChevron" style="color:var(--text-secondary);font-size:18px;transition:transform 0.2s;">›</span>
+      </div>
+    </div>
+ 
+    <!-- Painel expansível de solicitações -->
+    <div id="pendingRequestsPanel" style="
+      display:none;
+      border-bottom:1px solid var(--border);
+    "></div>
+ 
+    <!-- ── Posts privados (info) ──────────────────────────── -->
+    <div style="
+      padding:16px 20px;
+      border-bottom:1px solid var(--border);
+    ">
+      <p style="font-weight:700;font-size:15px;color:var(--text-primary);margin:0 0 4px;">
+        📌 Como funciona a conta privada
+      </p>
+      <ul style="
+        font-size:13px;color:var(--text-secondary);
+        margin:8px 0 0;padding-left:20px;
+        line-height:1.8;
+      ">
+        <li>Visitantes verão apenas seu nome, handle e foto.</li>
+        <li>Posts, curtidas e seguidores ficam ocultos.</li>
+        <li>Seguidores atuais continuam podendo ver seus posts.</li>
+        <li>Novos seguidores precisam de sua aprovação.</li>
+        <li>Você pode aceitar ou rejeitar cada solicitação individualmente.</li>
+      </ul>
+    </div>
+ 
+  </div>
+</div>
 
       <div class="settings-section" id="settings-notificacoes" style="display: none; padding: 20px;">
         <h3>Notificações Push</h3>
@@ -661,6 +771,77 @@
     }
 
   })();
+
+  (function () {
+ 
+  /* ── Sincroniza o toggle com o estado atual do perfil ────── */
+  function syncPrivacyToggle() {
+    const toggle = document.getElementById('privacyToggle');
+    const track  = document.getElementById('privacyTrack');
+    const thumb  = document.getElementById('privacyThumb');
+    if (!toggle) return;
+ 
+    // currentProfile é a variável global do home.js
+    const isPrivate = window.currentProfile?.is_private ?? false;
+    toggle.checked = isPrivate;
+    updateToggleVisual(isPrivate, track, thumb);
+  }
+ 
+  function updateToggleVisual(checked, track, thumb) {
+    if (!track || !thumb) return;
+    track.style.background = checked ? 'var(--primary)' : 'var(--border)';
+    thumb.style.transform   = checked ? 'translateX(20px)' : 'translateX(0)';
+  }
+ 
+  /* Atualiza visual quando o toggle muda */
+  document.addEventListener('change', function (e) {
+    if (e.target.id !== 'privacyToggle') return;
+    const track = document.getElementById('privacyTrack');
+    const thumb = document.getElementById('privacyThumb');
+    updateToggleVisual(e.target.checked, track, thumb);
+  });
+ 
+  /* Sincroniza cada vez que a aba de privacidade é aberta */
+  document.addEventListener('click', function (e) {
+    const btn = e.target.closest('.settings-tab-btn[data-settings-tab="privacidade"]');
+    if (!btn) return;
+    setTimeout(syncPrivacyToggle, 50); // aguarda o home.js mudar a seção
+    if (typeof window.refreshPendingBadge === 'function') {
+      window.refreshPendingBadge();
+    }
+  });
+ 
+  /* ── Painel de solicitações ─────────────────────────────── */
+  var panelOpen = false;
+ 
+  window.togglePendingPanel = function () {
+    const panel   = document.getElementById('pendingRequestsPanel');
+    const chevron = document.getElementById('pendingChevron');
+    if (!panel) return;
+ 
+    panelOpen = !panelOpen;
+    panel.style.display   = panelOpen ? 'block' : 'none';
+    chevron.style.transform = panelOpen ? 'rotate(90deg)' : 'rotate(0deg)';
+ 
+    if (panelOpen && typeof window.loadPendingRequestsPanel === 'function') {
+      window.loadPendingRequestsPanel();
+    }
+  };
+ 
+  /* Expõe para o home.js atualizar o badge de fora */
+  window.refreshPendingBadge = async function () {
+    if (typeof getPendingRequestsCount !== 'function') return;
+    try {
+      const count = await getPendingRequestsCount();
+      const badge = document.getElementById('pendingRequestsBadge');
+      if (badge) {
+        badge.textContent  = count > 0 ? count : '';
+        badge.style.display = count > 0 ? 'inline-flex' : 'none';
+      }
+    } catch (_) {}
+  };
+ 
+})();
   </script>
 </body>
 </html>
