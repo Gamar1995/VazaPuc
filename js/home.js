@@ -398,24 +398,30 @@ try {
   setupMediaInModal();
   setupSearch();
   setupTemas();
+    setupPrivacySettings();
 } catch (erroInterface) {
   console.error('Erro ao carregar interface:', erroInterface);
 }
 
 try {
   onAuthChange(async (session) => {
-    if (session) {
-      currentProfile = await getCurrentProfile();
-      updateUserUI();
-      await initNotifications();
-      await loadFeed();
-      startRealtimeFeed();
-    } else {
-      currentProfile = null;
-      updateUserUI();
-      await loadFeed();
-    }
-  });
+  if (session) {
+    currentProfile = await getCurrentProfile();
+    window.currentProfile = currentProfile; // ← ADICIONE
+    updateUserUI();
+    await initNotifications();
+    await loadFeed();
+    startRealtimeFeed();
+  } else {
+    currentProfile = null;
+    window.currentProfile = null; // ← ADICIONE
+    updateUserUI();
+    await loadFeed();
+  }
+});
+
+// Também exponha refreshPendingBadge globalmente (no final do arquivo)
+window.refreshPendingBadge = refreshPendingBadge;
 } catch (erroBanco) {
   console.error('Erro ao conectar com banco:', erroBanco);
 }
@@ -2165,7 +2171,9 @@ function setupProfileModal() {
       });
 
       currentProfile = updated;
+      window.currentProfile = updated;
       updateUserUI();
+
       loadProfilePage();
       showNotification('Perfil atualizado com sucesso! ✅');
       closeModal();

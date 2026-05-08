@@ -829,17 +829,9 @@
   };
  
   /* Expõe para o home.js atualizar o badge de fora */
-  window.refreshPendingBadge = async function () {
-    if (typeof getPendingRequestsCount !== 'function') return;
-    try {
-      const count = await getPendingRequestsCount();
-      const badge = document.getElementById('pendingRequestsBadge');
-      if (badge) {
-        badge.textContent  = count > 0 ? count : '';
-        badge.style.display = count > 0 ? 'inline-flex' : 'none';
-      }
-    } catch (_) {}
-  };
+  window.refreshPendingBadge = function() {
+  // Será sobrescrita pelo home.js quando carregar
+};
  
 })();
   </script>
