@@ -83,24 +83,6 @@ body {
     overflow: hidden;
 }
 
-/* ===== LUZES DE FUNDO ANIMADAS ===== */
-.ambient-light {
-    position: fixed;
-    border-radius: 50%;
-    filter: blur(120px);
-    opacity: 0.45;
-    pointer-events: none;
-    z-index: 0;
-    animation: floatLight 18s infinite alternate ease-in-out;
-}
-
-.light-1 {
-    top: -15%;
-    left: -10%;
-    width: 60vw;
-    height: 60vw;
-    background: radial-gradient(circle, rgba(var(--primary-rgb), 0.4) 0%, rgba(var(--primary-rgb), 0) 70%);
-}
 
 .light-2 {
     bottom: -15%;
@@ -1257,4 +1239,134 @@ body {
         border-bottom: 8px solid rgba(0, 0, 0, 0.03) !important;
     }
 
+}
+/* ==========================================
+   LUZES DINÂMICAS DE FUNDO (AMBIENT LIGHTS)
+========================================== */
+.ambient-lights {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.light-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.15;
+  animation: floatAmbient 18s infinite alternate ease-in-out;
+  will-change: transform;
+}
+
+/* Usando primary-rgb e secondary-rgb para sincronizar com a rede social! */
+.blob-1 {
+  width: 50vw; height: 50vw;
+  max-width: 700px; max-height: 700px;
+  background: radial-gradient(circle, rgba(var(--primary-rgb), 1) 0%, rgba(var(--primary-rgb), 0) 70%);
+  top: -20%; left: -10%;
+  animation-delay: 0s;
+}
+
+.blob-2 {
+  width: 45vw; height: 45vw;
+  max-width: 600px; max-height: 600px;
+  background: radial-gradient(circle, rgba(var(--secondary-rgb), 1) 0%, rgba(var(--secondary-rgb), 0) 70%);
+  bottom: -15%; right: -10%;
+  animation-duration: 22s; animation-delay: -5s;
+}
+
+.blob-3 {
+  width: 35vw; height: 35vw;
+  max-width: 500px; max-height: 500px;
+  background: radial-gradient(circle, rgba(var(--primary-rgb), 1) 0%, rgba(var(--primary-rgb), 0) 70%);
+  top: 35%; left: 55%;
+  opacity: 0.08;
+  animation-duration: 25s; animation-delay: -10s;
+}
+
+@keyframes floatAmbient {
+  0% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(4%, -6%) scale(1.05); }
+  66% { transform: translate(-3%, 5%) scale(0.95); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+[data-theme$="-claro"] .light-blob {
+  opacity: 0.06;
+}
+/* ==========================================
+   LUZES DINÂMICAS DE FUNDO (AMBIENT LIGHTS)
+========================================== */
+.ambient-lights {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  
+  /* Controle de Intensidade das Luzes (Pulsação) */
+  --op-min: 0.15;
+  --op-mid: 0.25;
+  --op-max: 0.35;
+}
+
+/* Reduz o brilho nos temas claros para não atrapalhar a leitura */
+[data-theme$="-claro"] .ambient-lights {
+  --op-min: 0.04;
+  --op-mid: 0.08;
+  --op-max: 0.12;
+}
+
+.light-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  will-change: transform, opacity; /* Otimiza a performance da animação dupla */
+}
+
+/* Cada bolha agora tem um tempo diferente (18s, 24s, 28s) para parecer aleatório */
+.blob-1 {
+  width: 50vw; height: 50vw;
+  max-width: 700px; max-height: 700px;
+  background: radial-gradient(circle, rgba(var(--primary-rgb), 1) 0%, rgba(var(--primary-rgb), 0) 70%);
+  top: -20%; left: -10%;
+  animation: pulseLight1 18s infinite alternate ease-in-out;
+}
+
+.blob-2 {
+  width: 45vw; height: 45vw;
+  max-width: 600px; max-height: 600px;
+  background: radial-gradient(circle, rgba(var(--secondary-rgb), 1) 0%, rgba(var(--secondary-rgb), 0) 70%);
+  bottom: -15%; right: -10%;
+  animation: pulseLight2 24s infinite alternate ease-in-out;
+}
+
+.blob-3 {
+  width: 35vw; height: 35vw;
+  max-width: 500px; max-height: 500px;
+  background: radial-gradient(circle, rgba(var(--primary-rgb), 1) 0%, rgba(var(--primary-rgb), 0) 70%);
+  top: 35%; left: 55%;
+  animation: pulseLight3 28s infinite alternate ease-in-out;
+}
+
+/* ── ANIMAÇÕES INDIVIDUAIS (Efeito de Respiração e Movimento) ── */
+
+@keyframes pulseLight1 {
+  0% { transform: translate(0, 0) scale(0.85); opacity: var(--op-min); }
+  50% { transform: translate(6%, 10%) scale(1.2); opacity: var(--op-max); } /* Aumenta tamanho e brilho */
+  100% { transform: translate(-4%, -6%) scale(0.95); opacity: var(--op-mid); } /* Diminui suavemente */
+}
+
+@keyframes pulseLight2 {
+  0% { transform: translate(0, 0) scale(1.1); opacity: var(--op-max); }
+  50% { transform: translate(-8%, 6%) scale(0.85); opacity: var(--op-min); } /* Apaga e encolhe */
+  100% { transform: translate(5%, -10%) scale(1.15); opacity: var(--op-mid); }
+}
+
+@keyframes pulseLight3 {
+  0% { transform: translate(0, 0) scale(0.9); opacity: var(--op-min); }
+  50% { transform: translate(10%, -8%) scale(1.35); opacity: var(--op-mid); } /* Fica gigante na tela */
+  100% { transform: translate(-6%, 8%) scale(0.8); opacity: var(--op-min); }
 }
