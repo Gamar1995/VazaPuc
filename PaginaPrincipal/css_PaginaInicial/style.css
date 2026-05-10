@@ -1370,3 +1370,106 @@ body {
   50% { transform: translate(10%, -8%) scale(1.35); opacity: var(--op-mid); } /* Fica gigante na tela */
   100% { transform: translate(-6%, 8%) scale(0.8); opacity: var(--op-min); }
 }
+/* ==========================================
+   WIDGET: FILTRAR POR BLOCO (SIDEBAR DIREITA)
+========================================== */
+#blocosWidget {
+  background-color: var(--dark-bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+/* Suavização no tema claro */
+[data-theme$="-claro"] #blocosWidget {
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+}
+
+#blocosWidget h3 {
+  font-size: 18px;
+  font-weight: 800;
+  margin-bottom: 18px;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+}
+
+.bloco-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Estilo Base dos Botões de Bloco */
+.bloco-sidebar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 16px;
+  border-width: 1px;
+  border-style: solid;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* Efeito Hover (passar o mouse) */
+.bloco-sidebar-btn:hover {
+  transform: translateX(6px);
+  filter: brightness(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Estado Ativo (quando clicado) */
+.bloco-sidebar-btn.ativo {
+  transform: translateX(8px);
+  filter: brightness(1.2);
+  border-width: 2px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+}
+
+/* Estilo do Contador de Posts dentro do botão */
+.bloco-sidebar-count {
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+}
+/* ==========================================
+   AJUSTE DE LEGIBILIDADE: BLOCO 10
+========================================== */
+
+/* O Bloco 10 usa #dddddd (cinza muito claro). 
+   No modo claro, forçamos uma cor escura (vinho escuro) para manter o contraste 
+   e o padrão visual do site.
+*/
+[data-theme$="-claro"] .bloco-sidebar-btn[data-bloco-id="bloco-10"] {
+  color: #4a1c2d !important; /* Vinho escuro para contraste total */
+  background-color: rgba(0, 0, 0, 0.05) !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Ajusta também o contador de posts do Bloco 10 */
+[data-theme$="-claro"] .bloco-sidebar-btn[data-bloco-id="bloco-10"] .bloco-sidebar-count {
+  color: #4a1c2d !important;
+  background-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Efeito hover específico para o Bloco 10 no modo claro */
+[data-theme$="-claro"] .bloco-sidebar-btn[data-bloco-id="bloco-10"]:hover {
+  background-color: rgba(0, 0, 0, 0.1) !important;
+  transform: translateX(6px);
+}
