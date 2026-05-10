@@ -5,6 +5,16 @@
 import { supabase, getCurrentUser } from './supabase.js';
 import { getCurrentProfile, onAuthChange, signOut } from './supabase.js';
 
+
+import {
+  isPremium,
+  activatePremium,
+  deactivatePremium,
+  recordProfileVisit,
+  getProfileVisitors,
+  profileIsPremium,
+} from './premium.js';
+
 import {
   uploadPostMedia,
   createPostWithMedia,
@@ -34,6 +44,7 @@ import {
   markAllAsRead,
   markAsRead,
   subscribeToNotifications,
+  deleteNotification,
   getNotifText,
   getNotifIcon,
   formatTimeAgoNotif,
@@ -801,7 +812,7 @@ function createPostHTML(post) {
         <div class="post-content" style="flex:1;min-width:0;">
           <div class="post-header" style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;width:100%;">
             <span class="post-author clickable-avatar" data-handle="${post.author?.handle}" style="cursor:pointer;">
-              ${escapeHtml(post.author?.name ?? 'Usuário')}
+             ${escapeHtml(post.author?.name ?? 'Usuário')}${post.author?.is_premium ? ' <span class="premium-badge-tag" title="Premium">✦</span>' : ''}
             </span>
             <span class="post-handle">@${escapeHtml(post.author?.handle ?? '')}</span>
             <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
@@ -1713,9 +1724,13 @@ async function loadProfilePage() {
   profileBtnControllers.forEach(ctrl => ctrl.abort());
   profileBtnControllers = [];
  
+  // Remove widget de visitas anterior para não acumular
+  document.getElementById('visitorsWidget')?.remove();
+ 
   const editBtn = document.getElementById('editProfileBtn');
   const profile = viewingProfile || currentProfile;
  
+  // ── Perfil não disponível ──────────────────────────────────
   if (!profile) {
     document.getElementById('profileName').textContent = 'Visitante';
     document.getElementById('profileHandle').textContent = '@anonimo';
@@ -1728,10 +1743,26 @@ async function loadProfilePage() {
     document.getElementById('followProfileBtn')?.remove();
     document.getElementById('profileContent').innerHTML =
       '<p style="padding:40px;text-align:center;color:var(--text-secondary);">Faça login para visualizar seus posts. 🚀</p>';
-    return;
+    return; // ← return aqui, ANTES de qualquer outra lógica
   }
  
-  document.getElementById('profileName').textContent = profile.name;
+  // ── Determina se é o próprio perfil (ANTES de usar a variável) ──
+  const isOwnProfile = currentProfile && profile.id === currentProfile.id;
+ 
+  // ── Badge de premium no nome ───────────────────────────────
+  const _nameEl = document.getElementById('profileName');
+  if (_nameEl) {
+    // Para perfil próprio: checa localStorage. Para outros: checa campo do banco.
+    const _isViewedPremium = isOwnProfile
+      ? isPremium()
+      : profileIsPremium(profile);
+ 
+    _nameEl.innerHTML = escapeHtml(profile.name) +
+      (_isViewedPremium
+        ? ` <span class="premium-badge-tag" title="Usuário Premium">✦ Premium</span>`
+        : '');
+  }
+ 
   document.getElementById('profileHandle').textContent = `@${profile.handle}`;
   document.getElementById('profileBio').textContent = profile.bio || 'Sem bio.';
  
@@ -1760,12 +1791,14 @@ async function loadProfilePage() {
   document.getElementById('privateProfileBanner')?.remove();
  
   const profileInfo = document.querySelector('.profile-info');
-  const isOwnProfile = currentProfile && profile.id === currentProfile.id;
  
+  // ══════════════════════════════════════════════════════════
+  // PERFIL PRÓPRIO
+  // ══════════════════════════════════════════════════════════
   if (isOwnProfile) {
     if (editBtn) { editBtn.textContent = 'Editar Perfil'; editBtn.style.display = 'block'; }
  
-    // Badge de conta privada no perfil próprio
+    // Badge de conta privada
     let privacyBadge = document.getElementById('ownPrivacyBadge');
     if (!privacyBadge) {
       privacyBadge = document.createElement('span');
@@ -1782,25 +1815,36 @@ async function loadProfilePage() {
     privacyBadge.style.background = isPrivate ? 'var(--primary)22' : '#17bf6322';
     privacyBadge.style.color = isPrivate ? 'var(--primary)' : '#17bf63';
  
-    // Carrega aba de posts normalmente
+    // Carrega aba de posts
     const tabs = document.querySelectorAll('.profile-tab-btn');
     tabs.forEach(t => t.classList.remove('active'));
     document.querySelector('.profile-tab-btn[data-tab="posts"]')?.classList.add('active');
     loadProfileTabContent('posts');
  
+    // ── WIDGET DE VISITANTES (só no perfil próprio) ──────────
+    renderVisitorsWidget(profile.id);
+ 
+  // ══════════════════════════════════════════════════════════
+  // PERFIL DE OUTRO USUÁRIO
+  // ══════════════════════════════════════════════════════════
   } else {
     if (editBtn) editBtn.style.display = 'none';
  
-    // ── Verifica se visitante pode ver o perfil ──────────────
+    // Remove badge de privacidade próprio se sobrou
+    document.getElementById('ownPrivacyBadge')?.remove();
+ 
+    // Registra visita (modo ghost: premium não aparece)
+    recordProfileVisit(profile.id);
+ 
+    // Verifica se visitante pode ver o perfil
     const podeVer = await canViewProfile(profile.id);
  
     if (!podeVer) {
-      // ── PERFIL BLOQUEADO ─────────────────────────────────
       renderProfileLocked(profile, profileInfo);
       return;
     }
  
-    // ── Perfil visível — botões normais ──────────────────────
+    // Botões de interação (mensagem + seguir)
     if (currentProfile) {
       const controller = new AbortController();
       profileBtnControllers.push(controller);
@@ -1822,7 +1866,6 @@ async function loadProfilePage() {
       }, { signal });
       profileInfo.appendChild(msgBtn);
  
-      // Botão seguir — versão com suporte a conta privada
       await renderFollowButton(profile, profileInfo, signal);
     }
  
@@ -1832,6 +1875,8 @@ async function loadProfilePage() {
     loadProfileTabContent('posts');
   }
 }
+ 
+
  
 // ── Renderiza o perfil bloqueado para visitantes ─────────────
 async function renderProfileLocked(profile, profileInfo) {
@@ -2011,112 +2056,332 @@ function setupPrivacySettings() {
   refreshPendingBadge();
 }
  
+async function renderVisitorsWidget(profileId) {
+  document.getElementById('visitorsWidget')?.remove();
+  const profileContent = document.getElementById('profileContent');
+  if (!profileContent) return;
+ 
+  const userIsPremium = isPremium();
+ 
+  const widget = document.createElement('div');
+  widget.id = 'visitorsWidget';
+  widget.style.cssText = 'padding:20px;border-bottom:1px solid var(--border);margin-bottom:4px;';
+  widget.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+      <span style="font-size:16px;">👁️</span>
+      <h3 style="font-size:15px;font-weight:800;color:var(--text-primary);margin:0;">Quem visitou seu perfil</h3>
+      ${!userIsPremium
+        ? `<span style="font-size:10px;font-weight:700;background:linear-gradient(135deg,#ffd700,#ff8c00);color:#1a0008;padding:2px 8px;border-radius:10px;margin-left:auto;">✦ PREMIUM</span>`
+        : `<span style="font-size:10px;font-weight:700;background:var(--primary)22;color:var(--primary);border:1px solid var(--primary)44;padding:2px 8px;border-radius:10px;margin-left:auto;">Ativo ✓</span>`
+      }
+    </div>
+    <div id="visitorsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(62px,1fr));gap:10px;">
+      <div style="color:var(--text-secondary);font-size:13px;grid-column:1/-1;text-align:center;padding:8px;">Carregando...</div>
+    </div>
+    ${!userIsPremium ? `
+      <div style="margin-top:14px;padding:14px 16px;background:linear-gradient(135deg,#ffd70011,#ff8c0011);border:1px solid #ffd70033;border-radius:12px;display:flex;align-items:center;gap:12px;cursor:pointer;">
+        <span style="font-size:22px;">✦</span>
+        <div style="flex:1;">
+          <p style="font-weight:700;font-size:13px;color:#ffd700;margin:0 0 2px;">Ative o Premium para ver quem visitou</p>
+          <p style="font-size:12px;color:var(--text-secondary);margin:0;">Veja os perfis completos de quem te visitou</p>
+        </div>
+        <button id="btnActivatePremiumWidget" style="background:linear-gradient(135deg,#ffd700,#ff8c00);color:#1a0008;border:none;border-radius:20px;padding:8px 16px;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap;flex-shrink:0;">Ativar Grátis</button>
+      </div>
+    ` : ''}
+  `;
+ 
+  profileContent.parentElement?.insertBefore(widget, profileContent);
+ 
+  const visitors = await getProfileVisitors(profileId, 12);
+  const grid = document.getElementById('visitorsGrid');
+  if (!grid) return;
+ 
+  if (visitors.length === 0) {
+    grid.innerHTML = `<p style="color:var(--text-secondary);font-size:13px;grid-column:1/-1;text-align:center;padding:8px 0;">Nenhuma visita ainda 👀</p>`;
+  } else {
+    grid.innerHTML = visitors.map((v, i) => {
+      const avatar = v.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${v.handle}`;
+      const shouldBlur = !userIsPremium && i >= 2;
+      return `
+        <div class="visitor-avatar-wrap" data-handle="${escapeHtml(v.handle ?? '')}"
+          style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:${shouldBlur ? 'default' : 'pointer'};">
+          <div style="position:relative;width:52px;height:52px;">
+            <img src="${avatar}" style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid ${v.is_premium ? '#ffd700' : 'var(--border)'};${shouldBlur ? 'filter:blur(8px);user-select:none;pointer-events:none;' : ''}transition:transform 0.15s;" loading="lazy">
+            ${shouldBlur ? `<div style="position:absolute;inset:0;border-radius:50%;background:rgba(0,0,0,0.15);display:flex;align-items:center;justify-content:center;"><span style="font-size:16px;">🔒</span></div>` : ''}
+          </div>
+          <span style="font-size:10px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60px;text-align:center;${shouldBlur ? 'filter:blur(6px);user-select:none;' : ''}">@${shouldBlur ? 'usuario' : escapeHtml(v.handle ?? '')}</span>
+        </div>`;
+    }).join('');
+ 
+    grid.querySelectorAll('.visitor-avatar-wrap').forEach((wrap, i) => {
+      if (!userIsPremium && i >= 2) return;
+      wrap.addEventListener('click', () => {
+        const handle = wrap.dataset.handle;
+        if (!handle) return;
+        document.querySelectorAll('.page-container').forEach(p => p.classList.remove('active'));
+        document.getElementById('profile-page').classList.add('active');
+        loadProfileByHandle(handle);
+      });
+    });
+  }
+ 
+  document.getElementById('btnActivatePremiumWidget')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    openPremiumModal();
+  });
+}
+ 
+function openPremiumModal() {
+  document.getElementById('premiumModal')?.remove();
+  const alreadyPremium = isPremium();
+  const modal = document.createElement('div');
+  modal.id = 'premiumModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px);';
+  modal.innerHTML = `
+    <div style="background:var(--dark-bg-secondary);border:1px solid #ffd70033;border-radius:24px;width:100%;max-width:460px;padding:36px 32px;position:relative;box-shadow:0 0 60px rgba(255,215,0,0.15);text-align:center;">
+      <button id="closePremiumModal" style="position:absolute;top:16px;right:16px;background:none;border:none;color:var(--text-secondary);font-size:20px;cursor:pointer;padding:4px 8px;border-radius:6px;">✕</button>
+      <div style="font-size:48px;margin-bottom:4px;">✦</div>
+      <div style="display:inline-block;background:linear-gradient(135deg,#ffd700,#ff8c00);color:#1a0008;font-weight:800;font-size:11px;padding:4px 14px;border-radius:20px;letter-spacing:1px;text-transform:uppercase;margin-bottom:20px;">VazaPUC Premium</div>
+      <h2 style="font-size:24px;font-weight:800;color:var(--text-primary);margin:0 0 8px;">${alreadyPremium ? 'Você já é Premium! ✦' : 'Eleve sua Experiência'}</h2>
+      <p style="color:var(--text-secondary);font-size:14px;line-height:1.6;margin:0 0 28px;">${alreadyPremium ? 'Aproveite todos os benefícios exclusivos da sua conta Premium.' : 'Ative gratuitamente para testar todos os recursos exclusivos.'}</p>
+      <div style="background:var(--dark-bg);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:24px;text-align:left;">
+        ${[
+          ['👁️','Ver quem visitou seu perfil',true],
+          ['👻','Modo Ghost — visite sem aparecer',true],
+          ['✦','Badge Premium no seu perfil',true],
+          ['💬','Mensagens diretas ilimitadas',true],
+          ['🚫','Navegação sem anúncios',true],
+          ['⚡','Posts em destaque no feed',false],
+        ].map(([icon,text,active])=>`
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);opacity:${active?1:0.4};">
+            <span style="font-size:16px;width:24px;text-align:center;">${icon}</span>
+            <span style="font-size:14px;color:${active?'var(--text-primary)':'var(--text-secondary)'};">${text}</span>
+            <span style="margin-left:auto;color:${active?'#ffd700':'var(--text-secondary)'};font-size:13px;">${active?'✓':'Em breve'}</span>
+          </div>`).join('')}
+      </div>
+      ${alreadyPremium
+        ? `<button id="deactivatePremiumBtn" style="width:100%;padding:14px;border-radius:20px;font-size:14px;font-weight:700;cursor:pointer;background:none;border:1px solid var(--border);color:var(--text-secondary);">Desativar Premium (modo teste)</button>`
+        : `<button id="activatePremiumBtn" style="width:100%;padding:16px;border-radius:20px;font-size:16px;font-weight:800;cursor:pointer;border:none;background:linear-gradient(135deg,#ffd700,#ff8c00);color:#1a0008;box-shadow:0 4px 20px rgba(255,215,0,0.3);" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">✦ Ativar Premium Gratuitamente</button>
+          <p style="font-size:11px;color:var(--text-secondary);margin:10px 0 0;">Modo de teste — sem cobranças. Pagamento em breve.</p>`
+      }
+    </div>`;
+  document.body.appendChild(modal);
+  document.getElementById('closePremiumModal')?.addEventListener('click', () => modal.remove());
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.getElementById('activatePremiumBtn')?.addEventListener('click', async () => {
+    activatePremium();
+    if (currentProfile) { currentProfile = { ...currentProfile, is_premium: true }; window.currentProfile = currentProfile; }
+    modal.remove();
+    showNotification('✦ Premium ativado! Bem-vindo ao clube.');
+    await loadProfilePage();
+  });
+  document.getElementById('deactivatePremiumBtn')?.addEventListener('click', async () => {
+    deactivatePremium();
+    if (currentProfile) { currentProfile = { ...currentProfile, is_premium: false }; window.currentProfile = currentProfile; }
+    modal.remove();
+    showNotification('Premium desativado.');
+    await loadProfilePage();
+  });
+}
+window.openPremiumModal = openPremiumModal;
+
 async function refreshPendingBadge() {
   if (!currentProfile) return;
   try {
     const count = await getPendingRequestsCount();
     const badge = document.getElementById('pendingRequestsBadge');
     if (badge) {
-      badge.textContent = count > 0 ? count : '';
-      badge.style.display = count > 0 ? 'inline-flex' : 'none';
+      if (count > 0) {
+        badge.textContent = count > 99 ? '99+' : String(count);
+        badge.style.display = 'inline-flex';
+      } else {
+        badge.textContent = '';
+        badge.style.display = 'none';
+      }
     }
-  } catch (_) {}
+  } catch (err) {
+    console.warn('[refreshPendingBadge]', err);
+  }
 }
  
+// Expõe globalmente
+window.refreshPendingBadge = refreshPendingBadge;
+
 // Carrega o painel de solicitações pendentes
 async function loadPendingRequestsPanel() {
   const panel = document.getElementById('pendingRequestsPanel');
   if (!panel) return;
-  panel.innerHTML = '<p style="padding:20px;text-align:center;color:var(--text-secondary);">Carregando...</p>';
+ 
+  panel.innerHTML = `
+    <div style="padding:20px;text-align:center;color:var(--text-secondary);">
+      <div style="font-size:24px;margin-bottom:8px;">⏳</div>
+      Carregando solicitações...
+    </div>`;
  
   try {
     const requests = await getPendingFollowRequests();
  
-    if (requests.length === 0) {
+    if (!requests || requests.length === 0) {
       panel.innerHTML = `
         <div style="padding:40px;text-align:center;color:var(--text-secondary);">
           <div style="font-size:36px;margin-bottom:12px;">✅</div>
           <p style="font-size:15px;font-weight:700;margin:0;">Nenhuma solicitação pendente</p>
+          <p style="font-size:13px;color:var(--text-secondary);margin:8px 0 0;">
+            Quando alguém quiser seguir você, aparecerá aqui.
+          </p>
         </div>`;
       return;
     }
  
     panel.innerHTML = requests.map(req => {
+      // Compatível com o novo profile.js que retorna req.requester
       const user = req.requester;
-      const avatar = user?.avatar_url
-        || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.handle}`;
+      if (!user) return ''; // segurança caso perfil não seja encontrado
+      const avatar = user.avatar_url
+        || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.handle}`;
+ 
       return `
-        <div class="pending-request-item" data-from-id="${user?.id}" style="
+        <div class="pending-request-item" data-from-id="${user.id}" style="
           display:flex;align-items:center;gap:12px;
-          padding:12px 16px;border-bottom:1px solid var(--border);
-        ">
-          <img src="${avatar}" style="width:42px;height:42px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+          padding:14px 20px;border-bottom:1px solid var(--border);
+          transition:background 0.2s;
+        "
+        onmouseover="this.style.background='var(--dark-bg-tertiary,#1f1520)'"
+        onmouseout="this.style.background=''">
+          <img src="${avatar}"
+            style="width:44px;height:44px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid var(--border);"
+            loading="lazy">
           <div style="flex:1;min-width:0;">
-            <div style="font-weight:700;font-size:14px;color:var(--text-primary);">
-              ${escapeHtml(user?.name ?? 'Usuário')}
+            <div style="font-weight:700;font-size:14px;color:var(--text-primary);
+                        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              ${escapeHtml(user.name ?? 'Usuário')}
             </div>
-            <div style="font-size:12px;color:var(--text-secondary);">@${escapeHtml(user?.handle ?? '')}</div>
+            <div style="font-size:12px;color:var(--text-secondary);">
+              @${escapeHtml(user.handle ?? '')}
+            </div>
           </div>
-          <div style="display:flex;gap:6px;flex-shrink:0;">
-            <button class="accept-request-btn" data-from-id="${user?.id}" style="
+          <div style="display:flex;gap:8px;flex-shrink:0;">
+            <button class="accept-request-btn" data-from-id="${user.id}" style="
               background:var(--primary);color:white;border:none;
-              border-radius:16px;padding:6px 14px;font-size:13px;
-              font-weight:700;cursor:pointer;
-            ">✓ Aceitar</button>
-            <button class="reject-request-btn" data-from-id="${user?.id}" style="
+              border-radius:20px;padding:8px 16px;font-size:13px;
+              font-weight:700;cursor:pointer;transition:opacity 0.2s;
+            "
+            onmouseover="this.style.opacity='0.85'"
+            onmouseout="this.style.opacity='1'">✓ Aceitar</button>
+ 
+            <button class="reject-request-btn" data-from-id="${user.id}" style="
               background:var(--dark-bg-secondary);color:var(--text-secondary);
-              border:1px solid var(--border);border-radius:16px;
-              padding:6px 14px;font-size:13px;font-weight:700;cursor:pointer;
-            ">✕</button>
+              border:1px solid var(--border);border-radius:20px;
+              padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;
+              transition:all 0.2s;
+            "
+            onmouseover="this.style.borderColor='var(--danger,#e0245e)';this.style.color='var(--danger,#e0245e)'"
+            onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-secondary)'">✕</button>
           </div>
         </div>`;
-    }).join('');
+    }).filter(Boolean).join('');
  
-    // Listeners
+    // ── Listeners: Aceitar ─────────────────────────────────
     panel.querySelectorAll('.accept-request-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         const fromId = btn.dataset.fromId;
+        const item = btn.closest('.pending-request-item');
+ 
         btn.disabled = true;
+        btn.textContent = '...';
+ 
         try {
           await acceptFollowRequest(fromId);
-          btn.closest('.pending-request-item')?.remove();
-          showNotification('Solicitação aceita! ✅');
-          refreshPendingBadge();
-          if (panel.querySelectorAll('.pending-request-item').length === 0) {
-            panel.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text-secondary);">
-              <div style="font-size:36px;margin-bottom:12px;">✅</div>
-              <p style="font-size:15px;font-weight:700;margin:0;">Nenhuma solicitação pendente</p>
-            </div>`;
+ 
+          // Remove o item com animação
+          if (item) {
+            item.style.transition = 'opacity 0.3s, transform 0.3s';
+            item.style.opacity = '0';
+            item.style.transform = 'translateX(20px)';
+            setTimeout(() => item.remove(), 300);
           }
+ 
+          showNotification('Solicitação aceita! ✅');
+          await refreshPendingBadge();
+ 
+          // Verifica se o painel ficou vazio
+          setTimeout(() => {
+            const remaining = panel.querySelectorAll('.pending-request-item');
+            if (remaining.length === 0) {
+              panel.innerHTML = `
+                <div style="padding:40px;text-align:center;color:var(--text-secondary);">
+                  <div style="font-size:36px;margin-bottom:12px;">✅</div>
+                  <p style="font-size:15px;font-weight:700;margin:0;">Nenhuma solicitação pendente</p>
+                </div>`;
+            }
+          }, 350);
+ 
         } catch (err) {
-          showNotification('Erro ao aceitar.');
+          console.error('[aceitar solicitação]', err);
+          showNotification('Erro ao aceitar. Tente novamente.');
           btn.disabled = false;
+          btn.textContent = '✓ Aceitar';
         }
       });
     });
  
+    // ── Listeners: Rejeitar ────────────────────────────────
     panel.querySelectorAll('.reject-request-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         const fromId = btn.dataset.fromId;
+        const item = btn.closest('.pending-request-item');
+ 
         btn.disabled = true;
+ 
         try {
           await rejectFollowRequest(fromId);
-          btn.closest('.pending-request-item')?.remove();
+ 
+          if (item) {
+            item.style.transition = 'opacity 0.3s';
+            item.style.opacity = '0';
+            setTimeout(() => item.remove(), 300);
+          }
+ 
           showNotification('Solicitação recusada.');
-          refreshPendingBadge();
+          await refreshPendingBadge();
+ 
+          setTimeout(() => {
+            const remaining = panel.querySelectorAll('.pending-request-item');
+            if (remaining.length === 0) {
+              panel.innerHTML = `
+                <div style="padding:40px;text-align:center;color:var(--text-secondary);">
+                  <div style="font-size:36px;margin-bottom:12px;">✅</div>
+                  <p style="font-size:15px;font-weight:700;margin:0;">Nenhuma solicitação pendente</p>
+                </div>`;
+            }
+          }, 350);
+ 
         } catch (err) {
-          showNotification('Erro ao recusar.');
+          console.error('[rejeitar solicitação]', err);
+          showNotification('Erro ao recusar. Tente novamente.');
           btn.disabled = false;
         }
       });
     });
  
   } catch (err) {
-    panel.innerHTML = '<p style="color:var(--danger);padding:20px;text-align:center;">Erro ao carregar.</p>';
+    console.error('[loadPendingRequestsPanel]', err);
+    panel.innerHTML = `
+      <div style="padding:24px;text-align:center;color:var(--danger);">
+        <p style="margin:0;font-size:14px;">Erro ao carregar solicitações.</p>
+        <p style="margin:8px 0 0;font-size:12px;color:var(--text-secondary);">
+          ${err?.message ?? 'Verifique o console para detalhes.'}
+        </p>
+        <button onclick="loadPendingRequestsPanel()" style="
+          margin-top:12px;background:var(--primary);color:white;
+          border:none;border-radius:20px;padding:8px 16px;
+          font-size:13px;cursor:pointer;
+        ">Tentar novamente</button>
+      </div>`;
   }
 }
  
-// Expõe para o HTML
+// Expõe globalmente (necessário pois o HTML chama window.loadPendingRequestsPanel)
 window.loadPendingRequestsPanel = loadPendingRequestsPanel;
 
 // ============================================================
@@ -2391,16 +2656,48 @@ function updateConversationPreview(convId, content) {
 // ============================================================
 // NOTIFICAÇÕES
 // ============================================================
+function subscribeToFollowRequests(userId) {
+  const channel = supabase
+    .channel(`follow-requests-${userId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'follow_requests',
+        filter: `to_user=eq.${userId}`,
+      },
+      async () => {
+        await refreshPendingBadge();
+        showNotification('👥 Você tem uma nova solicitação de seguimento!');
+      }
+    )
+    .subscribe();
+ 
+  return () => supabase.removeChannel(channel);
+}
+ 
+// ── Substitua initNotifications() por esta versão ───────────
 async function initNotifications() {
   if (!currentProfile) return;
+ 
   await refreshNotifBadge();
+  await refreshPendingBadge();
+ 
   if (unsubscribeNotifs) unsubscribeNotifs();
   unsubscribeNotifs = subscribeToNotifications(currentProfile.id, (newNotif) => {
     refreshNotifBadge();
     showNotifToast(newNotif);
     pulseNotifBell();
   });
+ 
+  // Cancela subscrição anterior se existir
+  if (window._unsubFollowRequests) {
+    try { window._unsubFollowRequests(); } catch (_) {}
+  }
+  window._unsubFollowRequests = subscribeToFollowRequests(currentProfile.id);
 }
+
 
 async function refreshNotifBadge() {
   const badge = document.getElementById('notifBadge');
@@ -2457,31 +2754,129 @@ async function renderNotifList() {
 
   listEl.innerHTML = notifs.map(n => {
     const avatar = n.actor?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${n.actor?.handle || 'anon'}`;
+    const handle = n.actor?.handle ?? '';
+
+    const followRequestBtns = n.type === 'follow_request' ? `
+      <div class="notif-follow-actions" style="display:flex;gap:6px;margin-top:8px;">
+        <button class="notif-accept-btn" data-from-id="${n.actor?.id}" data-notif-id="${n.id}"
+          style="background:var(--primary);color:white;border:none;border-radius:20px;
+                 padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;">
+          ✓ Aceitar
+        </button>
+        <button class="notif-reject-btn" data-from-id="${n.actor?.id}" data-notif-id="${n.id}"
+          style="background:none;color:var(--text-secondary);border:1px solid var(--border);
+                 border-radius:20px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;">
+          ✕
+        </button>
+      </div>` : '';
+
     return `
       <div class="notif-item ${n.read ? '' : 'unread'}" data-notif-id="${n.id}">
-        <img src="${avatar}" class="notif-item-avatar" alt="Avatar">
+        <img src="${avatar}" class="notif-item-avatar notif-avatar-clickable" 
+             data-handle="${escapeHtml(handle)}" alt="Avatar"
+             style="cursor:pointer;" title="Ver perfil de @${escapeHtml(handle)}">
         <div class="notif-item-icon">${getNotifIcon(n.type)}</div>
-        <div class="notif-item-body">
+        <div class="notif-item-body" style="flex:1;min-width:0;">
           <p class="notif-item-text">${escapeHtml(getNotifText(n))}</p>
           <p class="notif-item-time">${formatTimeAgoNotif(n.created_at)}</p>
+          ${followRequestBtns}
         </div>
       </div>`;
   }).join('');
 
+  // ── Clique no avatar → vai ao perfil ──────────────────────
+  listEl.querySelectorAll('.notif-avatar-clickable').forEach(img => {
+    img.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const handle = img.dataset.handle;
+      if (!handle) return;
+      document.getElementById('notifPanel')?.classList.remove('active');
+      document.querySelectorAll('.page-container').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.getElementById('profile-page')?.classList.add('active');
+      document.querySelector('.nav-item[data-page="profile"]')?.classList.add('active');
+      viewingProfile = null;
+      loadProfileByHandle(handle);
+    });
+  });
+
+  // ── Aceitar solicitação ────────────────────────────────────
+listEl.querySelectorAll('.notif-accept-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const fromId = btn.dataset.fromId;
+      const notifId = btn.dataset.notifId;
+      btn.disabled = true;
+      btn.textContent = '...';
+      try {
+        await acceptFollowRequest(fromId);
+        await deleteNotification(notifId);
+
+        // Cria notificação de "começou a te seguir" para você
+        if (currentProfile) {
+          await createNotification({
+            toUserId: currentProfile.id,
+            actorId: fromId,
+            type: NOTIF_TYPES.FOLLOW,
+          });
+        }
+
+        
+          showNotification('Solicitação aceita! ✅');
+        await refreshPendingBadge();
+        await refreshNotifBadge();
+        await renderNotifList();
+
+      } catch (err) {
+        console.error('[aceitar notif]', err);
+        showNotification('Erro ao aceitar.');
+        btn.disabled = false;
+        btn.textContent = '✓ Aceitar';
+      }
+    });
+  });
+
+  // ── Rejeitar solicitação ───────────────────────────────────
+  listEl.querySelectorAll('.notif-reject-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const fromId = btn.dataset.fromId;
+      const notifId = btn.dataset.notifId;
+      btn.disabled = true;
+      try {
+        await rejectFollowRequest(fromId);
+        await deleteNotification(notifId); // ← deleta em vez de marcar
+        const item = btn.closest('.notif-item');
+        if (item) {
+          item.style.transition = 'opacity 0.3s';
+          item.style.opacity = '0';
+          setTimeout(() => item.remove(), 300);
+        }
+        showNotification('Solicitação recusada.');
+        await refreshPendingBadge();
+        await refreshNotifBadge();
+      } catch (err) {
+        console.error('[rejeitar notif]', err);
+        showNotification('Erro ao recusar.');
+        btn.disabled = false;
+      }
+    });
+  });
+
+  // ── Clique no item (fora dos botões) → marca como lido ────
   listEl.querySelectorAll('.notif-item').forEach(item => {
-    item.addEventListener('click', async () => {
+    item.addEventListener('click', async (e) => {
+      if (
+        e.target.closest('.notif-accept-btn') ||
+        e.target.closest('.notif-reject-btn') ||
+        e.target.closest('.notif-avatar-clickable')
+      ) return;
       item.classList.remove('unread');
       await markAsRead(item.dataset.notifId);
       await refreshNotifBadge();
     });
   });
 
-  setTimeout(async () => {
-    if (document.getElementById('notifPanel')?.classList.contains('active')) {
-      await markAllAsRead();
-      await refreshNotifBadge();
-    }
-  }, 3000);
 }
 
 function showNotifToast(notif) {

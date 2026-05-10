@@ -12,6 +12,7 @@ export const NOTIF_TYPES = {
   REPLY:   'reply',
   FOLLOW:  'follow',
   MENTION: 'mention',
+  FOLLOW_REQUEST: 'follow_request'
 };
 
 // ============================================================
@@ -152,6 +153,8 @@ export function getNotifText(notif) {
       return `${actor} comentou no seu post ${preview}`;
     case NOTIF_TYPES.FOLLOW:
       return `${actor} começou a te seguir`;
+    case NOTIF_TYPES.FOLLOW_REQUEST: 
+      return `${actor} quer te seguir`;
     case NOTIF_TYPES.MENTION:
       return `${actor} mencionou você ${preview}`;
     default:
@@ -165,10 +168,16 @@ export function getNotifIcon(type) {
     case NOTIF_TYPES.REPLY:   return '💬';
     case NOTIF_TYPES.FOLLOW:  return '👤';
     case NOTIF_TYPES.MENTION: return '📣';
+    case NOTIF_TYPES.FOLLOW_REQUEST: return '👥';
     default:                   return '🔔';
   }
 }
-
+export async function deleteNotification(notifId) {
+  await supabase
+    .from('notifications')
+    .delete()
+    .eq('id', notifId);
+}
 export function formatTimeAgoNotif(isoString) {
   const diff = Date.now() - new Date(isoString).getTime();
   const min = Math.floor(diff / 60000);
