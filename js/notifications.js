@@ -12,7 +12,9 @@ export const NOTIF_TYPES = {
   REPLY:   'reply',
   FOLLOW:  'follow',
   MENTION: 'mention',
+  PROFILE_VISIT: 'profile_visit',
   FOLLOW_REQUEST: 'follow_request'
+
 };
 
 // ============================================================
@@ -157,8 +159,11 @@ export function getNotifText(notif) {
       return `${actor} quer te seguir`;
     case NOTIF_TYPES.MENTION:
       return `${actor} mencionou você ${preview}`;
+    case 'profile_visit':
+       return `${actor} visitou seu perfil`;
     default:
       return `${actor} interagiu com você`;
+  
   }
 }
 
@@ -168,6 +173,7 @@ export function getNotifIcon(type) {
     case NOTIF_TYPES.REPLY:   return '💬';
     case NOTIF_TYPES.FOLLOW:  return '👤';
     case NOTIF_TYPES.MENTION: return '📣';
+    case 'profile_visit': return '👁️';
     case NOTIF_TYPES.FOLLOW_REQUEST: return '👥';
     default:                   return '🔔';
   }
