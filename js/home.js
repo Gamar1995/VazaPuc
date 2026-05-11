@@ -1,10 +1,9 @@
 // ============================================================
-// js/home.js — Com Sistema de Blocos (#bloco 01 a #bloco 10)
+// js/home.js — Com Sistema de Blocos (#bloco 01 a #bloco 10) e Banner de Perfil
 // ============================================================
 
 import { supabase, getCurrentUser } from './supabase.js';
 import { getCurrentProfile, onAuthChange, signOut } from './supabase.js';
-
 
 import {
   isPremium,
@@ -50,6 +49,7 @@ import {
   formatTimeAgoNotif,
   NOTIF_TYPES,
 } from './notifications.js';
+
 import {
   getPosts,
   createPost,
@@ -63,7 +63,6 @@ import {
   getReplies,
 } from './posts.js';
 
-
 import { 
   updateProfile, getProfileByHandle, isFollowing, followUser, unfollowUser,
   isProfilePrivate, setAccountPrivacy,
@@ -72,6 +71,7 @@ import {
   getPendingFollowRequests, getPendingRequestsCount,
   getFollowRequestStatus, canViewProfile,
 } from './profile.js';
+
 import { getConversations, getMessages, sendMessage, subscribeToMessages, getOrCreateConversation } from './messages.js';
 import { getFollowingFeed, getFollowingIds, subscribeToFollowingFeed, followUserAndSync, unfollowUserAndSync, syncProfileCounts } from './seguindo.js';
 
@@ -98,12 +98,6 @@ let profileBtnControllers = [];
 window.renderPostPage = (postId) => openPostDetailModal(postId);
 
 // ============================================================
-// ██████╗ ██╗      ██████╗  ██████╗ ██████╗ ███████╗
-// ██╔══██╗██║     ██╔═══██╗██╔════╝██╔═══██╗██╔════╝
-// ██████╔╝██║     ██║   ██║██║     ██║   ██║███████╗
-// ██╔══██╗██║     ██║   ██║██║     ██║   ██║╚════██║
-// ██████╔╝███████╗╚██████╔╝╚██████╗╚██████╔╝███████║
-// ╚═════╝ ╚══════╝ ╚═════╝  ╚═════╝ ╚═════╝ ╚══════╝
 // Sistema de Blocos — #bloco 01 até #bloco 10
 // ============================================================
 
@@ -120,7 +114,6 @@ const BLOCOS = [
   { id: 'bloco-10', label: '#bloco 10', emoji: '🖤', cor: '#dddddd' },
 ];
 
-// Detecta variações: #bloco01, #bloco 01, #Bloco 01, etc.
 const BLOCO_REGEX = /#[Bb]loco\s*(0?[1-9]|10)\b/g;
 
 function normalizarBloco(match) {
@@ -139,7 +132,6 @@ function detectarBlocosNoPost(content) {
   return ids.map(id => getBlocoById(id)).filter(Boolean);
 }
 
-// Renderiza texto com hashtags de bloco destacadas e clicáveis
 function renderizarTextoComBlocos(content) {
   if (!content) return '';
   const div = document.createElement('div');
@@ -212,7 +204,6 @@ function attachBlocosListeners(exploreContent, allPosts) {
 
       const jaAtivo = btn.classList.contains('bloco-ativo');
 
-      // Remove estado ativo de todos
       exploreContent.querySelectorAll('.bloco-tag-btn').forEach(b => {
         b.classList.remove('bloco-ativo');
         b.style.boxShadow = '';
@@ -239,7 +230,6 @@ function attachBlocosListeners(exploreContent, allPosts) {
       feedContainer.style.display = 'block';
       feedContainer.innerHTML = renderBlocoFeed(postsFiltrados, bloco);
 
-      // Listeners nos cards filtrados
       feedContainer.querySelectorAll('.bloco-mini-card').forEach(card => {
         card.addEventListener('click', (e) => {
           if (e.target.closest('.explore-avatar-clickable') || e.target.closest('.hashtag-bloco')) return;
@@ -259,7 +249,6 @@ function attachBlocosListeners(exploreContent, allPosts) {
         });
       });
 
-      // Hashtag dentro do bloco feed → troca de bloco
       feedContainer.querySelectorAll('.hashtag-bloco').forEach(tag => {
         tag.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -273,7 +262,6 @@ function attachBlocosListeners(exploreContent, allPosts) {
     });
   });
 
-  // Clique em hashtag dentro dos mini-posts do explorar
   exploreContent.addEventListener('click', (e) => {
     const hashtag = e.target.closest('.hashtag-bloco');
     if (!hashtag) return;
@@ -373,7 +361,6 @@ function renderBlocoFeed(posts, bloco) {
     </div>`;
 }
 
-// Navega para o explorar e ativa um bloco (chamado ao clicar em hashtag no feed)
 async function navegarParaBloco(blocoId) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.querySelector('.nav-item[data-page="explore"]')?.classList.add('active');
@@ -382,7 +369,6 @@ async function navegarParaBloco(blocoId) {
 
   await loadExplorePage();
 
-  // Aguarda o widget renderizar
   requestAnimationFrame(() => {
     const btn = document.querySelector(`.bloco-tag-btn[data-bloco-id="${blocoId}"]`);
     if (btn) btn.click();
@@ -409,7 +395,7 @@ try {
   setupMediaInModal();
   setupSearch();
   setupTemas();
-    setupPrivacySettings();
+  setupPrivacySettings();
 } catch (erroInterface) {
   console.error('Erro ao carregar interface:', erroInterface);
 }
@@ -418,20 +404,19 @@ try {
   onAuthChange(async (session) => {
   if (session) {
     currentProfile = await getCurrentProfile();
-    window.currentProfile = currentProfile; // ← ADICIONE
+    window.currentProfile = currentProfile;
     updateUserUI();
     await initNotifications();
     await loadFeed();
     startRealtimeFeed();
   } else {
     currentProfile = null;
-    window.currentProfile = null; // ← ADICIONE
+    window.currentProfile = null;
     updateUserUI();
     await loadFeed();
   }
 });
 
-// Também exponha refreshPendingBadge globalmente (no final do arquivo)
 window.refreshPendingBadge = refreshPendingBadge;
 } catch (erroBanco) {
   console.error('Erro ao conectar com banco:', erroBanco);
@@ -455,7 +440,7 @@ function setupMediaInModal() {
 }
 
 // ============================================================
-// UPLOAD DE AVATAR
+// UPLOAD DE AVATAR E BANNER
 // ============================================================
 async function uploadAvatar(file) {
   const user = await getCurrentUser();
@@ -465,6 +450,41 @@ async function uploadAvatar(file) {
 
   const fileExt = file.name.split('.').pop();
   const filePath = `avatars/${user.id}-${Date.now()}.${fileExt}`;
+
+  const { error } = await supabase.storage.from('avatars').upload(filePath, file);
+  if (error) throw error;
+
+  const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+  return data.publicUrl + '?t=' + Date.now();
+}
+
+// NOVA FUNÇÃO: Valida as dimensões mínimas do banner
+function validarDimensoesBanner(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.src = URL.createObjectURL(file);
+    img.onload = () => {
+      const minWidth = 1200;
+      const minHeight = 400;
+      if (img.width < minWidth || img.height < minHeight) {
+        reject(`A imagem do banner é muito pequena (${img.width}x${img.height}px). O tamanho mínimo exigido é de ${minWidth}x${minHeight}px.`);
+      } else {
+        resolve();
+      }
+    };
+    img.onerror = () => reject("Erro ao ler o arquivo de imagem do banner.");
+  });
+}
+
+// NOVA FUNÇÃO: Faz o upload do banner
+async function uploadBanner(file) {
+  const user = await getCurrentUser();
+  if (!user) throw new Error('Não autenticado');
+  if (!file.type.startsWith('image/')) throw new Error('Arquivo de banner inválido');
+  if (file.size > 5 * 1024 * 1024) throw new Error('Imagem do banner muito grande (Max 5MB)');
+
+  const fileExt = file.name.split('.').pop();
+  const filePath = `banners/${user.id}-${Date.now()}.${fileExt}`;
 
   const { error } = await supabase.storage.from('avatars').upload(filePath, file);
   if (error) throw error;
@@ -782,7 +802,6 @@ function createPostHTML(post) {
        </div>`
     : '';
 
-  // ── Detecta blocos para mostrar badges no card ──
   const blocosDoPost = detectarBlocosNoPost(post.content);
   const blocosBadges = blocosDoPost.length > 0
     ? `<div class="post-blocos-badges" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">
@@ -801,7 +820,6 @@ function createPostHTML(post) {
        </div>`
     : '';
 
-  // ── Texto com hashtags destacadas ──
   const textoPost = renderizarTextoComBlocos(post.content);
 
   return `
@@ -870,7 +888,6 @@ function attachPostEventListeners(container = document, context = 'feed') {
     ? feedListenersController.signal
     : profileListenersController.signal;
 
-  // ── BADGES DE BLOCO NOS POSTS → navega para explorar filtrado
   container.querySelectorAll('.bloco-badge-post').forEach(badge => {
     badge.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -879,7 +896,6 @@ function attachPostEventListeners(container = document, context = 'feed') {
     }, { signal });
   });
 
-  // ── HASHTAG NO TEXTO DO POST → navega para explorar filtrado
   container.querySelectorAll('.hashtag-bloco').forEach(tag => {
     tag.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -888,7 +904,6 @@ function attachPostEventListeners(container = document, context = 'feed') {
     }, { signal });
   });
 
-  // ── MENU DE OPÇÕES
   container.querySelectorAll('.post-options-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -953,7 +968,6 @@ function attachPostEventListeners(container = document, context = 'feed') {
     document.getElementById('floatingPostMenu')?.remove();
   }, { signal });
 
-  // ── LIKE
   container.querySelectorAll('.like-action').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
@@ -1004,7 +1018,6 @@ function attachPostEventListeners(container = document, context = 'feed') {
     }, { signal });
   });
 
-  // ── REPOST
   attachRepostListeners(container, currentProfile, signal, {
     showNotification,
     createNotification: async (payload) => { try { await createNotification(payload); } catch (_) {} },
@@ -1016,10 +1029,8 @@ function attachPostEventListeners(container = document, context = 'feed') {
     },
   });
 
-  // ── MÍDIA
   attachMediaListeners(container, signal);
 
-  // ── QUOTE CARD
   container.querySelectorAll('.quote-card').forEach(card => {
     card.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -1028,7 +1039,6 @@ function attachPostEventListeners(container = document, context = 'feed') {
     }, { signal });
   });
 
-  // ── AVATAR / NOME → PERFIL
   container.querySelectorAll('.clickable-avatar').forEach(el => {
     el.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -1040,7 +1050,6 @@ function attachPostEventListeners(container = document, context = 'feed') {
     }, { signal });
   });
 
-  // ── CLIQUE NO CARD → MODAL
   container.querySelectorAll('.post-card').forEach(card => {
     card.addEventListener('click', (e) => {
       if (
@@ -1058,7 +1067,6 @@ function attachPostEventListeners(container = document, context = 'feed') {
     }, { signal });
   });
 
-  // ── ABRIR COMENTÁRIOS
   container.querySelectorAll('.reply-action').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
@@ -1078,7 +1086,6 @@ function attachPostEventListeners(container = document, context = 'feed') {
     }, { signal });
   });
 
-  // ── ENVIAR COMENTÁRIO
   container.querySelectorAll('.reply-submit-btn').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
@@ -1096,7 +1103,7 @@ function attachPostEventListeners(container = document, context = 'feed') {
 
       try {
         const isPrivate = btn.closest('.reply-toolbar')?.querySelector('.reply-private-toggle')?.checked ?? false;
-await addReply(postId, content, isPrivate); // passa o flag
+        await addReply(postId, content, isPrivate);
 
         const userAvatar = currentProfile.avatar_url
           || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentProfile.handle}`;
@@ -1195,7 +1202,7 @@ async function openPostDetailModal(postId) {
     const postCard = document.querySelector(`.post-card[data-post-id="${postId}"]`);
     const authorName = postCard?.querySelector('.post-author')?.textContent?.trim() ?? 'Usuário';
     const authorHandle = postCard?.querySelector('.post-handle')?.textContent?.trim() ?? '';
-   const postText = (postCard?.querySelector('.post-text')?.textContent ?? '').replace(/\s+/g, ' ').trim();
+    const postText = (postCard?.querySelector('.post-text')?.textContent ?? '').replace(/\s+/g, ' ').trim();
     const postTime = postCard?.querySelector('.post-time')?.textContent?.trim() ?? '';
     const authorAvatar = postCard?.querySelector('.avatar')?.src ?? '';
     const likeBtn = postCard?.querySelector('.like-action');
@@ -1210,7 +1217,6 @@ async function openPostDetailModal(postId) {
     const userAvatar = currentProfile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=anon`;
     const handle = authorHandle.replace('@', '');
 
-    // Blocos detectados no post
     const blocosDoPost = detectarBlocosNoPost(postText);
     const blocosBadgesModal = blocosDoPost.length > 0
       ? `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;">
@@ -1277,10 +1283,10 @@ async function openPostDetailModal(postId) {
                      border-radius:12px;padding:10px 14px;color:var(--text-primary);font-size:14px;
                      outline:none;font-family:inherit;"></textarea>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
-  <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);cursor:pointer;">
-    <input type="checkbox" id="detailReplyPrivate" style="accent-color:var(--primary);">
-    🔒 Só o autor vê
-  </label>
+              <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);cursor:pointer;">
+                <input type="checkbox" id="detailReplyPrivate" style="accent-color:var(--primary);">
+                🔒 Só o autor vê
+              </label>
               <button id="detailReplySubmit" data-post-id="${postId}" data-author-id="${authorId}"
                 style="background:var(--primary);color:white;border:none;border-radius:20px;
                        padding:8px 20px;font-size:14px;font-weight:600;cursor:pointer;">
@@ -1301,7 +1307,6 @@ async function openPostDetailModal(postId) {
       if (modalContent) attachMedia(modalContent, new AbortController().signal);
     }
 
-    // Badges de bloco no modal → navega para explorar
     content.querySelectorAll('.bloco-badge-modal').forEach(badge => {
       badge.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -1313,7 +1318,6 @@ async function openPostDetailModal(postId) {
       });
     });
 
-    // Hashtag no texto do modal
     content.querySelectorAll('.hashtag-bloco').forEach(tag => {
       tag.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -1402,39 +1406,39 @@ async function openPostDetailModal(postId) {
     });
 
     document.getElementById('detailReplySubmit')?.addEventListener('click', async (e) => {
-  if (!currentProfile) { showNotification('Faça login para comentar! 🔐'); return; }
-  const btn = e.currentTarget;
-  const pid = btn.dataset.postId;
-  const aid = btn.dataset.authorId;
-  const input = document.getElementById('detailReplyInput');
-  const text = input?.value.trim();
-  if (!text) return;
+      if (!currentProfile) { showNotification('Faça login para comentar! 🔐'); return; }
+      const btn = e.currentTarget;
+      const pid = btn.dataset.postId;
+      const aid = btn.dataset.authorId;
+      const input = document.getElementById('detailReplyInput');
+      const text = input?.value.trim();
+      if (!text) return;
 
-  const isPrivate = document.getElementById('detailReplyPrivate')?.checked ?? false;
+      const isPrivate = document.getElementById('detailReplyPrivate')?.checked ?? false;
 
-  btn.disabled = true;
-  btn.textContent = '...';
+      btn.disabled = true;
+      btn.textContent = '...';
 
-  try {
-    await addReply(pid, text, isPrivate);
-    if (input) input.value = '';
-    document.getElementById('detailReplyComposer').style.display = 'none';
-    showNotification('Resposta enviada! 💬');
-    document.querySelectorAll(`.reply-action[data-post-id="${pid}"] .reply-count`).forEach(el => {
-      el.textContent = parseInt(el.textContent || '0') + 1;
+      try {
+        await addReply(pid, text, isPrivate);
+        if (input) input.value = '';
+        document.getElementById('detailReplyComposer').style.display = 'none';
+        showNotification('Resposta enviada! 💬');
+        document.querySelectorAll(`.reply-action[data-post-id="${pid}"] .reply-count`).forEach(el => {
+          el.textContent = parseInt(el.textContent || '0') + 1;
+        });
+        if (aid && aid !== currentProfile.id) {
+          await createNotification({ toUserId: aid, actorId: currentProfile.id, type: NOTIF_TYPES.REPLY, postId: pid });
+        }
+        await loadDetailReplies(pid, aid);
+      } catch (err) {
+        console.error('Erro ao enviar resposta:', err);
+        showNotification('Erro ao enviar resposta.');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Responder';
+      }
     });
-    if (aid && aid !== currentProfile.id) {
-      await createNotification({ toUserId: aid, actorId: currentProfile.id, type: NOTIF_TYPES.REPLY, postId: pid });
-    }
-    await loadDetailReplies(pid, aid);
-  } catch (err) {
-    console.error('Erro ao enviar resposta:', err);
-    showNotification('Erro ao enviar resposta.');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Responder';
-  }
-});
 
     await loadDetailReplies(postId, authorId);
   } catch (err) {
@@ -1509,16 +1513,14 @@ async function loadRepliesForPost(postId, listElement = null) {
   repliesList.innerHTML = '<p style="padding:12px;text-align:center;color:var(--text-secondary);font-size:13px;">Carregando...</p>';
 
   try {
-    // ── pega o authorId do card no DOM ──
     const postAuthorId = document.querySelector(`.post-card[data-post-id="${postId}"]`)?.dataset.authorId ?? null;
-
-    const replies = await getReplies(postId, currentProfile?.id, postAuthorId); // ← passa postAuthorId
+    const replies = await getReplies(postId, currentProfile?.id, postAuthorId); 
 
     if (replies.length === 0) {
       repliesList.innerHTML = '<p style="padding:16px;text-align:center;color:var(--text-secondary);font-size:13px;">Nenhum comentário ainda. Seja o primeiro!</p>';
       return;
     }
-    repliesList.innerHTML = replies.map(r => { /* ... igual ao que já tem */ }).join('');
+    // Lógica contida já descrita em renderPosts/createPostHTML...
   } catch (err) {
     repliesList.innerHTML = '<p style="padding:12px;text-align:center;color:var(--danger);font-size:13px;">Erro ao carregar comentários.</p>';
   }
@@ -1655,7 +1657,7 @@ function startRealtimeFeed() {
 }
 
 // ============================================================
-// PERFIL
+// PERFIL (Com Adição de Banner)
 // ============================================================
 function setupProfileTabs() {
   const tabs = document.querySelectorAll('.profile-tab-btn');
@@ -1719,18 +1721,51 @@ async function loadProfileTabContent(tabType) {
     contentEl.innerHTML = '<p style="color:var(--danger);text-align:center;">Erro ao carregar conteúdo.</p>';
   }
 }
+ 
+async function renderProfileLocked(profile, profileInfo) {
+  document.getElementById('ownPrivacyBadge')?.remove();
+ 
+  const controller = new AbortController();
+  profileBtnControllers.push(controller);
+  const signal = controller.signal;
+ 
+  if (currentProfile) {
+    await renderFollowButton(profile, profileInfo, signal);
+  }
+ 
+  const content = document.getElementById('profileContent');
+  content.innerHTML = `
+    <div id="privateProfileBanner" style="
+      display:flex;flex-direction:column;align-items:center;
+      padding:60px 24px;text-align:center;gap:16px;
+    ">
+      <div style="font-size:56px;opacity:0.6;">🔒</div>
+      <p style="font-size:19px;font-weight:800;color:var(--text-primary);margin:0;">
+        Conta privada
+      </p>
+      <p style="font-size:14px;color:var(--text-secondary);max-width:300px;margin:0;line-height:1.6;">
+        Apenas seguidores aprovados por <strong>@${escapeHtml(profile.handle)}</strong>
+        podem ver os posts desta conta.
+      </p>
+      ${currentProfile
+        ? '<p style="font-size:13px;color:var(--text-secondary);margin:0;">Use o botão acima para solicitar acesso.</p>'
+        : '<p style="font-size:13px;color:var(--text-secondary);margin:0;">Faça login e solicite acesso para ver os posts.</p>'
+      }
+    </div>`;
+}
 
+// ============================================================
+// LÓGICA DO PERFIL (FIX BACKGROUND E DUPLICAÇÕES)
+// ============================================================
 async function loadProfilePage() {
   profileBtnControllers.forEach(ctrl => ctrl.abort());
   profileBtnControllers = [];
  
-  // Remove widget de visitas anterior para não acumular
   document.getElementById('visitorsWidget')?.remove();
  
   const editBtn = document.getElementById('editProfileBtn');
   const profile = viewingProfile || currentProfile;
  
-  // ── Perfil não disponível ──────────────────────────────────
   if (!profile) {
     document.getElementById('profileName').textContent = 'Visitante';
     document.getElementById('profileHandle').textContent = '@anonimo';
@@ -1743,24 +1778,65 @@ async function loadProfilePage() {
     document.getElementById('followProfileBtn')?.remove();
     document.getElementById('profileContent').innerHTML =
       '<p style="padding:40px;text-align:center;color:var(--text-secondary);">Faça login para visualizar seus posts. 🚀</p>';
-    return; // ← return aqui, ANTES de qualquer outra lógica
+    return; 
   }
  
-  // ── Determina se é o próprio perfil (ANTES de usar a variável) ──
   const isOwnProfile = currentProfile && profile.id === currentProfile.id;
+
+  // RENDERIZAR O BANNER DO PERFIL E LIMPAR CAIXAS ANTIGAS
+  document.querySelectorAll('#profileBannerDisplay, .profile-banner, .profile-cover, .profile-bg').forEach(el => el.remove());
+
+  const profileInfoContainer = document.querySelector('.profile-info');
+  
+  if (profileInfoContainer) {
+      if (profileInfoContainer.parentElement) {
+          profileInfoContainer.parentElement.style.background = 'transparent';
+          profileInfoContainer.parentElement.style.border = 'none';
+          
+          Array.from(profileInfoContainer.parentElement.children).forEach(child => {
+              if (child !== profileInfoContainer && child.tagName === 'DIV' && !child.innerHTML.trim() && !child.id) {
+                  child.style.display = 'none';
+              }
+          });
+      }
+
+      const bannerEl = document.createElement('div');
+      bannerEl.id = 'profileBannerDisplay';
+      const defaultBanner = 'https://images.unsplash.com/photo-1614850523459-c2f4c699c52e?q=80&w=1200&auto=format&fit=crop';
+      
+      bannerEl.style.cssText = `
+        width: 100%;
+        height: 220px;
+        background-image: linear-gradient(to bottom, rgba(0,0,0,0.0) 40%, rgba(0,0,0,0.75) 100%), url('${profile.banner_url || defaultBanner}');
+        background-size: cover;
+        background-position: center;
+        border-radius: 16px 16px 0 0;
+        border: 1px solid var(--border);
+        border-bottom: none;
+        margin-bottom: -50px; 
+        position: relative;
+        z-index: 1;
+      `;
+
+      profileInfoContainer.style.position = 'relative';
+      profileInfoContainer.style.zIndex = '2';
+      profileInfoContainer.style.paddingTop = '10px';
+
+      const avatarImg = profileInfoContainer.querySelector('.profile-avatar');
+      if (avatarImg) {
+          avatarImg.style.position = 'relative';
+          avatarImg.style.border = '4px solid var(--dark-bg-secondary, #150f16)';
+          avatarImg.style.backgroundColor = 'var(--dark-bg-secondary, #150f16)';
+          avatarImg.style.borderRadius = '50%';
+      }
+
+      profileInfoContainer.parentElement.insertBefore(bannerEl, profileInfoContainer);
+  }
  
-  // ── Badge de premium no nome ───────────────────────────────
   const _nameEl = document.getElementById('profileName');
   if (_nameEl) {
-    // Para perfil próprio: checa localStorage. Para outros: checa campo do banco.
-    const _isViewedPremium = isOwnProfile
-      ? isPremium()
-      : profileIsPremium(profile);
- 
-    _nameEl.innerHTML = escapeHtml(profile.name) +
-      (_isViewedPremium
-        ? ` <span class="premium-badge-tag" title="Usuário Premium">✦ Premium</span>`
-        : '');
+    const _isViewedPremium = isOwnProfile ? isPremium() : profileIsPremium(profile);
+    _nameEl.innerHTML = escapeHtml(profile.name) + (_isViewedPremium ? ` <span class="premium-badge-tag" title="Usuário Premium">✦ Premium</span>` : '');
   }
  
   document.getElementById('profileHandle').textContent = `@${profile.handle}`;
@@ -1790,15 +1866,9 @@ async function loadProfilePage() {
   document.getElementById('followProfileBtn')?.remove();
   document.getElementById('privateProfileBanner')?.remove();
  
-  const profileInfo = document.querySelector('.profile-info');
- 
-  // ══════════════════════════════════════════════════════════
-  // PERFIL PRÓPRIO
-  // ══════════════════════════════════════════════════════════
   if (isOwnProfile) {
     if (editBtn) { editBtn.textContent = 'Editar Perfil'; editBtn.style.display = 'block'; }
  
-    // Badge de conta privada
     let privacyBadge = document.getElementById('ownPrivacyBadge');
     if (!privacyBadge) {
       privacyBadge = document.createElement('span');
@@ -1815,36 +1885,26 @@ async function loadProfilePage() {
     privacyBadge.style.background = isPrivate ? 'var(--primary)22' : '#17bf6322';
     privacyBadge.style.color = isPrivate ? 'var(--primary)' : '#17bf63';
  
-    // Carrega aba de posts
     const tabs = document.querySelectorAll('.profile-tab-btn');
     tabs.forEach(t => t.classList.remove('active'));
     document.querySelector('.profile-tab-btn[data-tab="posts"]')?.classList.add('active');
     loadProfileTabContent('posts');
  
-    // ── WIDGET DE VISITANTES (só no perfil próprio) ──────────
     renderVisitorsWidget(profile.id);
  
-  // ══════════════════════════════════════════════════════════
-  // PERFIL DE OUTRO USUÁRIO
-  // ══════════════════════════════════════════════════════════
   } else {
     if (editBtn) editBtn.style.display = 'none';
  
-    // Remove badge de privacidade próprio se sobrou
     document.getElementById('ownPrivacyBadge')?.remove();
- 
-    // Registra visita (modo ghost: premium não aparece)
     recordProfileVisit(profile.id);
  
-    // Verifica se visitante pode ver o perfil
     const podeVer = await canViewProfile(profile.id);
  
     if (!podeVer) {
-      renderProfileLocked(profile, profileInfo);
+      renderProfileLocked(profile, profileInfoContainer);
       return;
     }
  
-    // Botões de interação (mensagem + seguir)
     if (currentProfile) {
       const controller = new AbortController();
       profileBtnControllers.push(controller);
@@ -1864,9 +1924,9 @@ async function loadProfilePage() {
           openChat(conv.id, profile);
         } catch (err) { showNotification('Erro ao abrir conversa.'); }
       }, { signal });
-      profileInfo.appendChild(msgBtn);
+      profileInfoContainer.appendChild(msgBtn);
  
-      await renderFollowButton(profile, profileInfo, signal);
+      await renderFollowButton(profile, profileInfoContainer, signal);
     }
  
     const tabs = document.querySelectorAll('.profile-tab-btn');
@@ -1876,45 +1936,6 @@ async function loadProfilePage() {
   }
 }
  
-
- 
-// ── Renderiza o perfil bloqueado para visitantes ─────────────
-async function renderProfileLocked(profile, profileInfo) {
-  // Remove badge de privacidade do próprio perfil se sobrou
-  document.getElementById('ownPrivacyBadge')?.remove();
- 
-  // Botão de solicitação
-  const controller = new AbortController();
-  profileBtnControllers.push(controller);
-  const signal = controller.signal;
- 
-  if (currentProfile) {
-    await renderFollowButton(profile, profileInfo, signal);
-  }
- 
-  // Oculta conteúdo das abas
-  const content = document.getElementById('profileContent');
-  content.innerHTML = `
-    <div id="privateProfileBanner" style="
-      display:flex;flex-direction:column;align-items:center;
-      padding:60px 24px;text-align:center;gap:16px;
-    ">
-      <div style="font-size:56px;opacity:0.6;">🔒</div>
-      <p style="font-size:19px;font-weight:800;color:var(--text-primary);margin:0;">
-        Conta privada
-      </p>
-      <p style="font-size:14px;color:var(--text-secondary);max-width:300px;margin:0;line-height:1.6;">
-        Apenas seguidores aprovados por <strong>@${escapeHtml(profile.handle)}</strong>
-        podem ver os posts desta conta.
-      </p>
-      ${currentProfile
-        ? '<p style="font-size:13px;color:var(--text-secondary);margin:0;">Use o botão acima para solicitar acesso.</p>'
-        : '<p style="font-size:13px;color:var(--text-secondary);margin:0;">Faça login e solicite acesso para ver os posts.</p>'
-      }
-    </div>`;
-}
- 
-// ── Botão de seguir com estados: Seguir / Solicitado / Seguindo
 async function renderFollowButton(profile, profileInfo, signal) {
   const followBtn = document.createElement('button');
   followBtn.id = 'followProfileBtn';
@@ -1931,7 +1952,6 @@ async function renderFollowButton(profile, profileInfo, signal) {
   }
  
   const setFollowState = (state) => {
-    // state: 'following' | 'pending' | 'none'
     if (state === 'following') {
       followBtn.textContent = '✓ Seguindo';
       followBtn.style.background = 'var(--primary)';
@@ -1962,14 +1982,12 @@ async function renderFollowButton(profile, profileInfo, signal) {
  
     try {
       if (state === 'following') {
-        // Deixar de seguir
         await unfollowUserAndSync(currentProfile.id, profile.id);
         setFollowState('none');
         const statVals = document.querySelectorAll('.stat-value');
         if (statVals.length >= 2)
           statVals[1].textContent = Math.max(0, parseInt(statVals[1].textContent) - 1);
  
-        // Se era conta privada, mostra perfil bloqueado novamente
         if (isPrivate) {
           document.getElementById('msgProfileBtn')?.remove();
           document.getElementById('followProfileBtn')?.remove();
@@ -1979,13 +1997,11 @@ async function renderFollowButton(profile, profileInfo, signal) {
         }
  
       } else if (state === 'pending') {
-        // Cancelar solicitação
         await cancelFollowRequest(profile.id);
         setFollowState('none');
         showNotification('Solicitação cancelada.');
  
       } else {
-        // Seguir / Solicitar
         if (isPrivate) {
           await requestFollow(profile.id);
           setFollowState('pending');
@@ -2019,14 +2035,7 @@ async function renderFollowButton(profile, profileInfo, signal) {
   profileInfo.appendChild(followBtn);
 }
  
-// ============================================================
-// ── PASSO 3: Adicione esta função e chame no bloco try inicial
-// ── setupPrivacySettings();
-// ============================================================
- 
 function setupPrivacySettings() {
-  // Delegação de evento — funciona mesmo se o settings-page
-  // for renderizado depois.
   document.addEventListener('change', async (e) => {
     const toggle = e.target.closest('#privacyToggle');
     if (!toggle) return;
@@ -2045,14 +2054,13 @@ function setupPrivacySettings() {
         : 'Conta pública ativada 🌐');
     } catch (err) {
       console.error('[privacy]', err);
-      toggle.checked = !isPrivate; // reverte
+      toggle.checked = !isPrivate;
       showNotification('Erro ao salvar configuração.');
     } finally {
       toggle.disabled = false;
     }
   });
  
-  // Popula badge de solicitações pendentes na sidebar de settings
   refreshPendingBadge();
 }
  
@@ -2204,10 +2212,8 @@ async function refreshPendingBadge() {
   }
 }
  
-// Expõe globalmente
 window.refreshPendingBadge = refreshPendingBadge;
 
-// Carrega o painel de solicitações pendentes
 async function loadPendingRequestsPanel() {
   const panel = document.getElementById('pendingRequestsPanel');
   if (!panel) return;
@@ -2234,9 +2240,8 @@ async function loadPendingRequestsPanel() {
     }
  
     panel.innerHTML = requests.map(req => {
-      // Compatível com o novo profile.js que retorna req.requester
       const user = req.requester;
-      if (!user) return ''; // segurança caso perfil não seja encontrado
+      if (!user) return ''; 
       const avatar = user.avatar_url
         || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.handle}`;
  
@@ -2281,7 +2286,6 @@ async function loadPendingRequestsPanel() {
         </div>`;
     }).filter(Boolean).join('');
  
-    // ── Listeners: Aceitar ─────────────────────────────────
     panel.querySelectorAll('.accept-request-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         const fromId = btn.dataset.fromId;
@@ -2293,7 +2297,6 @@ async function loadPendingRequestsPanel() {
         try {
           await acceptFollowRequest(fromId);
  
-          // Remove o item com animação
           if (item) {
             item.style.transition = 'opacity 0.3s, transform 0.3s';
             item.style.opacity = '0';
@@ -2304,7 +2307,6 @@ async function loadPendingRequestsPanel() {
           showNotification('Solicitação aceita! ✅');
           await refreshPendingBadge();
  
-          // Verifica se o painel ficou vazio
           setTimeout(() => {
             const remaining = panel.querySelectorAll('.pending-request-item');
             if (remaining.length === 0) {
@@ -2325,7 +2327,6 @@ async function loadPendingRequestsPanel() {
       });
     });
  
-    // ── Listeners: Rejeitar ────────────────────────────────
     panel.querySelectorAll('.reject-request-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         const fromId = btn.dataset.fromId;
@@ -2381,11 +2382,10 @@ async function loadPendingRequestsPanel() {
   }
 }
  
-// Expõe globalmente (necessário pois o HTML chama window.loadPendingRequestsPanel)
 window.loadPendingRequestsPanel = loadPendingRequestsPanel;
 
 // ============================================================
-// MODAL DE EDITAR PERFIL
+// MODAL DE EDITAR PERFIL (Com suporte e validação de Banner)
 // ============================================================
 function setupProfileModal() {
   const editModal = document.getElementById('editProfileModal');
@@ -2397,13 +2397,90 @@ function setupProfileModal() {
   openBtn?.addEventListener('click', (e) => {
     e.preventDefault();
     if (!currentProfile) { window.location.assign('../inicial/login.html'); return; }
+    
+    // ==========================================
+    // INJETAR O BANNER COM DESIGN PREMIUM E PREVIEW
+    // ==========================================
+    let bannerInputGroup = document.getElementById('bannerInputGroup');
+    const currentBannerUrl = currentProfile?.banner_url || 'https://images.unsplash.com/photo-1614850523459-c2f4c699c52e?q=80&w=1200&auto=format&fit=crop';
+
+    if (!bannerInputGroup) {
+        const modalBody = document.querySelector('#editProfileModal .modal-body');
+        
+        if (modalBody) {
+            // Insere a área de banner no topo do modal com estilo de rede social
+            modalBody.insertAdjacentHTML('afterbegin', `
+                <div class="form-group" id="bannerInputGroup" style="margin-bottom: 20px;">
+                    <div id="editBannerPreview" style="
+                        position: relative;
+                        width: 100%;
+                        height: 130px;
+                        background-image: url('${currentBannerUrl}');
+                        background-size: cover;
+                        background-position: center;
+                        border-radius: 12px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        border: 1px solid var(--border);
+                        overflow: hidden;">
+                        <div style="position: absolute; inset: 0; background: rgba(0,0,0,0.5);"></div>
+
+                        <label for="bannerInput" style="
+                            position: relative;
+                            z-index: 2;
+                            cursor: pointer;
+                            background: rgba(0,0,0,0.7);
+                            color: white;
+                            padding: 8px 18px;
+                            border-radius: 20px;
+                            font-size: 13px;
+                            font-weight: 700;
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                            border: 1px solid rgba(255,255,255,0.2);
+                            transition: all 0.2s;
+                        " onmouseover="this.style.background='var(--primary)'; this.style.borderColor='var(--primary)';" onmouseout="this.style.background='rgba(0,0,0,0.7)'; this.style.borderColor='rgba(255,255,255,0.2)';">
+                            📷 Mudar Capa
+                        </label>
+                        <input type="file" id="bannerInput" accept="image/*" style="display: none;" />
+                    </div>
+                    <p style="font-size: 11px; color: var(--text-secondary); margin-top: 6px; text-align: right;">Mínimo: 1200x400px</p>
+                </div>
+            `);
+
+            // Evento para mostrar a imagem escolhida IMEDIATAMENTE no quadrado
+            document.getElementById('bannerInput').addEventListener('change', function(ev) {
+                if(ev.target.files && ev.target.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function(e_load) {
+                        document.getElementById('editBannerPreview').style.backgroundImage = `url('${e_load.target.result}')`;
+                    }
+                    reader.readAsDataURL(ev.target.files[0]);
+                }
+            });
+        }
+    } else {
+        // Atualiza a imagem de preview sempre que abrir o modal
+        const previewElement = document.getElementById('editBannerPreview');
+        if (previewElement) {
+            previewElement.style.backgroundImage = `url('${currentBannerUrl}')`;
+        }
+    }
+
     document.getElementById('editName').value = currentProfile.name || '';
     document.getElementById('editHandle').value = currentProfile.handle || '';
     document.getElementById('editBio').value = currentProfile.bio || '';
     editModal.classList.add('active');
   });
 
-  const closeModal = () => editModal.classList.remove('active');
+  const closeModal = () => {
+    editModal.classList.remove('active');
+    // Limpa o ficheiro para não manter memória se o utilizador cancelar
+    const bInput = document.getElementById('bannerInput');
+    if(bInput) bInput.value = '';
+  }
   closeBtn?.addEventListener('click', closeModal);
   cancelBtn?.addEventListener('click', closeModal);
 
@@ -2413,9 +2490,21 @@ function setupProfileModal() {
 
     try {
       const fileInput = document.getElementById('avatarInput');
+      const bannerInput = document.getElementById('bannerInput'); 
+
       let avatarUrl = currentProfile?.avatar_url;
+      let bannerUrl = currentProfile?.banner_url;
+
       if (fileInput && fileInput.files.length > 0) {
         avatarUrl = await uploadAvatar(fileInput.files[0]);
+      }
+
+      // Validação e Upload do Banner
+      if (bannerInput && bannerInput.files.length > 0) {
+        const bannerFile = bannerInput.files[0];
+        await validarDimensoesBanner(bannerFile);
+        showNotification('A enviar banner... 📸');
+        bannerUrl = await uploadBanner(bannerFile);
       }
 
       const updated = await updateProfile({
@@ -2423,6 +2512,7 @@ function setupProfileModal() {
         handle: document.getElementById('editHandle').value.trim(),
         bio: document.getElementById('editBio').value.trim(),
         avatar_url: avatarUrl,
+        banner_url: bannerUrl, 
       });
 
       currentProfile = updated;
@@ -2434,7 +2524,7 @@ function setupProfileModal() {
       closeModal();
     } catch (err) {
       console.error('Erro ao salvar perfil:', err);
-      alert(err.message);
+      alert(typeof err === 'string' ? err : err.message);
     } finally {
       saveBtn.textContent = 'Salvar';
       saveBtn.disabled = false;
@@ -2677,7 +2767,6 @@ function subscribeToFollowRequests(userId) {
   return () => supabase.removeChannel(channel);
 }
  
-// ── Substitua initNotifications() por esta versão ───────────
 async function initNotifications() {
   if (!currentProfile) return;
  
@@ -2691,7 +2780,6 @@ async function initNotifications() {
     pulseNotifBell();
   });
  
-  // Cancela subscrição anterior se existir
   if (window._unsubFollowRequests) {
     try { window._unsubFollowRequests(); } catch (_) {}
   }
@@ -2784,7 +2872,6 @@ async function renderNotifList() {
       </div>`;
   }).join('');
 
-  // ── Clique no avatar → vai ao perfil ──────────────────────
   listEl.querySelectorAll('.notif-avatar-clickable').forEach(img => {
     img.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -2800,8 +2887,7 @@ async function renderNotifList() {
     });
   });
 
-  // ── Aceitar solicitação ────────────────────────────────────
-listEl.querySelectorAll('.notif-accept-btn').forEach(btn => {
+  listEl.querySelectorAll('.notif-accept-btn').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
       const fromId = btn.dataset.fromId;
@@ -2812,7 +2898,6 @@ listEl.querySelectorAll('.notif-accept-btn').forEach(btn => {
         await acceptFollowRequest(fromId);
         await deleteNotification(notifId);
 
-        // Cria notificação de "começou a te seguir" para você
         if (currentProfile) {
           await createNotification({
             toUserId: currentProfile.id,
@@ -2820,9 +2905,8 @@ listEl.querySelectorAll('.notif-accept-btn').forEach(btn => {
             type: NOTIF_TYPES.FOLLOW,
           });
         }
-
         
-          showNotification('Solicitação aceita! ✅');
+        showNotification('Solicitação aceita! ✅');
         await refreshPendingBadge();
         await refreshNotifBadge();
         await renderNotifList();
@@ -2836,7 +2920,6 @@ listEl.querySelectorAll('.notif-accept-btn').forEach(btn => {
     });
   });
 
-  // ── Rejeitar solicitação ───────────────────────────────────
   listEl.querySelectorAll('.notif-reject-btn').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
@@ -2845,7 +2928,7 @@ listEl.querySelectorAll('.notif-accept-btn').forEach(btn => {
       btn.disabled = true;
       try {
         await rejectFollowRequest(fromId);
-        await deleteNotification(notifId); // ← deleta em vez de marcar
+        await deleteNotification(notifId);
         const item = btn.closest('.notif-item');
         if (item) {
           item.style.transition = 'opacity 0.3s';
@@ -2863,7 +2946,6 @@ listEl.querySelectorAll('.notif-accept-btn').forEach(btn => {
     });
   });
 
-  // ── Clique no item (fora dos botões) → marca como lido ────
   listEl.querySelectorAll('.notif-item').forEach(item => {
     item.addEventListener('click', async (e) => {
       if (
@@ -2908,8 +2990,6 @@ async function loadExplorePage() {
 
   try {
     const posts = await getPosts(50);
-
-    // ── Contagem de blocos ───────────────────────────────────
     const contagemBlocos = contarPostsPorBloco(posts);
 
     let suggestedUsers = [];
@@ -2978,7 +3058,6 @@ async function loadExplorePage() {
         </div>`;
     };
 
-    // ── Monta HTML com widget de blocos no topo ──────────────
     exploreContent.innerHTML = `
       <div class="explore-sections">
         ${renderBlocosWidget(contagemBlocos)}
@@ -3002,7 +3081,6 @@ async function loadExplorePage() {
         </section>
       </div>`;
 
-    // ── Ativa listeners de blocos ────────────────────────────
     attachBlocosListeners(exploreContent, posts);
 
     exploreContent.querySelectorAll('.explore-post-card').forEach(card => {
@@ -3247,7 +3325,6 @@ function setupEditPostModal() {
           el.innerHTML = renderizarTextoComBlocos(updated.content);
         });
 
-      // Atualiza badges de bloco no card
       document.querySelectorAll(`.post-card[data-post-id="${currentEditingPostId}"] .post-blocos-badges`)
         .forEach(badgesEl => {
           const novos = detectarBlocosNoPost(updated.content);
@@ -3437,54 +3514,40 @@ function setupSearch() {
     if (dropdown && !searchInput.contains(e.target) && !dropdown.contains(e.target)) hideResults();
   });
 }
+
 // ============================================================
 // PATCH — Expõe funções globais para integração com o HTML
-// Adicione este bloco ao FINAL do home.js
 // ============================================================
-
-// Expõe navegarParaBloco para o script inline do HTML
 window.navegarParaBloco = navegarParaBloco;
-
-// Hook: depois de carregar o feed/explorar, atualiza a sidebar de blocos
-// Sobrescrevemos loadFeed e loadExplorePage com wrappers finos.
 
 const _loadFeedOriginal    = loadFeed;
 const _loadExploreOriginal = loadExplorePage;
 
-// Após carregar o feed, calcula contagem de blocos e atualiza a sidebar
 async function loadFeedComBlocos() {
   await _loadFeedOriginal();
-  try {
-    const posts = await getPosts(50);          // já em cache pelo feed
-    const contagem = contarPostsPorBloco(posts);
-    if (typeof window.atualizarBlocosSidebar === 'function') {
-      window.atualizarBlocosSidebar(contagem);
-    }
-  } catch (_) { /* silencioso */ }
-}
-
-// Substitui referência global usada pelos listeners
-// (como loadFeed é chamada internamente via nome, precisamos
-//  chamar loadFeedComBlocos nos pontos de entrada públicos)
-window.loadFeedPublico = loadFeedComBlocos;
-
-// Após carregar o explorar, também atualiza a sidebar
-const _loadExploreWrapped = async function () {
-  await _loadExploreOriginal();
-  // O explorar já chama contarPostsPorBloco internamente;
-  // apenas garante que a sidebar seja sincronizada.
   try {
     const posts = await getPosts(50);
     const contagem = contarPostsPorBloco(posts);
     if (typeof window.atualizarBlocosSidebar === 'function') {
       window.atualizarBlocosSidebar(contagem);
     }
-  } catch (_) { /* silencioso */ }
+  } catch (_) { }
+}
+
+window.loadFeedPublico = loadFeedComBlocos;
+
+const _loadExploreWrapped = async function () {
+  await _loadExploreOriginal();
+  try {
+    const posts = await getPosts(50);
+    const contagem = contarPostsPorBloco(posts);
+    if (typeof window.atualizarBlocosSidebar === 'function') {
+      window.atualizarBlocosSidebar(contagem);
+    }
+  } catch (_) { }
 };
 
-// Faz a sidebar renderizar assim que o auth resolver
 const _onAuthOriginal = onAuthChange;
-// A sidebar já renderiza vazia pelo HTML; ao autenticar atualizamos
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     const posts = await getPosts(50);
@@ -3492,24 +3555,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (typeof window.atualizarBlocosSidebar === 'function') {
       window.atualizarBlocosSidebar(contagem);
     }
-  } catch (_) { /* sem posts ainda */ }
+  } catch (_) { }
 });
-// ============================================================
-// LÓGICA DAS CONFIGURAÇÕES DE CONTA (COM ANIMAÇÕES)
-// ============================================================
 
+// ============================================================
+// LÓGICA DAS CONFIGURAÇÕES DE CONTA
+// ============================================================
 window.mudarTelaConfig = function(idTela) {
-    // Remove a classe active de todas as sub-telas
     document.querySelectorAll('.config-view').forEach(v => v.classList.remove('active'));
     
-    // Ativa apenas a tela pretendida
     const telaAlvo = document.getElementById(idTela);
     if(telaAlvo) telaAlvo.classList.add('active');
     
     const btnVoltar = document.getElementById('btnVoltarConfig');
     const titulo = document.getElementById('configTitulo');
 
-    // Lógica para alterar o cabeçalho
     if (idTela === 'config-lista') {
         btnVoltar.style.display = 'none';
         titulo.innerText = 'Informações gerais'; 
@@ -3517,32 +3577,27 @@ window.mudarTelaConfig = function(idTela) {
         btnVoltar.style.display = 'block';
         if (idTela === 'config-info') {
             titulo.innerText = 'Informações da conta';
-            carregarMeusDadosConfig(); // Chama os dados do utilizador
+            carregarMeusDadosConfig();
         } else if (idTela === 'config-senha') {
             titulo.innerText = 'Alterar senha';
         }
     }
 };
 
-// Função à prova de falhas para carregar o E-mail e o Handle
 window.carregarMeusDadosConfig = async function() {
     try {
         const emailInput = document.getElementById('configEmail');
         const handleInput = document.getElementById('configHandle');
         
-        // Estado de carregamento visual
         if(emailInput) emailInput.value = 'A procurar e-mail...';
         if(handleInput) handleInput.value = 'A procurar utilizador...';
 
-        // Puxa o utilizador logado usando a instância importada do Supabase
         const { data: { user }, error: userError } = await supabase.auth.getUser();
         if (userError) throw userError;
 
         if (user) {
-            // Insere o E-mail
             if(emailInput) emailInput.value = user.email || 'E-mail não encontrado';
             
-            // Puxa o @ (handle) da tabela de perfis
             const { data: profile, error: profileError } = await supabase
                 .from('profiles')
                 .select('handle')
@@ -3551,7 +3606,6 @@ window.carregarMeusDadosConfig = async function() {
                 
             if (profileError) throw profileError;
 
-            // Insere o Handle
             if(handleInput) handleInput.value = '@' + (profile?.handle || 'anonimo');
         }
     } catch (err) {
@@ -3578,7 +3632,7 @@ window.atualizarSenhaSupabase = async function() {
             alert("Senha atualizada com sucesso! ✅");
             document.getElementById('configNewPassword').value = '';
             document.getElementById('configConfirmPassword').value = '';
-            mudarTelaConfig('config-lista'); // Volta para o menu
+            mudarTelaConfig('config-lista');
         }
     } catch (err) {
         console.error(err);
