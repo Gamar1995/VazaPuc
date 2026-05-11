@@ -1834,7 +1834,19 @@ async function loadProfilePage() {
     document.getElementById('ownPrivacyBadge')?.remove();
  
     // Registra visita (modo ghost: premium não aparece)
-    recordProfileVisit(profile.id);
+    recordProfileVisit(profile.id).then(async () => {
+      // Só dispara notificação se o dono do perfil for premium
+      // (para não spammar quem não assinou)
+      if (currentProfile && profileIsPremium(profile)) {
+        try {
+          await createNotification({
+            toUserId: profile.id,
+            actorId: currentProfile.id,
+            type: 'profile_visit',   // novo tipo
+          });
+        } catch (_) { /* silencioso */ }
+      }
+    });
  
     // Verifica se visitante pode ver o perfil
     const podeVer = await canViewProfile(profile.id);
@@ -2079,7 +2091,7 @@ async function renderVisitorsWidget(profileId) {
       <div style="color:var(--text-secondary);font-size:13px;grid-column:1/-1;text-align:center;padding:8px;">Carregando...</div>
     </div>
     ${!userIsPremium ? `
-      <div style="margin-top:14px;padding:14px 16px;background:linear-gradient(135deg,#ffd70011,#ff8c0011);border:1px solid #ffd70033;border-radius:12px;display:flex;align-items:center;gap:12px;cursor:pointer;">
+      <div id="premiumVisitorsTeaser" style="margin-top:14px;padding:14px 16px;background:linear-gradient(135deg,#ffd70011,#ff8c0011);border:1px solid #ffd70033;border-radius:12px;display:flex;align-items:center;gap:12px;cursor:pointer;">
         <span style="font-size:22px;">✦</span>
         <div style="flex:1;">
           <p style="font-weight:700;font-size:13px;color:#ffd700;margin:0 0 2px;">Ative o Premium para ver quem visitou</p>
@@ -2092,30 +2104,66 @@ async function renderVisitorsWidget(profileId) {
  
   profileContent.parentElement?.insertBefore(widget, profileContent);
  
+  // ── Carrega visitantes reais do banco ──────────────────────
   const visitors = await getProfileVisitors(profileId, 12);
   const grid = document.getElementById('visitorsGrid');
   if (!grid) return;
  
   if (visitors.length === 0) {
-    grid.innerHTML = `<p style="color:var(--text-secondary);font-size:13px;grid-column:1/-1;text-align:center;padding:8px 0;">Nenhuma visita ainda 👀</p>`;
+    grid.innerHTML = `
+      <div style="grid-column:1/-1;text-align:center;padding:20px 0;">
+        <div style="font-size:32px;margin-bottom:8px;opacity:0.5;">👀</div>
+        <p style="color:var(--text-secondary);font-size:13px;margin:0;">Nenhuma visita registrada ainda</p>
+        <p style="color:var(--text-secondary);font-size:11px;margin:6px 0 0;opacity:0.7;">Quando alguém ver seu perfil, aparece aqui</p>
+      </div>`;
   } else {
     grid.innerHTML = visitors.map((v, i) => {
       const avatar = v.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${v.handle}`;
+      // Usuário free: vê as 2 primeiras sem blur, o resto com blur
       const shouldBlur = !userIsPremium && i >= 2;
+ 
       return `
-        <div class="visitor-avatar-wrap" data-handle="${escapeHtml(v.handle ?? '')}"
-          style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:${shouldBlur ? 'default' : 'pointer'};">
+        <div class="visitor-avatar-wrap" data-handle="${shouldBlur ? '' : escapeHtml(v.handle ?? '')}"
+          data-blurred="${shouldBlur}"
+          style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:${shouldBlur ? 'pointer' : 'pointer'};">
           <div style="position:relative;width:52px;height:52px;">
-            <img src="${avatar}" style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid ${v.is_premium ? '#ffd700' : 'var(--border)'};${shouldBlur ? 'filter:blur(8px);user-select:none;pointer-events:none;' : ''}transition:transform 0.15s;" loading="lazy">
-            ${shouldBlur ? `<div style="position:absolute;inset:0;border-radius:50%;background:rgba(0,0,0,0.15);display:flex;align-items:center;justify-content:center;"><span style="font-size:16px;">🔒</span></div>` : ''}
+            <img src="${avatar}"
+              style="width:52px;height:52px;border-radius:50%;object-fit:cover;
+                     border:2px solid ${v.is_premium ? '#ffd700' : 'var(--border)'};
+                     ${shouldBlur ? 'filter:blur(8px);' : ''}
+                     transition:transform 0.15s;"
+              loading="lazy">
+            ${shouldBlur
+              ? `<div style="position:absolute;inset:0;border-radius:50%;background:rgba(0,0,0,0.25);
+                            display:flex;align-items:center;justify-content:center;">
+                   <span style="font-size:18px;">🔒</span>
+                 </div>`
+              : (v.is_premium
+                  ? `<div style="position:absolute;bottom:-2px;right:-2px;background:#ffd700;
+                                border-radius:50%;width:16px;height:16px;display:flex;
+                                align-items:center;justify-content:center;font-size:9px;border:1px solid var(--dark-bg);">✦</div>`
+                  : '')
+            }
           </div>
-          <span style="font-size:10px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60px;text-align:center;${shouldBlur ? 'filter:blur(6px);user-select:none;' : ''}">@${shouldBlur ? 'usuario' : escapeHtml(v.handle ?? '')}</span>
+          <span style="font-size:10px;color:var(--text-secondary);white-space:nowrap;
+                       overflow:hidden;text-overflow:ellipsis;max-width:60px;text-align:center;
+                       ${shouldBlur ? 'filter:blur(5px);user-select:none;' : ''}">
+            ${shouldBlur ? '••••••' : '@' + escapeHtml(v.handle ?? '')}
+          </span>
         </div>`;
     }).join('');
  
-    grid.querySelectorAll('.visitor-avatar-wrap').forEach((wrap, i) => {
-      if (!userIsPremium && i >= 2) return;
+    // ── Listeners nos avatares ─────────────────────────────
+    grid.querySelectorAll('.visitor-avatar-wrap').forEach((wrap) => {
       wrap.addEventListener('click', () => {
+        const isBlurred = wrap.dataset.blurred === 'true';
+ 
+        if (isBlurred) {
+          // Mostra modal de upgrade premium
+          showVisitorPremiumModal();
+          return;
+        }
+ 
         const handle = wrap.dataset.handle;
         if (!handle) return;
         document.querySelectorAll('.page-container').forEach(p => p.classList.remove('active'));
@@ -2125,12 +2173,17 @@ async function renderVisitorsWidget(profileId) {
     });
   }
  
+  // ── Botão Ativar Premium no widget ────────────────────────
   document.getElementById('btnActivatePremiumWidget')?.addEventListener('click', (e) => {
     e.stopPropagation();
     openPremiumModal();
   });
-}
  
+  document.getElementById('premiumVisitorsTeaser')?.addEventListener('click', (e) => {
+    if (!e.target.closest('#btnActivatePremiumWidget')) openPremiumModal();
+  });
+}
+
 function openPremiumModal() {
   document.getElementById('premiumModal')?.remove();
   const alreadyPremium = isPremium();
@@ -2184,7 +2237,101 @@ function openPremiumModal() {
   });
 }
 window.openPremiumModal = openPremiumModal;
-
+function showVisitorPremiumModal() {
+  document.getElementById('visitorPremiumModal')?.remove();
+ 
+  const modal = document.createElement('div');
+  modal.id = 'visitorPremiumModal';
+  modal.style.cssText = `
+    position:fixed;inset:0;z-index:9999;
+    background:rgba(0,0,0,0.85);
+    display:flex;align-items:center;justify-content:center;
+    padding:20px;backdrop-filter:blur(8px);
+  `;
+  modal.innerHTML = `
+    <div style="
+      background:var(--dark-bg-secondary);
+      border:1px solid #ffd70033;border-radius:24px;
+      width:100%;max-width:380px;padding:36px 28px;
+      position:relative;text-align:center;
+      box-shadow:0 0 60px rgba(255,215,0,0.15);
+      animation:slideDown 0.25s ease;
+    ">
+      <button id="closeVisitorModal" style="
+        position:absolute;top:14px;right:14px;
+        background:none;border:none;color:var(--text-secondary);
+        font-size:20px;cursor:pointer;padding:4px 8px;border-radius:6px;
+      ">✕</button>
+ 
+      <!-- Avatar borrado de exemplo -->
+      <div style="position:relative;width:72px;height:72px;margin:0 auto 20px;">
+        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=mystery123"
+          style="width:72px;height:72px;border-radius:50%;object-fit:cover;
+                 filter:blur(10px);border:3px solid #ffd70066;">
+        <div style="position:absolute;inset:0;border-radius:50%;
+                    background:rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;">
+          <span style="font-size:28px;">🔒</span>
+        </div>
+      </div>
+ 
+      <div style="font-size:36px;margin-bottom:4px;">✦</div>
+      <h2 style="font-size:20px;font-weight:800;color:var(--text-primary);margin:0 0 10px;">
+        Alguém visitou seu perfil!
+      </h2>
+      <p style="color:var(--text-secondary);font-size:14px;line-height:1.6;margin:0 0 24px;">
+        Ative o <strong style="color:#ffd700;">VazaPUC Premium</strong> para descobrir
+        quem são todos os seus visitantes.
+      </p>
+ 
+      <div style="
+        background:var(--dark-bg);border:1px solid var(--border);
+        border-radius:14px;padding:14px 16px;margin-bottom:22px;text-align:left;
+      ">
+        ${[
+          '👁️ Ver todos os visitantes do seu perfil',
+          '👻 Modo Ghost — visite sem ser visto',
+          '✦ Badge Premium exclusivo',
+          '🔔 Notificação de nova visita',
+        ].map(item => `
+          <div style="display:flex;align-items:center;gap:10px;padding:7px 0;
+                      border-bottom:1px solid var(--border);">
+            <span style="font-size:13px;color:var(--text-primary);">${item}</span>
+          </div>`).join('')}
+      </div>
+ 
+      <button id="activatePremiumFromVisitor" style="
+        width:100%;padding:14px;border-radius:20px;font-size:15px;font-weight:800;
+        cursor:pointer;border:none;
+        background:linear-gradient(135deg,#ffd700,#ff8c00);color:#1a0008;
+        box-shadow:0 4px 20px rgba(255,215,0,0.3);
+        transition:transform 0.15s;
+      "
+      onmouseover="this.style.transform='translateY(-2px)'"
+      onmouseout="this.style.transform=''">
+        ✦ Ativar Premium Gratuitamente
+      </button>
+      <p style="font-size:11px;color:var(--text-secondary);margin:10px 0 0;">
+        Modo de teste — sem cobranças.
+      </p>
+    </div>
+  `;
+ 
+  document.body.appendChild(modal);
+ 
+  document.getElementById('closeVisitorModal')?.addEventListener('click', () => modal.remove());
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+ 
+  document.getElementById('activatePremiumFromVisitor')?.addEventListener('click', async () => {
+    modal.remove();
+    // Reaproveita o fluxo do openPremiumModal para ativar
+    activatePremium();
+    if (window.currentProfile) {
+      window.currentProfile = { ...window.currentProfile, is_premium: true };
+    }
+    showNotification('✦ Premium ativado! Agora você pode ver todos os visitantes.');
+    await loadProfilePage();
+  });
+}
 async function refreshPendingBadge() {
   if (!currentProfile) return;
   try {
