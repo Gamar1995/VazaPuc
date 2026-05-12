@@ -1901,7 +1901,8 @@ async function loadProfilePage() {
     document.getElementById('ownPrivacyBadge')?.remove();
  
     // Registra visita (modo ghost: premium não aparece)
-    recordProfileVisit(profile.id);
+   recordProfileVisit(supabase, getCurrentUser, profile.id);
+  
  
     const podeVer = await canViewProfile(profile.id);
  
@@ -2106,7 +2107,7 @@ async function renderVisitorsWidget(profileId) {
   profileContent.parentElement?.insertBefore(widget, profileContent);
  
   // ── Carrega visitantes reais do banco ──────────────────────
-  const visitors = await getProfileVisitors(profileId, 12);
+  const visitors = await getProfileVisitors(supabase, profileId, 12);
   const grid = document.getElementById('visitorsGrid');
   if (!grid) return;
  
