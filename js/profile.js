@@ -41,21 +41,27 @@
   // ============================================================
   // EDITAR PERFIL
   // ============================================================
-  export async function updateProfile({ name, handle, bio, avatar_url }) {
-    const user = await getCurrentUser();
-    if (!user) throw new Error('Não autenticado.');
+ // Substitua a sua função updateProfile no js/profile.js por esta:
+export async function updateProfile({ name, handle, bio, avatar_url, banner_url }) {
+  const user = await getCurrentUser();
+  if (!user) throw new Error('Não autenticado.');
 
-    const { data, error } = await supabase
-      .from('profiles')
-      .update({ name, handle, bio, avatar_url })
-      .eq('id', user.id)
-      .select()
-      .single();
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ 
+      name, 
+      handle, 
+      bio, 
+      avatar_url, 
+      banner_url // Adicionámos o banner aqui
+    })
+    .eq('id', user.id)
+    .select()
+    .single();
 
-    if (error) throw error;
-    return data;
-  }
-
+  if (error) throw error;
+  return data;
+}
   // ============================================================
   // FOLLOWS
   // ============================================================

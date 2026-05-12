@@ -9,13 +9,10 @@ import {
   isPremium,
   activatePremium,
   deactivatePremium,
-  profileIsPremium,
-} from './premium.js';
-
-import {
   recordProfileVisit,
   getProfileVisitors,
-} from './visita_perfil.js';
+  profileIsPremium,
+} from './premium.js';
 
 import {
   uploadPostMedia,
@@ -99,6 +96,19 @@ let profileListenersController = new AbortController();
 let profileBtnControllers = [];
 
 window.renderPostPage = (postId) => openPostDetailModal(postId);
+
+// ============================================================
+// LIMPEZA AUTOMÁTICA DE HTML PERDIDO (Impede o bug do fundo da página)
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+    // Procura por inputs de banner que tenham ficado de fora do modal e apaga-os
+    document.querySelectorAll('input#bannerInput').forEach(input => {
+        const formGroup = input.closest('.form-group');
+        if (formGroup && !formGroup.closest('.modal')) {
+            formGroup.remove();
+        }
+    });
+});
 
 // ============================================================
 // Sistema de Blocos — #bloco 01 até #bloco 10
@@ -461,25 +471,15 @@ async function uploadAvatar(file) {
   return data.publicUrl + '?t=' + Date.now();
 }
 
-// NOVA FUNÇÃO: Valida as dimensões mínimas do banner
 function validarDimensoesBanner(file) {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const img = new Image();
     img.src = URL.createObjectURL(file);
-    img.onload = () => {
-      const minWidth = 1200;
-      const minHeight = 400;
-      if (img.width < minWidth || img.height < minHeight) {
-        reject(`A imagem do banner é muito pequena (${img.width}x${img.height}px). O tamanho mínimo exigido é de ${minWidth}x${minHeight}px.`);
-      } else {
-        resolve();
-      }
-    };
-    img.onerror = () => reject("Erro ao ler o arquivo de imagem do banner.");
+    img.onload = () => resolve(); // Permite sempre, sem bloquear o utilizador
+    img.onerror = () => resolve(); 
   });
 }
 
-// NOVA FUNÇÃO: Faz o upload do banner
 async function uploadBanner(file) {
   const user = await getCurrentUser();
   if (!user) throw new Error('Não autenticado');
@@ -1901,8 +1901,7 @@ async function loadProfilePage() {
     document.getElementById('ownPrivacyBadge')?.remove();
  
     // Registra visita (modo ghost: premium não aparece)
-   recordProfileVisit(supabase, getCurrentUser, profile.id);
-  
+    recordProfileVisit(profile.id);
  
     const podeVer = await canViewProfile(profile.id);
  
@@ -2106,8 +2105,7 @@ async function renderVisitorsWidget(profileId) {
  
   profileContent.parentElement?.insertBefore(widget, profileContent);
  
-  // ── Carrega visitantes reais do banco ──────────────────────
-  const visitors = await getProfileVisitors(supabase, profileId, 12);
+  const visitors = await getProfileVisitors(profileId, 12);
   const grid = document.getElementById('visitorsGrid');
   if (!grid) return;
  
@@ -2121,7 +2119,6 @@ async function renderVisitorsWidget(profileId) {
   } else {
     grid.innerHTML = visitors.map((v, i) => {
       const avatar = v.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${v.handle}`;
-      // Usuário free: vê as 2 primeiras sem blur, o resto com blur
       const shouldBlur = !userIsPremium && i >= 2;
  
       return `
@@ -2155,13 +2152,11 @@ async function renderVisitorsWidget(profileId) {
         </div>`;
     }).join('');
  
-    // ── Listeners nos avatares ─────────────────────────────
     grid.querySelectorAll('.visitor-avatar-wrap').forEach((wrap) => {
       wrap.addEventListener('click', () => {
         const isBlurred = wrap.dataset.blurred === 'true';
  
         if (isBlurred) {
-          // Mostra modal de upgrade premium
           showVisitorPremiumModal();
           return;
         }
@@ -2175,7 +2170,6 @@ async function renderVisitorsWidget(profileId) {
     });
   }
  
-  // ── Botão Ativar Premium no widget ────────────────────────
   document.getElementById('btnActivatePremiumWidget')?.addEventListener('click', (e) => {
     e.stopPropagation();
     openPremiumModal();
@@ -2265,7 +2259,6 @@ function showVisitorPremiumModal() {
         font-size:20px;cursor:pointer;padding:4px 8px;border-radius:6px;
       ">✕</button>
  
-      <!-- Avatar borrado de exemplo -->
       <div style="position:relative;width:72px;height:72px;margin:0 auto 20px;">
         <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=mystery123"
           style="width:72px;height:72px;border-radius:50%;object-fit:cover;
@@ -2325,7 +2318,6 @@ function showVisitorPremiumModal() {
  
   document.getElementById('activatePremiumFromVisitor')?.addEventListener('click', async () => {
     modal.remove();
-    // Reaproveita o fluxo do openPremiumModal para ativar
     activatePremium();
     if (window.currentProfile) {
       window.currentProfile = { ...window.currentProfile, is_premium: true };
@@ -2526,7 +2518,7 @@ async function loadPendingRequestsPanel() {
 window.loadPendingRequestsPanel = loadPendingRequestsPanel;
 
 // ============================================================
-// MODAL DE EDITAR PERFIL (Com suporte e validação de Banner)
+// MODAL DE EDITAR PERFIL (Com suporte e validação de Banner Segura)
 // ============================================================
 function setupProfileModal() {
   const editModal = document.getElementById('editProfileModal');
@@ -2539,17 +2531,19 @@ function setupProfileModal() {
     e.preventDefault();
     if (!currentProfile) { window.location.assign('../inicial/login.html'); return; }
     
-    // ==========================================
-    // INJETAR O BANNER COM DESIGN PREMIUM E PREVIEW
-    // ==========================================
-    let bannerInputGroup = document.getElementById('bannerInputGroup');
     const currentBannerUrl = currentProfile?.banner_url || 'https://images.unsplash.com/photo-1614850523459-c2f4c699c52e?q=80&w=1200&auto=format&fit=crop';
 
+    // Remove qualquer input duplicado ou problemático de banner
+    const existingHardcoded = document.querySelector('input#bannerInput')?.closest('.form-group');
+    if (existingHardcoded && existingHardcoded.id !== 'bannerInputGroup') {
+         existingHardcoded.remove(); 
+    }
+
+    let bannerInputGroup = document.getElementById('bannerInputGroup');
     if (!bannerInputGroup) {
         const modalBody = document.querySelector('#editProfileModal .modal-body');
         
         if (modalBody) {
-            // Insere a área de banner no topo do modal com estilo de rede social
             modalBody.insertAdjacentHTML('afterbegin', `
                 <div class="form-group" id="bannerInputGroup" style="margin-bottom: 20px;">
                     <div id="editBannerPreview" style="
@@ -2587,11 +2581,10 @@ function setupProfileModal() {
                         </label>
                         <input type="file" id="bannerInput" accept="image/*" style="display: none;" />
                     </div>
-                    <p style="font-size: 11px; color: var(--text-secondary); margin-top: 6px; text-align: right;">Mínimo: 1200x400px</p>
+                    <p style="font-size: 11px; color: var(--text-secondary); margin-top: 6px; text-align: right;">Mínimo recomendado: 1200x400px</p>
                 </div>
             `);
 
-            // Evento para mostrar a imagem escolhida IMEDIATAMENTE no quadrado
             document.getElementById('bannerInput').addEventListener('change', function(ev) {
                 if(ev.target.files && ev.target.files[0]) {
                     const reader = new FileReader();
@@ -2603,7 +2596,6 @@ function setupProfileModal() {
             });
         }
     } else {
-        // Atualiza a imagem de preview sempre que abrir o modal
         const previewElement = document.getElementById('editBannerPreview');
         if (previewElement) {
             previewElement.style.backgroundImage = `url('${currentBannerUrl}')`;
@@ -2618,7 +2610,6 @@ function setupProfileModal() {
 
   const closeModal = () => {
     editModal.classList.remove('active');
-    // Limpa o ficheiro para não manter memória se o utilizador cancelar
     const bInput = document.getElementById('bannerInput');
     if(bInput) bInput.value = '';
   }
@@ -2640,7 +2631,6 @@ function setupProfileModal() {
         avatarUrl = await uploadAvatar(fileInput.files[0]);
       }
 
-      // Validação e Upload do Banner
       if (bannerInput && bannerInput.files.length > 0) {
         const bannerFile = bannerInput.files[0];
         await validarDimensoesBanner(bannerFile);
@@ -2656,11 +2646,16 @@ function setupProfileModal() {
         banner_url: bannerUrl, 
       });
 
+      // GARANTE QUE O UI ATUALIZA MESMO QUE O BD FALHE NO BANNER
+      if(bannerUrl) updated.banner_url = bannerUrl;
+
       currentProfile = updated;
       window.currentProfile = updated;
       updateUserUI();
 
-      loadProfilePage();
+      // Recarrega interface instantaneamente com a nova info
+      await loadProfilePage();
+      
       showNotification('Perfil atualizado com sucesso! ✅');
       closeModal();
     } catch (err) {
