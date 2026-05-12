@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8">
   <script>
@@ -8,11 +9,12 @@
       document.documentElement.setAttribute('data-theme', tema);
     }
   </script>
-  
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Vaza PUC</title>
   <link rel="stylesheet" href="css_PaginaInicial/style.css">
 </head>
+
 <body>
   <div class="app-container">
 
@@ -44,7 +46,7 @@
           <span class="nav-icon">◎</span>
           <span class="nav-label">Perfil</span>
         </a>
-        
+
         <a href="#notifications" class="notif-bell-wrapper" id="notifBellBtn">
           <span class="notif-bell-icon">🔔</span>
           <span class="nav-label">Notificações</span>
@@ -52,9 +54,9 @@
         </a>
 
         <a href="#settings" class="nav-item" data-page="settings">
-  <span class="nav-icon">⚙️</span>
-  <span class="nav-label">Configurações</span>
-</a>
+          <span class="nav-icon">⚙️</span>
+          <span class="nav-label">Configurações</span>
+        </a>
 
         <div class="nav-item-theme" id="themeNavBtn">
           <span class="nav-icon">🎨</span>
@@ -62,22 +64,30 @@
 
           <div class="theme-nav-panel" id="themeNavPanel">
             <div class="theme-nav-indicator" id="themeNavIndicator"></div>
-            <div class="theme-opt" data-theme="padrao"        style="background:#a31f4b;"  title="Vinho"></div>
-            <div class="theme-opt" data-theme="azul"          style="background:#1f5aa3;"  title="Azul"></div>
-            <div class="theme-opt" data-theme="cinza"         style="background:#888888;"  title="Cinza"></div>
-            <div class="theme-opt" data-theme="amarelo"       style="background:#b8860b;"  title="Amarelo"></div>
+            <div class="theme-opt" data-theme="padrao" style="background:#a31f4b;" title="Vinho"></div>
+            <div class="theme-opt" data-theme="azul" style="background:#1f5aa3;" title="Azul"></div>
+            <div class="theme-opt" data-theme="cinza" style="background:#888888;" title="Cinza"></div>
+            <div class="theme-opt" data-theme="amarelo" style="background:#b8860b;" title="Amarelo"></div>
             <div class="theme-nav-divider"></div>
-            <div class="theme-opt" data-theme="padrao-claro"  style="background:linear-gradient(135deg,#a31f4b 50%,#f4f6f8 50%);border:1px solid #dce0e4!important;" title="Vinho Claro"></div>
-            <div class="theme-opt" data-theme="azul-claro"    style="background:linear-gradient(135deg,#1f5aa3 50%,#f0f4f8 50%);border:1px solid #d7e2ea!important;" title="Azul Claro"></div>
-            <div class="theme-opt" data-theme="cinza-claro"   style="background:linear-gradient(135deg,#555555 50%,#f5f5f5 50%);border:1px solid #e0e0e0!important;" title="Cinza Claro"></div>
-            <div class="theme-opt" data-theme="amarelo-claro" style="background:linear-gradient(135deg,#b8860b 50%,#fcfbf7 50%);border:1px solid #e8e4d3!important;" title="Amarelo Claro"></div>
+            <div class="theme-opt" data-theme="padrao-claro"
+              style="background:linear-gradient(135deg,#a31f4b 50%,#f4f6f8 50%);border:1px solid #dce0e4!important;"
+              title="Vinho Claro"></div>
+            <div class="theme-opt" data-theme="azul-claro"
+              style="background:linear-gradient(135deg,#1f5aa3 50%,#f0f4f8 50%);border:1px solid #d7e2ea!important;"
+              title="Azul Claro"></div>
+            <div class="theme-opt" data-theme="cinza-claro"
+              style="background:linear-gradient(135deg,#555555 50%,#f5f5f5 50%);border:1px solid #e0e0e0!important;"
+              title="Cinza Claro"></div>
+            <div class="theme-opt" data-theme="amarelo-claro"
+              style="background:linear-gradient(135deg,#b8860b 50%,#fcfbf7 50%);border:1px solid #e8e4d3!important;"
+              title="Amarelo Claro"></div>
           </div>
         </div>
       </nav>
       <button class="nav-premium-btn" onclick="openPremiumModal()">
-  <span>✦</span>
-  <span>Premium</span>
-</button>
+        <span>✦</span>
+        <span>Premium</span>
+      </button>
       <button class="post-btn" id="postBtnSidebar">
         <span>Novo Post</span>
       </button>
@@ -133,7 +143,7 @@
         </header>
 
         <!-- Composer de post no feed -->
-        
+
 
         <div class="feed">
           <div class="posts-container" id="postsContainer"></div>
@@ -144,9 +154,8 @@
       <div class="page-container" id="explore-page">
         <header class="feed-header">
           <div class="search-box">
-            <input type="text"
-                   placeholder="Procurar usuários, posts, hashtags..."
-                   class="search-input" id="searchInput">
+            <input type="text" placeholder="Procurar usuários, posts, hashtags..." class="search-input"
+              id="searchInput">
             <span class="search-icon">🔍</span>
           </div>
         </header>
@@ -168,161 +177,199 @@
         </div>
       </div>
 
-      <!-- ── PERFIL ── -->
+        <!-- ── PERFIL ── -->
       <div class="page-container" id="profile-page">
-  <div class="profile-container">
-    
-    <div class="profile-header">
-      <div class="profile-cover" id="profileCoverBg"></div> <div class="profile-info">
-        
-        <div class="profile-action-row">
-          <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=currentuser"
-               alt="Avatar" class="profile-avatar">
-          <button class="edit-profile-btn" id="editProfileBtn">Editar Perfil</button>
+        <div class="profile-container">
+          <div class="profile-header">
+            <div class="profile-cover" id="profileCoverBg"></div>
+            <div class="profile-info">
+              <div class="profile-action-row">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=currentuser" alt="Avatar" class="profile-avatar">
+                <button class="edit-profile-btn" id="editProfileBtn">Editar Perfil</button>
+              </div>
+              <div class="profile-details">
+                <h2 id="profileName">Seu Nome</h2>
+                <p id="profileHandle">@seu_handle</p>
+                <p id="profileBio">Bio do seu perfil aqui...</p>
+                <div class="profile-stats">
+                  <div class="stat" id="btnShowFollowing" style="cursor:pointer;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">
+                    <span class="stat-value">0</span><span class="stat-label">Seguindo</span>
+                  </div>
+                  <div class="stat" id="btnShowFollowers" style="cursor:pointer;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">
+                    <span class="stat-value">0</span><span class="stat-label">Seguidores</span>
+                  </div>
+                </div>
+                <div class="profile-tabs">
+                  <button class="profile-tab-btn active" data-tab="posts">Posts</button>
+                  <button class="profile-tab-btn" data-tab="curtidos">Curtidos</button>
+                  <button class="profile-tab-btn" data-tab="midia">Mídia</button>
+                </div>
+                <div class="profile-content" id="profileContent"></div>
+              </div>
+            </div>
+          </div>
         </div>
-
-        <div class="profile-details">
-          <h2 id="profileName">Seu Nome</h2>
-          <p id="profileHandle">@seu_handle</p>
-          <p id="profileBio">Bio do seu perfil aqui...</p>
-          
-         <div class="profile-stats">
-  <div class="stat" id="btnShowFollowing" style="cursor: pointer; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">
-    <span class="stat-value">0</span><span class="stat-label">Seguindo</span>
-  </div>
-  <div class="stat" id="btnShowFollowers" style="cursor: pointer; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">
-    <span class="stat-value">0</span><span class="stat-label">Seguidores</span>
-  </div>
-</div>
-    
-    <div class="profile-tabs">
-      <button class="profile-tab-btn active" data-tab="posts">Posts</button>
-      <button class="profile-tab-btn" data-tab="curtidos">Curtidos</button>
-      <button class="profile-tab-btn" data-tab="midia">Mídia</button>
-    </div>
-    <div class="profile-content" id="profileContent"></div>
-  </div>
-</div>
+      </div> <!-- ✅ fecha profile-page AQUI -->
 
       <!-- ── CONFIGURAÇÕES ── -->
       <div class="page-container" id="settings-page">
-  <header class="feed-header">
-    <h2>Configurações</h2>
-  </header>
-  
-  <div class="settings-container" style="display: flex; min-height: calc(100vh - 60px);">
-    
-    <div class="settings-sidebar" style="width: 250px; border-right: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; gap: 10px;">
-      <button class="settings-tab-btn active" data-settings-tab="conta" style="background: none; border: none; text-align: left; padding: 12px; color: var(--text-primary); cursor: pointer; border-radius: 8px; font-size: 15px; font-weight: bold;">👤 Sua Conta</button>
-      <button class="settings-tab-btn" data-settings-tab="privacidade" style="background: none; border: none; text-align: left; padding: 12px; color: var(--text-secondary); cursor: pointer; border-radius: 8px; font-size: 15px;">🔒 Privacidade</button>
-      <button class="settings-tab-btn" data-settings-tab="notificacoes" style="background: none; border: none; text-align: left; padding: 12px; color: var(--text-secondary); cursor: pointer; border-radius: 8px; font-size: 15px;">🔔 Notificações</button>
-    </div>
+              <header class="feed-header">
+                <h2>Configurações</h2>
+              </header>
 
-    <div class="settings-content" style="flex: 1; position: relative;">
-      
-      <div class="settings-section active" id="settings-conta">
-        
-        <div class="feed-header" style="border-bottom: 1px solid var(--border); padding: 15px 20px; display: flex; align-items: center; gap: 15px; position: sticky; top: 0; background: var(--dark-bg); z-index: 10;">
-            <button id="btnVoltarConfig" class="icon-btn" style="display: none; background: none; border: none; cursor: pointer; color: var(--text-primary);" onclick="mudarTelaConfig('config-lista')">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
-            </button>
-            <h3 id="configTitulo" style="font-size: 1.1rem; font-weight: 800; margin: 0; color: var(--text-primary);">Informações gerais</h3>
-        </div>
+              <div class="settings-container" style="display: flex; min-height: calc(100vh - 60px);">
 
-        <div class="config-view active" id="config-lista">
-            <div class="config-option" onclick="mudarTelaConfig('config-info')" style="padding: 15px 20px; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
-                <div class="config-info" style="display: flex; flex-direction: column; gap: 4px;">
-                    <span class="config-title" style="font-weight: bold; color: var(--text-primary);">Informações da conta</span>
-                    <span class="config-desc" style="font-size: 0.85rem; color: var(--text-secondary);">Veja seu nome de usuário e e-mail.</span>
+                <div class="settings-sidebar"
+                  style="width: 250px; border-right: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; gap: 10px;">
+                  <button class="settings-tab-btn active" data-settings-tab="conta"
+                    style="background: none; border: none; text-align: left; padding: 12px; color: var(--text-primary); cursor: pointer; border-radius: 8px; font-size: 15px; font-weight: bold;">👤
+                    Sua Conta</button>
+                  <button class="settings-tab-btn" data-settings-tab="privacidade"
+                    style="background: none; border: none; text-align: left; padding: 12px; color: var(--text-secondary); cursor: pointer; border-radius: 8px; font-size: 15px;">🔒
+                    Privacidade</button>
+                  <button class="settings-tab-btn" data-settings-tab="notificacoes"
+                    style="background: none; border: none; text-align: left; padding: 12px; color: var(--text-secondary); cursor: pointer; border-radius: 8px; font-size: 15px;">🔔
+                    Notificações</button>
                 </div>
-                <span class="config-chevron" style="color: var(--text-secondary); font-size: 1.2rem;">›</span>
-            </div>
 
-            <div class="config-option" onclick="mudarTelaConfig('config-senha')" style="padding: 15px 20px; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
-                <div class="config-info" style="display: flex; flex-direction: column; gap: 4px;">
-                    <span class="config-title" style="font-weight: bold; color: var(--text-primary);">Alterar sua senha</span>
-                    <span class="config-desc" style="font-size: 0.85rem; color: var(--text-secondary);">Altere sua senha de acesso a qualquer momento.</span>
-                </div>
-                <span class="config-chevron" style="color: var(--text-secondary); font-size: 1.2rem;">›</span>
-            </div>
+                <div class="settings-content" style="flex: 1; position: relative;">
 
-            <div class="config-option" style="padding: 15px 20px; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
-                <div class="config-info" style="display: flex; flex-direction: column; gap: 4px;">
-                    <span class="config-title" style="font-weight: bold; color: #f4212e;">Desativar sua conta</span>
-                    <span class="config-desc" style="font-size: 0.85rem; color: var(--text-secondary);">Veja como você pode encerrar sua conta.</span>
-                </div>
-                <span class="config-chevron" style="color: var(--text-secondary); font-size: 1.2rem;">›</span>
-            </div>
-        </div>
+                  <div class="settings-section active" id="settings-conta">
 
-        <div class="config-view" id="config-info" style="display: none; padding: 20px;">
-            <p class="config-help-text" style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 20px;">Estes são os detalhes da sua conta no VazaPUC.</p>
-            <div class="form-group-config" style="margin-bottom: 15px;">
-                <label style="display: block; font-size: 0.75rem; color: var(--primary); margin-bottom: 5px; text-transform: uppercase; font-weight: bold;">Nome de Usuário</label>
-                <input type="text" id="configHandle" class="auth-input" disabled style="background: var(--dark-bg-tertiary); border: 1px solid var(--border); padding: 12px; width: 100%; border-radius: 8px; color: var(--text-secondary); cursor: not-allowed;">
-            </div>
-            <div class="form-group-config" style="margin-bottom: 15px;">
-                <label style="display: block; font-size: 0.75rem; color: var(--primary); margin-bottom: 5px; text-transform: uppercase; font-weight: bold;">E-mail</label>
-                <input type="text" id="configEmail" class="auth-input" disabled style="background: var(--dark-bg-tertiary); border: 1px solid var(--border); padding: 12px; width: 100%; border-radius: 8px; color: var(--text-secondary); cursor: not-allowed;">
-            </div>
-        </div>
+                    <div class="feed-header"
+                      style="border-bottom: 1px solid var(--border); padding: 15px 20px; display: flex; align-items: center; gap: 15px; position: sticky; top: 0; background: var(--dark-bg); z-index: 10;">
+                      <button id="btnVoltarConfig" class="icon-btn"
+                        style="display: none; background: none; border: none; cursor: pointer; color: var(--text-primary);"
+                        onclick="mudarTelaConfig('config-lista')">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                          <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
+                        </svg>
+                      </button>
+                      <h3 id="configTitulo"
+                        style="font-size: 1.1rem; font-weight: 800; margin: 0; color: var(--text-primary);">Informações
+                        gerais</h3>
+                    </div>
 
-        <div class="config-view" id="config-senha" style="display: none; padding: 20px;">
-            <p class="config-help-text" style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 20px;">Você pode atualizar sua senha aqui. Use pelo menos 6 caracteres.</p>
-            <div class="form-group-config" style="margin-bottom: 15px;">
-                <label style="display: block; font-size: 0.75rem; color: var(--primary); margin-bottom: 5px; text-transform: uppercase; font-weight: bold;">Nova Senha</label>
-                <input type="password" id="configNewPassword" class="auth-input" placeholder="Digite a nova senha" style="background: var(--dark-bg); border: 1px solid var(--border); padding: 12px; width: 100%; border-radius: 8px; color: var(--text-primary); outline: none;">
-            </div>
-            <div class="form-group-config" style="margin-bottom: 25px;">
-                <label style="display: block; font-size: 0.75rem; color: var(--primary); margin-bottom: 5px; text-transform: uppercase; font-weight: bold;">Confirmar Senha</label>
-                <input type="password" id="configConfirmPassword" class="auth-input" placeholder="Repita a nova senha" style="background: var(--dark-bg); border: 1px solid var(--border); padding: 12px; width: 100%; border-radius: 8px; color: var(--text-primary); outline: none;">
-            </div>
-            <button class="btn btn-primary" style="width: 100%; padding: 12px; border-radius: 99px; font-weight: bold; cursor: pointer; border: none; background: var(--primary); color: white;" onclick="atualizarSenhaSupabase()">Salvar Nova Senha</button>
-        </div>
-      </div>
-<div class="settings-section" id="settings-privacidade">
- 
-  <!-- Cabeçalho -->
-  <div class="feed-header" style="
+                    <div class="config-view active" id="config-lista">
+                      <div class="config-option" onclick="mudarTelaConfig('config-info')"
+                        style="padding: 15px 20px; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+                        <div class="config-info" style="display: flex; flex-direction: column; gap: 4px;">
+                          <span class="config-title" style="font-weight: bold; color: var(--text-primary);">Informações
+                            da conta</span>
+                          <span class="config-desc" style="font-size: 0.85rem; color: var(--text-secondary);">Veja seu
+                            nome de usuário e e-mail.</span>
+                        </div>
+                        <span class="config-chevron" style="color: var(--text-secondary); font-size: 1.2rem;">›</span>
+                      </div>
+
+                      <div class="config-option" onclick="mudarTelaConfig('config-senha')"
+                        style="padding: 15px 20px; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+                        <div class="config-info" style="display: flex; flex-direction: column; gap: 4px;">
+                          <span class="config-title" style="font-weight: bold; color: var(--text-primary);">Alterar sua
+                            senha</span>
+                          <span class="config-desc" style="font-size: 0.85rem; color: var(--text-secondary);">Altere sua
+                            senha de acesso a qualquer momento.</span>
+                        </div>
+                        <span class="config-chevron" style="color: var(--text-secondary); font-size: 1.2rem;">›</span>
+                      </div>
+
+                      <div class="config-option"
+                        style="padding: 15px 20px; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+                        <div class="config-info" style="display: flex; flex-direction: column; gap: 4px;">
+                          <span class="config-title" style="font-weight: bold; color: #f4212e;">Desativar sua
+                            conta</span>
+                          <span class="config-desc" style="font-size: 0.85rem; color: var(--text-secondary);">Veja como
+                            você pode encerrar sua conta.</span>
+                        </div>
+                        <span class="config-chevron" style="color: var(--text-secondary); font-size: 1.2rem;">›</span>
+                      </div>
+                    </div>
+
+                    <div class="config-view" id="config-info" style="display: none; padding: 20px;">
+                      <p class="config-help-text"
+                        style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 20px;">Estes são os
+                        detalhes da sua conta no VazaPUC.</p>
+                      <div class="form-group-config" style="margin-bottom: 15px;">
+                        <label
+                          style="display: block; font-size: 0.75rem; color: var(--primary); margin-bottom: 5px; text-transform: uppercase; font-weight: bold;">Nome
+                          de Usuário</label>
+                        <input type="text" id="configHandle" class="auth-input" disabled
+                          style="background: var(--dark-bg-tertiary); border: 1px solid var(--border); padding: 12px; width: 100%; border-radius: 8px; color: var(--text-secondary); cursor: not-allowed;">
+                      </div>
+                      <div class="form-group-config" style="margin-bottom: 15px;">
+                        <label
+                          style="display: block; font-size: 0.75rem; color: var(--primary); margin-bottom: 5px; text-transform: uppercase; font-weight: bold;">E-mail</label>
+                        <input type="text" id="configEmail" class="auth-input" disabled
+                          style="background: var(--dark-bg-tertiary); border: 1px solid var(--border); padding: 12px; width: 100%; border-radius: 8px; color: var(--text-secondary); cursor: not-allowed;">
+                      </div>
+                    </div>
+
+                    <div class="config-view" id="config-senha" style="display: none; padding: 20px;">
+                      <p class="config-help-text"
+                        style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 20px;">Você pode
+                        atualizar sua senha aqui. Use pelo menos 6 caracteres.</p>
+                      <div class="form-group-config" style="margin-bottom: 15px;">
+                        <label
+                          style="display: block; font-size: 0.75rem; color: var(--primary); margin-bottom: 5px; text-transform: uppercase; font-weight: bold;">Nova
+                          Senha</label>
+                        <input type="password" id="configNewPassword" class="auth-input"
+                          placeholder="Digite a nova senha"
+                          style="background: var(--dark-bg); border: 1px solid var(--border); padding: 12px; width: 100%; border-radius: 8px; color: var(--text-primary); outline: none;">
+                      </div>
+                      <div class="form-group-config" style="margin-bottom: 25px;">
+                        <label
+                          style="display: block; font-size: 0.75rem; color: var(--primary); margin-bottom: 5px; text-transform: uppercase; font-weight: bold;">Confirmar
+                          Senha</label>
+                        <input type="password" id="configConfirmPassword" class="auth-input"
+                          placeholder="Repita a nova senha"
+                          style="background: var(--dark-bg); border: 1px solid var(--border); padding: 12px; width: 100%; border-radius: 8px; color: var(--text-primary); outline: none;">
+                      </div>
+                      <button class="btn btn-primary"
+                        style="width: 100%; padding: 12px; border-radius: 99px; font-weight: bold; cursor: pointer; border: none; background: var(--primary); color: white;"
+                        onclick="atualizarSenhaSupabase()">Salvar Nova Senha</button>
+                    </div>
+                  </div>
+                  <div class="settings-section" id="settings-privacidade">
+
+                    <!-- Cabeçalho -->
+                    <div class="feed-header" style="
     border-bottom:1px solid var(--border);
     padding:15px 20px;
     position:sticky;top:0;
     background:var(--dark-bg);z-index:10;
   ">
-    <h3 style="font-size:1.1rem;font-weight:800;margin:0;color:var(--text-primary);">
-      Privacidade e Segurança
-    </h3>
-  </div>
- 
-  <div style="padding:0;">
- 
-    <!-- ── Toggle: Conta privada ─────────────────────────── -->
-    <div style="
+                      <h3 style="font-size:1.1rem;font-weight:800;margin:0;color:var(--text-primary);">
+                        Privacidade e Segurança
+                      </h3>
+                    </div>
+
+                    <div style="padding:0;">
+
+                      <!-- ── Toggle: Conta privada ─────────────────────────── -->
+                      <div style="
       padding:18px 20px;
       border-bottom:1px solid var(--border);
       display:flex;justify-content:space-between;align-items:center;gap:16px;
     ">
-      <div>
-        <p style="font-weight:700;font-size:15px;color:var(--text-primary);margin:0 0 4px;">
-          🔒 Conta privada
-        </p>
-        <p style="font-size:13px;color:var(--text-secondary);margin:0;line-height:1.5;max-width:380px;">
-          Quando ativado, apenas pessoas que você aprovar poderão ver seus posts e seguir você.
-          Solicitações de seguimento aparecem para você aprovar manualmente.
-        </p>
-      </div>
- 
-      <!-- Toggle switch -->
-      <label style="
+                        <div>
+                          <p style="font-weight:700;font-size:15px;color:var(--text-primary);margin:0 0 4px;">
+                            🔒 Conta privada
+                          </p>
+                          <p
+                            style="font-size:13px;color:var(--text-secondary);margin:0;line-height:1.5;max-width:380px;">
+                            Quando ativado, apenas pessoas que você aprovar poderão ver seus posts e seguir você.
+                            Solicitações de seguimento aparecem para você aprovar manualmente.
+                          </p>
+                        </div>
+
+                        <!-- Toggle switch -->
+                        <label style="
         position:relative;display:flex;align-items:center;
         cursor:pointer;flex-shrink:0;
       ">
-        <input
-          type="checkbox"
-          id="privacyToggle"
-          style="position:absolute;opacity:0;width:0;height:0;"
-        >
-        <span id="privacyTrack" style="
+                          <input type="checkbox" id="privacyToggle"
+                            style="position:absolute;opacity:0;width:0;height:0;">
+                          <span id="privacyTrack" style="
           display:inline-block;
           width:46px;height:26px;
           background:var(--border);
@@ -330,7 +377,7 @@
           transition:background 0.25s;
           position:relative;
         ">
-          <span id="privacyThumb" style="
+                            <span id="privacyThumb" style="
             position:absolute;top:3px;left:3px;
             width:20px;height:20px;
             background:white;
@@ -338,78 +385,81 @@
             transition:transform 0.25s;
             box-shadow:0 1px 3px rgba(0,0,0,0.35);
           "></span>
-        </span>
-      </label>
-    </div>
- 
-    <!-- ── Solicitações pendentes ─────────────────────────── -->
-    <div style="
+                          </span>
+                        </label>
+                      </div>
+
+                      <!-- ── Solicitações pendentes ─────────────────────────── -->
+                      <div style="
       padding:16px 20px;
       border-bottom:1px solid var(--border);
       display:flex;justify-content:space-between;align-items:center;
       cursor:pointer;
     " id="pendingRequestsRow" onclick="togglePendingPanel()">
-      <div>
-        <p style="font-weight:700;font-size:15px;color:var(--text-primary);margin:0 0 3px;">
-          👥 Solicitações de seguimento
-        </p>
-        <p style="font-size:13px;color:var(--text-secondary);margin:0;">
-          Aceite ou recuse quem quer seguir você.
-        </p>
-      </div>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <span id="pendingRequestsBadge" style="
+                        <div>
+                          <p style="font-weight:700;font-size:15px;color:var(--text-primary);margin:0 0 3px;">
+                            👥 Solicitações de seguimento
+                          </p>
+                          <p style="font-size:13px;color:var(--text-secondary);margin:0;">
+                            Aceite ou recuse quem quer seguir você.
+                          </p>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:10px;">
+                          <span id="pendingRequestsBadge" style="
           display:none;
           background:var(--primary);color:white;
           font-size:11px;font-weight:800;
           padding:2px 8px;border-radius:10px;
           min-width:20px;text-align:center;
         "></span>
-        <span id="pendingChevron" style="color:var(--text-secondary);font-size:18px;transition:transform 0.2s;">›</span>
-      </div>
-    </div>
- 
-    <!-- Painel expansível de solicitações -->
-    <div id="pendingRequestsPanel" style="
+                          <span id="pendingChevron"
+                            style="color:var(--text-secondary);font-size:18px;transition:transform 0.2s;">›</span>
+                        </div>
+                      </div>
+
+                      <!-- Painel expansível de solicitações -->
+                      <div id="pendingRequestsPanel" style="
       display:none;
       border-bottom:1px solid var(--border);
     "></div>
- 
-    <!-- ── Posts privados (info) ──────────────────────────── -->
-    <div style="
+
+                      <!-- ── Posts privados (info) ──────────────────────────── -->
+                      <div style="
       padding:16px 20px;
       border-bottom:1px solid var(--border);
     ">
-      <p style="font-weight:700;font-size:15px;color:var(--text-primary);margin:0 0 4px;">
-        📌 Como funciona a conta privada
-      </p>
-      <ul style="
+                        <p style="font-weight:700;font-size:15px;color:var(--text-primary);margin:0 0 4px;">
+                          📌 Como funciona a conta privada
+                        </p>
+                        <ul style="
         font-size:13px;color:var(--text-secondary);
         margin:8px 0 0;padding-left:20px;
         line-height:1.8;
       ">
-        <li>Visitantes verão apenas seu nome, handle e foto.</li>
-        <li>Posts, curtidas e seguidores ficam ocultos.</li>
-        <li>Seguidores atuais continuam podendo ver seus posts.</li>
-        <li>Novos seguidores precisam de sua aprovação.</li>
-        <li>Você pode aceitar ou rejeitar cada solicitação individualmente.</li>
-      </ul>
-    </div>
- 
-  </div>
-</div>
+                          <li>Visitantes verão apenas seu nome, handle e foto.</li>
+                          <li>Posts, curtidas e seguidores ficam ocultos.</li>
+                          <li>Seguidores atuais continuam podendo ver seus posts.</li>
+                          <li>Novos seguidores precisam de sua aprovação.</li>
+                          <li>Você pode aceitar ou rejeitar cada solicitação individualmente.</li>
+                        </ul>
+                      </div>
 
-      <div class="settings-section" id="settings-notificacoes" style="display: none; padding: 20px;">
-        <h3>Notificações Push</h3>
-        <p style="color:var(--text-secondary); margin-bottom:20px; font-size: 0.9rem;">Escolha o que você quer receber no seu feed e e-mail.</p>
-        <div class="settings-placeholder-box" style="padding: 30px; border: 1px dashed var(--border); border-radius: 12px; text-align: center; color: var(--text-secondary);">
-          <p>Em breve: Alertas de menções, curtidas e novos seguidores.</p>
-        </div>
-      </div>
+                    </div>
+                  </div>
 
-    </div>
-  </div>
-</div>
+                  <div class="settings-section" id="settings-notificacoes" style="display: none; padding: 20px;">
+                    <h3>Notificações Push</h3>
+                    <p style="color:var(--text-secondary); margin-bottom:20px; font-size: 0.9rem;">Escolha o que você
+                      quer receber no seu feed e e-mail.</p>
+                    <div class="settings-placeholder-box"
+                      style="padding: 30px; border: 1px dashed var(--border); border-radius: 12px; text-align: center; color: var(--text-secondary);">
+                      <p>Em breve: Alertas de menções, curtidas e novos seguidores.</p>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </div>
     </main>
 
     <!-- ══════════════════════════════════════════════
@@ -462,35 +512,35 @@
         <button class="modal-close" id="closePostModal">✕</button>
       </div>
       <div class="modal-body" id="modalComposerBody">
-        <textarea id="modalPostInput"
-                  placeholder="O que está em sua mente? Use #bloco 01 a #bloco 10!"
-                  rows="8"></textarea>
+        <textarea id="modalPostInput" placeholder="O que está em sua mente? Use #bloco 01 a #bloco 10!"
+          rows="8"></textarea>
 
         <!-- Dica de blocos no modal -->
-        <div id="blocoModalHint" style="display:none;padding:8px 12px;background:var(--dark-bg,#12121a);border:1px solid var(--border,#2a2a3e);border-radius:10px;margin:8px 0;gap:6px;flex-wrap:wrap;align-items:center;">
-          <span style="font-size:11px;color:var(--text-secondary,#888);margin-right:2px;white-space:nowrap;">🏷️ Blocos:</span>
+        <div id="blocoModalHint"
+          style="display:none;padding:8px 12px;background:var(--dark-bg,#12121a);border:1px solid var(--border,#2a2a3e);border-radius:10px;margin:8px 0;gap:6px;flex-wrap:wrap;align-items:center;">
+          <span style="font-size:11px;color:var(--text-secondary,#888);margin-right:2px;white-space:nowrap;">🏷️
+            Blocos:</span>
         </div>
 
-        <div id="modalImgPreview"
-             style="display:none;flex-wrap:wrap;gap:8px;margin:10px 0;"></div>
+        <div id="modalImgPreview" style="display:none;flex-wrap:wrap;gap:8px;margin:10px 0;"></div>
 
-       <div class="composer-toolbar-subbox">
-  <button type="button" class="toolbar-btn" id="btnEmojiModal" title="Adicionar Emoji">😊</button>
-  
-  <label for="modalFileInput" class="toolbar-btn" title="Adicionar Foto" style="cursor:pointer;">
-    📷
-     
-  </label>
-  
-  <input type="file" id="modalFileInput" accept="image/*" multiple style="display:none">
-</div>
+        <div class="composer-toolbar-subbox">
+          <button type="button" class="toolbar-btn" id="btnEmojiModal" title="Adicionar Emoji">😊</button>
+
+          <label for="modalFileInput" class="toolbar-btn" title="Adicionar Foto" style="cursor:pointer;">
+            📷
+
+          </label>
+
+          <input type="file" id="modalFileInput" accept="image/*" multiple style="display:none">
+        </div>
 
         <div id="pickerEmojiModal" class="emoji-picker-container"></div>
       </div>
 
       <div class="modal-footer">
         <button class="btn-secondary" id="cancelPostBtn">Cancelar</button>
-        <button class="btn-primary"   id="submitPostBtn">Postar</button>
+        <button class="btn-primary" id="submitPostBtn">Postar</button>
       </div>
     </div>
   </div>
@@ -503,13 +553,11 @@
         <button class="modal-close" id="closeEditPostModal">✕</button>
       </div>
       <div class="modal-body">
-        <textarea id="editPostInput"
-                  placeholder="Edite o conteúdo do seu post..."
-                  rows="6"></textarea>
+        <textarea id="editPostInput" placeholder="Edite o conteúdo do seu post..." rows="6"></textarea>
       </div>
       <div class="modal-footer">
         <button class="btn-secondary" id="cancelEditPostBtn">Cancelar</button>
-        <button class="btn-primary"   id="saveEditPostBtn">Salvar Alterações</button>
+        <button class="btn-primary" id="saveEditPostBtn">Salvar Alterações</button>
       </div>
     </div>
   </div>
@@ -522,11 +570,12 @@
         <button class="modal-close" id="closeEditModal">✕</button>
       </div>
       <div class="modal-body">
-        
+
         <div class="form-group">
           <label for="bannerInput">Banner do Perfil (Mínimo 1200x400px)</label>
           <input type="file" id="bannerInput" accept="image/*" />
-          <p style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">Recomendado: 1500x500px (Proporção 3:1)</p>
+          <p style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">Recomendado: 1500x500px (Proporção
+            3:1)</p>
         </div>
 
         <div class="form-group">
@@ -572,300 +621,301 @@
     sincronamente após o módulo home.js inicializar.
   -->
   <script>
-  (function () {
+    (function () {
 
-    /* ── Definição local dos blocos (espelho do home.js) ────── */
-    var BLOCOS = [
-      { id: 'bloco-01', label: '#bloco 01', emoji: '🟥', cor: '#e0245e' },
-      { id: 'bloco-02', label: '#bloco 02', emoji: '🟧', cor: '#f4700f' },
-      { id: 'bloco-03', label: '#bloco 03', emoji: '🟨', cor: '#f5b700' },
-      { id: 'bloco-04', label: '#bloco 04', emoji: '🟩', cor: '#17bf63' },
-      { id: 'bloco-05', label: '#bloco 05', emoji: '🟦', cor: '#1d9bf0' },
-      { id: 'bloco-06', label: '#bloco 06', emoji: '🟪', cor: '#7856ff' },
-      { id: 'bloco-07', label: '#bloco 07', emoji: '🩷', cor: '#ff5eab' },
-      { id: 'bloco-08', label: '#bloco 08', emoji: '🤎', cor: '#a0522d' },
-      { id: 'bloco-09', label: '#bloco 09', emoji: '🩶', cor: '#8899aa' },
-      { id: 'bloco-10', label: '#bloco 10', emoji: '🖤', cor: '#dddddd' },
-    ];
+      /* ── Definição local dos blocos (espelho do home.js) ────── */
+      var BLOCOS = [
+        { id: 'bloco-01', label: '#bloco 01', emoji: '🟥', cor: '#e0245e' },
+        { id: 'bloco-02', label: '#bloco 02', emoji: '🟧', cor: '#f4700f' },
+        { id: 'bloco-03', label: '#bloco 03', emoji: '🟨', cor: '#f5b700' },
+        { id: 'bloco-04', label: '#bloco 04', emoji: '🟩', cor: '#17bf63' },
+        { id: 'bloco-05', label: '#bloco 05', emoji: '🟦', cor: '#1d9bf0' },
+        { id: 'bloco-06', label: '#bloco 06', emoji: '🟪', cor: '#7856ff' },
+        { id: 'bloco-07', label: '#bloco 07', emoji: '🩷', cor: '#ff5eab' },
+        { id: 'bloco-08', label: '#bloco 08', emoji: '🤎', cor: '#a0522d' },
+        { id: 'bloco-09', label: '#bloco 09', emoji: '🩶', cor: '#8899aa' },
+        { id: 'bloco-10', label: '#bloco 10', emoji: '🖤', cor: '#dddddd' },
+      ];
 
-    /* ── Toast de navegação ─────────────────────────────────── */
-    function showBlocoNavToast(bloco) {
-      var toast = document.getElementById('blocoNavToast');
-      if (!toast) return;
-      toast.textContent = bloco.emoji + ' Indo para ' + bloco.label + '…';
-      toast.style.borderColor = bloco.cor;
-      toast.style.color = bloco.cor;
-      toast.classList.add('show');
-      setTimeout(function () { toast.classList.remove('show'); }, 1800);
-    }
+      /* ── Toast de navegação ─────────────────────────────────── */
+      function showBlocoNavToast(bloco) {
+        var toast = document.getElementById('blocoNavToast');
+        if (!toast) return;
+        toast.textContent = bloco.emoji + ' Indo para ' + bloco.label + '…';
+        toast.style.borderColor = bloco.cor;
+        toast.style.color = bloco.cor;
+        toast.classList.add('show');
+        setTimeout(function () { toast.classList.remove('show'); }, 1800);
+      }
 
-    /* ── Renderiza sidebar de blocos ────────────────────────── */
-    function renderBlocosSidebar(contagem) {
-      var lista = document.getElementById('blocoListaSidebar');
-      if (!lista) return;
+      /* ── Renderiza sidebar de blocos ────────────────────────── */
+      function renderBlocosSidebar(contagem) {
+        var lista = document.getElementById('blocoListaSidebar');
+        if (!lista) return;
 
-      lista.innerHTML = BLOCOS.map(function (b) {
-        var qty = (contagem && contagem[b.id]) || 0;
-        return [
-          '<button class="bloco-sidebar-btn" data-bloco-id="', b.id, '"',
-          ' style="color:', b.cor, ';border-color:', b.cor, '18;background:', b.cor, '0d;"',
-          ' title="', qty, ' post', qty !== 1 ? 's' : '', '">',
+        lista.innerHTML = BLOCOS.map(function (b) {
+          var qty = (contagem && contagem[b.id]) || 0;
+          return [
+            '<button class="bloco-sidebar-btn" data-bloco-id="', b.id, '"',
+            ' style="color:', b.cor, ';border-color:', b.cor, '18;background:', b.cor, '0d;"',
+            ' title="', qty, ' post', qty !== 1 ? 's' : '', '">',
             b.emoji, ' ', b.label,
             '<span class="bloco-sidebar-count" style="background:', b.cor, '22;color:', b.cor, ';">',
-              qty,
+            qty,
             '</span>',
-          '</button>'
-        ].join('');
-      }).join('');
-
-      /* Listeners nos botões da sidebar */
-      lista.querySelectorAll('.bloco-sidebar-btn').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-          var blocoId = btn.dataset.blocoId;
-          var bloco = BLOCOS.find(function (b) { return b.id === blocoId; });
-          if (!bloco) return;
-
-          showBlocoNavToast(bloco);
-
-          /* Usa a função global exposta pelo home.js */
-          if (typeof window.navegarParaBloco === 'function') {
-            window.navegarParaBloco(blocoId);
-          } else {
-            /* Fallback: navega manualmente para o explorar */
-            document.querySelectorAll('.nav-item').forEach(function (n) {
-              n.classList.remove('active');
-            });
-            var exploreNav = document.querySelector('.nav-item[data-page="explore"]');
-            if (exploreNav) exploreNav.classList.add('active');
-
-            document.querySelectorAll('.page-container').forEach(function (p) {
-              p.classList.remove('active');
-            });
-            var explorePage = document.getElementById('explore-page');
-            if (explorePage) explorePage.classList.add('active');
-          }
-
-          /* Realça o botão ativo */
-          lista.querySelectorAll('.bloco-sidebar-btn').forEach(function (b) {
-            b.classList.remove('ativo');
-            b.style.background = getBlocoById(b.dataset.blocoId).cor + '0d';
-          });
-          btn.classList.add('ativo');
-          btn.style.background = bloco.cor + '22';
-        });
-      });
-    }
-
-    function getBlocoById(id) {
-      return BLOCOS.find(function (b) { return b.id === id; }) || BLOCOS[0];
-    }
-
-    /* ── Expõe helper para home.js atualizar a sidebar ──────── */
-    window.atualizarBlocosSidebar = function (contagem) {
-      renderBlocosSidebar(contagem);
-    };
-
-    /* Renderiza imediatamente sem contagem (esqueleto) */
-    renderBlocosSidebar({});
-
-    /* ── Autocomplete de blocos no composer ─────────────────── */
-    function setupBlocoAutocomplete(textareaId, hintId) {
-      var ta   = document.getElementById(textareaId);
-      var hint = document.getElementById(hintId);
-      if (!ta || !hint) return;
-
-      /* Injeta os chips de blocos no hint, se ainda não tiver */
-      if (!hint.querySelector('.bloco-autocomplete-chip')) {
-        BLOCOS.forEach(function (b) {
-          var chip = document.createElement('button');
-          chip.type = 'button';
-          chip.className = 'bloco-autocomplete-chip';
-          chip.dataset.blocoTag = b.label;
-          chip.style.cssText = [
-            'background:', b.cor, '18;',
-            'color:', b.cor, ';',
-            'border-color:', b.cor, '44;',
+            '</button>'
           ].join('');
-          chip.innerHTML = b.emoji + ' ' + b.label;
-          chip.addEventListener('click', function () {
-            insertBlocoTag(ta, b.label);
-            hint.style.display = 'none';
+        }).join('');
+
+        /* Listeners nos botões da sidebar */
+        lista.querySelectorAll('.bloco-sidebar-btn').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var blocoId = btn.dataset.blocoId;
+            var bloco = BLOCOS.find(function (b) { return b.id === blocoId; });
+            if (!bloco) return;
+
+            showBlocoNavToast(bloco);
+
+            /* Usa a função global exposta pelo home.js */
+            if (typeof window.navegarParaBloco === 'function') {
+              window.navegarParaBloco(blocoId);
+            } else {
+              /* Fallback: navega manualmente para o explorar */
+              document.querySelectorAll('.nav-item').forEach(function (n) {
+                n.classList.remove('active');
+              });
+              var exploreNav = document.querySelector('.nav-item[data-page="explore"]');
+              if (exploreNav) exploreNav.classList.add('active');
+
+              document.querySelectorAll('.page-container').forEach(function (p) {
+                p.classList.remove('active');
+              });
+              var explorePage = document.getElementById('explore-page');
+              if (explorePage) explorePage.classList.add('active');
+            }
+
+            /* Realça o botão ativo */
+            lista.querySelectorAll('.bloco-sidebar-btn').forEach(function (b) {
+              b.classList.remove('ativo');
+              b.style.background = getBlocoById(b.dataset.blocoId).cor + '0d';
+            });
+            btn.classList.add('ativo');
+            btn.style.background = bloco.cor + '22';
           });
-          hint.appendChild(chip);
         });
       }
 
-      ta.addEventListener('input', function () {
-        var val = ta.value;
-        var cursor = ta.selectionStart;
-        /* Mostra dica se o usuário acabou de digitar # */
-        var beforeCursor = val.slice(0, cursor);
-        var hashMatch = beforeCursor.match(/#([Bb]loco)?\s*(\d*)$/);
-        if (hashMatch) {
-          hint.style.display = 'flex';
-        } else {
-          hint.style.display = 'none';
+      function getBlocoById(id) {
+        return BLOCOS.find(function (b) { return b.id === id; }) || BLOCOS[0];
+      }
+
+      /* ── Expõe helper para home.js atualizar a sidebar ──────── */
+      window.atualizarBlocosSidebar = function (contagem) {
+        renderBlocosSidebar(contagem);
+      };
+
+      /* Renderiza imediatamente sem contagem (esqueleto) */
+      renderBlocosSidebar({});
+
+      /* ── Autocomplete de blocos no composer ─────────────────── */
+      function setupBlocoAutocomplete(textareaId, hintId) {
+        var ta = document.getElementById(textareaId);
+        var hint = document.getElementById(hintId);
+        if (!ta || !hint) return;
+
+        /* Injeta os chips de blocos no hint, se ainda não tiver */
+        if (!hint.querySelector('.bloco-autocomplete-chip')) {
+          BLOCOS.forEach(function (b) {
+            var chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'bloco-autocomplete-chip';
+            chip.dataset.blocoTag = b.label;
+            chip.style.cssText = [
+              'background:', b.cor, '18;',
+              'color:', b.cor, ';',
+              'border-color:', b.cor, '44;',
+            ].join('');
+            chip.innerHTML = b.emoji + ' ' + b.label;
+            chip.addEventListener('click', function () {
+              insertBlocoTag(ta, b.label);
+              hint.style.display = 'none';
+            });
+            hint.appendChild(chip);
+          });
         }
-      });
 
-      ta.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') hint.style.display = 'none';
-      });
-
-      document.addEventListener('click', function (e) {
-        if (!ta.contains(e.target) && !hint.contains(e.target)) {
-          hint.style.display = 'none';
-        }
-      });
-    }
-
-    function insertBlocoTag(textarea, tag) {
-      var start = textarea.selectionStart;
-      var end   = textarea.selectionEnd;
-      var val   = textarea.value;
-
-      /* Remove fragmento de # que o usuário já digitou */
-      var before = val.slice(0, start);
-      var after  = val.slice(end);
-      var cleaned = before.replace(/#([Bb]loco)?\s*\d*$/, '');
-
-      textarea.value = cleaned + tag + ' ' + after;
-      var pos = cleaned.length + tag.length + 1;
-      textarea.selectionStart = textarea.selectionEnd = pos;
-      textarea.focus();
-      textarea.dispatchEvent(new Event('input'));
-    }
-
-    /* Inicializa autocomplete nos dois composers */
-    setupBlocoAutocomplete('postInput',      'blocoComposerHint');
-    setupBlocoAutocomplete('modalPostInput', 'blocoModalHint');
-
-    /* Garante que o hint do modal também aparece como flex */
-    var modalHint = document.getElementById('blocoModalHint');
-    if (modalHint) {
-      /* o display é controlado pelo evento input — só ajusta o default */
-      modalHint.style.flexWrap = 'wrap';
-      modalHint.style.gap = '6px';
-      modalHint.style.alignItems = 'center';
-    }
-
-    /* ══════════════════════════════════════════════
-       Tema — troca via sidebar
-    ══════════════════════════════════════════════ */
-    var navBtn = document.getElementById('themeNavBtn');
-    var panel  = document.getElementById('themeNavPanel');
-    if (navBtn && panel) {
-      var opts = panel.querySelectorAll('.theme-opt');
-
-      navBtn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        panel.classList.toggle('active');
-      });
-
-      document.addEventListener('click', function (e) {
-        if (!navBtn.contains(e.target)) panel.classList.remove('active');
-      });
-
-      opts.forEach(function (opt) {
-        opt.addEventListener('click', function (e) {
-          e.stopPropagation();
-          var theme = opt.getAttribute('data-theme');
-          if (theme === 'padrao') {
-            document.documentElement.removeAttribute('data-theme');
+        ta.addEventListener('input', function () {
+          var val = ta.value;
+          var cursor = ta.selectionStart;
+          /* Mostra dica se o usuário acabou de digitar # */
+          var beforeCursor = val.slice(0, cursor);
+          var hashMatch = beforeCursor.match(/#([Bb]loco)?\s*(\d*)$/);
+          if (hashMatch) {
+            hint.style.display = 'flex';
           } else {
-            document.documentElement.setAttribute('data-theme', theme);
+            hint.style.display = 'none';
           }
-          localStorage.setItem('vazaPucTheme', theme);
-          opts.forEach(function (o) { o.classList.remove('ativo'); });
-          opt.classList.add('ativo');
-          setTimeout(function () { panel.classList.remove('active'); }, 600);
         });
+
+        ta.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape') hint.style.display = 'none';
+        });
+
+        document.addEventListener('click', function (e) {
+          if (!ta.contains(e.target) && !hint.contains(e.target)) {
+            hint.style.display = 'none';
+          }
+        });
+      }
+
+      function insertBlocoTag(textarea, tag) {
+        var start = textarea.selectionStart;
+        var end = textarea.selectionEnd;
+        var val = textarea.value;
+
+        /* Remove fragmento de # que o usuário já digitou */
+        var before = val.slice(0, start);
+        var after = val.slice(end);
+        var cleaned = before.replace(/#([Bb]loco)?\s*\d*$/, '');
+
+        textarea.value = cleaned + tag + ' ' + after;
+        var pos = cleaned.length + tag.length + 1;
+        textarea.selectionStart = textarea.selectionEnd = pos;
+        textarea.focus();
+        textarea.dispatchEvent(new Event('input'));
+      }
+
+      /* Inicializa autocomplete nos dois composers */
+      setupBlocoAutocomplete('postInput', 'blocoComposerHint');
+      setupBlocoAutocomplete('modalPostInput', 'blocoModalHint');
+
+      /* Garante que o hint do modal também aparece como flex */
+      var modalHint = document.getElementById('blocoModalHint');
+      if (modalHint) {
+        /* o display é controlado pelo evento input — só ajusta o default */
+        modalHint.style.flexWrap = 'wrap';
+        modalHint.style.gap = '6px';
+        modalHint.style.alignItems = 'center';
+      }
+
+      /* ══════════════════════════════════════════════
+         Tema — troca via sidebar
+      ══════════════════════════════════════════════ */
+      var navBtn = document.getElementById('themeNavBtn');
+      var panel = document.getElementById('themeNavPanel');
+      if (navBtn && panel) {
+        var opts = panel.querySelectorAll('.theme-opt');
+
+        navBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          panel.classList.toggle('active');
+        });
+
+        document.addEventListener('click', function (e) {
+          if (!navBtn.contains(e.target)) panel.classList.remove('active');
+        });
+
+        opts.forEach(function (opt) {
+          opt.addEventListener('click', function (e) {
+            e.stopPropagation();
+            var theme = opt.getAttribute('data-theme');
+            if (theme === 'padrao') {
+              document.documentElement.removeAttribute('data-theme');
+            } else {
+              document.documentElement.setAttribute('data-theme', theme);
+            }
+            localStorage.setItem('vazaPucTheme', theme);
+            opts.forEach(function (o) { o.classList.remove('ativo'); });
+            opt.classList.add('ativo');
+            setTimeout(function () { panel.classList.remove('active'); }, 600);
+          });
+        });
+
+        var saved = localStorage.getItem('vazaPucTheme') || 'padrao';
+        var activeOpt = panel.querySelector('.theme-opt[data-theme="' + saved + '"]');
+        if (activeOpt) activeOpt.classList.add('ativo');
+      }
+
+    })();
+
+    (function () {
+
+      /* ── Sincroniza o toggle com o estado atual do perfil ────── */
+      function syncPrivacyToggle() {
+        const toggle = document.getElementById('privacyToggle');
+        const track = document.getElementById('privacyTrack');
+        const thumb = document.getElementById('privacyThumb');
+        if (!toggle) return;
+
+        // currentProfile é a variável global do home.js
+        const isPrivate = window.currentProfile?.is_private ?? false;
+        toggle.checked = isPrivate;
+        updateToggleVisual(isPrivate, track, thumb);
+      }
+
+      function updateToggleVisual(checked, track, thumb) {
+        if (!track || !thumb) return;
+        track.style.background = checked ? 'var(--primary)' : 'var(--border)';
+        thumb.style.transform = checked ? 'translateX(20px)' : 'translateX(0)';
+      }
+
+      /* Atualiza visual quando o toggle muda */
+      document.addEventListener('change', function (e) {
+        if (e.target.id !== 'privacyToggle') return;
+        const track = document.getElementById('privacyTrack');
+        const thumb = document.getElementById('privacyThumb');
+        updateToggleVisual(e.target.checked, track, thumb);
       });
 
-      var saved = localStorage.getItem('vazaPucTheme') || 'padrao';
-      var activeOpt = panel.querySelector('.theme-opt[data-theme="' + saved + '"]');
-      if (activeOpt) activeOpt.classList.add('ativo');
-    }
+      /* Sincroniza cada vez que a aba de privacidade é aberta */
+      document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.settings-tab-btn[data-settings-tab="privacidade"]');
+        if (!btn) return;
+        setTimeout(syncPrivacyToggle, 50); // aguarda o home.js mudar a seção
+        if (typeof window.refreshPendingBadge === 'function') {
+          window.refreshPendingBadge();
+        }
+      });
 
-  })();
+      /* ── Painel de solicitações ─────────────────────────────── */
+      var panelOpen = false;
 
-  (function () {
- 
-  /* ── Sincroniza o toggle com o estado atual do perfil ────── */
-  function syncPrivacyToggle() {
-    const toggle = document.getElementById('privacyToggle');
-    const track  = document.getElementById('privacyTrack');
-    const thumb  = document.getElementById('privacyThumb');
-    if (!toggle) return;
- 
-    // currentProfile é a variável global do home.js
-    const isPrivate = window.currentProfile?.is_private ?? false;
-    toggle.checked = isPrivate;
-    updateToggleVisual(isPrivate, track, thumb);
-  }
- 
-  function updateToggleVisual(checked, track, thumb) {
-    if (!track || !thumb) return;
-    track.style.background = checked ? 'var(--primary)' : 'var(--border)';
-    thumb.style.transform   = checked ? 'translateX(20px)' : 'translateX(0)';
-  }
- 
-  /* Atualiza visual quando o toggle muda */
-  document.addEventListener('change', function (e) {
-    if (e.target.id !== 'privacyToggle') return;
-    const track = document.getElementById('privacyTrack');
-    const thumb = document.getElementById('privacyThumb');
-    updateToggleVisual(e.target.checked, track, thumb);
-  });
- 
-  /* Sincroniza cada vez que a aba de privacidade é aberta */
-  document.addEventListener('click', function (e) {
-    const btn = e.target.closest('.settings-tab-btn[data-settings-tab="privacidade"]');
-    if (!btn) return;
-    setTimeout(syncPrivacyToggle, 50); // aguarda o home.js mudar a seção
-    if (typeof window.refreshPendingBadge === 'function') {
-      window.refreshPendingBadge();
-    }
-  });
- 
-  /* ── Painel de solicitações ─────────────────────────────── */
-  var panelOpen = false;
- 
-  window.togglePendingPanel = function () {
-    const panel   = document.getElementById('pendingRequestsPanel');
-    const chevron = document.getElementById('pendingChevron');
-    if (!panel) return;
- 
-    panelOpen = !panelOpen;
-    panel.style.display   = panelOpen ? 'block' : 'none';
-    chevron.style.transform = panelOpen ? 'rotate(90deg)' : 'rotate(0deg)';
- 
-    if (panelOpen && typeof window.loadPendingRequestsPanel === 'function') {
-      window.loadPendingRequestsPanel();
-    }
-  };
- 
-  /* Expõe para o home.js atualizar o badge de fora */
-  window.refreshPendingBadge = function() {
-  // Será sobrescrita pelo home.js quando carregar
-};
- 
-})();
-(async () => {
-  const mod = await import('/VazaPuc/js/supabase.js');
-  const sb = mod.supabase;
-  const user = await mod.getCurrentUser();
-  
-  const { error } = await sb.from('notifications').insert({
-    user_id: user.id,
-    actor_id: '77dfefb3-663a-4e7f-8ba9-772a9d9d7e57',
-    type: 'follow',
-    read: false,
-    created_at: new Date().toISOString()
-  });
-  
-  console.log('erro:', error);
-})();
+      window.togglePendingPanel = function () {
+        const panel = document.getElementById('pendingRequestsPanel');
+        const chevron = document.getElementById('pendingChevron');
+        if (!panel) return;
+
+        panelOpen = !panelOpen;
+        panel.style.display = panelOpen ? 'block' : 'none';
+        chevron.style.transform = panelOpen ? 'rotate(90deg)' : 'rotate(0deg)';
+
+        if (panelOpen && typeof window.loadPendingRequestsPanel === 'function') {
+          window.loadPendingRequestsPanel();
+        }
+      };
+
+      /* Expõe para o home.js atualizar o badge de fora */
+      window.refreshPendingBadge = function () {
+        // Será sobrescrita pelo home.js quando carregar
+      };
+
+    })();
+    (async () => {
+      const mod = await import('/VazaPuc/js/supabase.js');
+      const sb = mod.supabase;
+      const user = await mod.getCurrentUser();
+
+      const { error } = await sb.from('notifications').insert({
+        user_id: user.id,
+        actor_id: '77dfefb3-663a-4e7f-8ba9-772a9d9d7e57',
+        type: 'follow',
+        read: false,
+        created_at: new Date().toISOString()
+      });
+
+      console.log('erro:', error);
+    })();
   </script>
 </body>
+
 </html>

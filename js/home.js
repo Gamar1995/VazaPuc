@@ -47,6 +47,7 @@ import {
   getNotifText,
   getNotifIcon,
   formatTimeAgoNotif,
+  deleteAllNotifications,
   NOTIF_TYPES,
 } from './notifications.js';
 
@@ -3535,10 +3536,10 @@ function setupNotifications() {
 
   backdrop?.addEventListener('click', () => panel.classList.remove('active'));
   markAllBtn?.addEventListener('click', async () => {
-    await markAllAsRead();
+   await deleteAllNotifications();
     await refreshNotifBadge();
     await renderNotifList();
-    showNotification('Todas as notificações foram lidas! ✅');
+    showNotification('Todas as foram apagadas! ✅');
   });
 }
 

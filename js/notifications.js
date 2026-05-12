@@ -63,6 +63,20 @@ export async function getNotifications(limit = 30) {
   return data || [];
 }
 
+export async function deleteAllNotifications() {
+  const user = await getCurrentUser();
+  if (!user) return;
+
+  const { error } = await supabase
+    .from('notifications')
+    .delete()
+    .eq('user_id', user.id);
+
+  if (error) {
+    console.error('[VazaPUC] Erro ao apagar todas as notificações:', error);
+  }
+}
+
 // ============================================================
 // CONTAR NOTIFICAÇÕES NÃO LIDAS
 // ============================================================
