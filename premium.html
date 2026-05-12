@@ -3,255 +3,299 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Vazadinhos da PUC - Premium</title>
-  
+  <title>VazaPUC — Premium</title>
+
+  <script>
+    const tema = localStorage.getItem('vazaPucTheme');
+    if (tema && tema !== 'padrao') document.documentElement.setAttribute('data-theme', tema);
+    else document.documentElement.removeAttribute('data-theme');
+  </script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Syne:wght@400;700;800&family=DM+Sans:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
-  
-  <link rel="stylesheet" href="css/Pagina_Principal.css">
-  
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+
   <style>
-    
-    /* ===== HERO PREMIUM ===== */
-    .premium-hero {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 10rem 1rem 4rem 1rem;
-      position: relative;
+    /* ===== TOKENS DO INDEX.HTML (GARANTE QUE O TEMA CONTINUE APLICADO) ===== */
+    :root, [data-theme="padrao"] {
+      --ink:    #0d0007;
+      --paper:  #f5eff0;
+      --text-muted: rgba(245,239,240,0.6);
+      --red:    #c0182a;
+      --red2:   #e8325a;
+      --gold:   #d4a017;
+      --muted:  #8a6070;
+      --border: rgba(192,24,42,0.18);
+      --card-bg: rgba(255,255,255,0.04);
+      --card-border: rgba(255,255,255,0.08);
+      --input-bg: rgba(255,255,255,0.04);
+      --radius: 16px;
     }
-    
+
+    [data-theme="azul"] { --ink: #070a16; --paper: #e8edf5; --text-muted: rgba(232,237,245,0.6); --red: #143e75; --red2: #1f5aa3; --muted: #5a7090; --border: rgba(31,90,163,0.25); --card-bg: rgba(255,255,255,0.04); --card-border: rgba(255,255,255,0.08); --input-bg: rgba(255,255,255,0.04); }
+    [data-theme="cinza"] { --ink: #0a0a0a; --paper: #ffffff; --text-muted: rgba(255,255,255,0.6); --red: #555555; --red2: #888888; --muted: #666666; --border: rgba(136,136,136,0.2); --card-bg: rgba(255,255,255,0.05); --card-border: rgba(255,255,255,0.1); --input-bg: rgba(255,255,255,0.05); }
+    [data-theme="amarelo"] { --ink: #121008; --paper: #f5f0e8; --text-muted: rgba(245,240,232,0.6); --red: #8b6508; --red2: #b8860b; --muted: #7a6a40; --border: rgba(184,134,11,0.25); --card-bg: rgba(255,255,255,0.04); --card-border: rgba(255,255,255,0.08); --input-bg: rgba(255,255,255,0.04); }
+    [data-theme="padrao-claro"] { --ink: #f4f6f8; --paper: #1a1a1a; --text-muted: rgba(26,26,26,0.65); --red: #7a1738; --red2: #a31f4b; --muted: #5c6c7c; --border: rgba(163,31,75,0.15); --card-bg: rgba(0,0,0,0.03); --card-border: rgba(0,0,0,0.1); --input-bg: rgba(0,0,0,0.03); }
+    [data-theme="azul-claro"] { --ink: #f0f4f8; --paper: #0f1c2b; --text-muted: rgba(15,28,43,0.65); --red: #143e75; --red2: #1f5aa3; --muted: #5a6e82; --border: rgba(31,90,163,0.15); --card-bg: rgba(0,0,0,0.03); --card-border: rgba(0,0,0,0.1); --input-bg: rgba(0,0,0,0.03); }
+    [data-theme="cinza-claro"] { --ink: #f5f5f5; --paper: #111111; --text-muted: rgba(17,17,17,0.65); --red: #333333; --red2: #555555; --muted: #666666; --border: rgba(85,85,85,0.15); --card-bg: rgba(0,0,0,0.03); --card-border: rgba(0,0,0,0.1); --input-bg: rgba(0,0,0,0.03); }
+    [data-theme="amarelo-claro"] { --ink: #fcfbf7; --paper: #1f1c0d; --text-muted: rgba(31,28,13,0.65); --red: #8b6508; --red2: #b8860b; --muted: #7a7051; --border: rgba(184,134,11,0.15); --card-bg: rgba(0,0,0,0.03); --card-border: rgba(0,0,0,0.1); --input-bg: rgba(0,0,0,0.03); }
+
+    /* ===== RESET E GRAIN ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; font-size: 16px; }
+
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--ink);
+      color: var(--paper);
+      overflow-x: hidden;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    body::after {
+      content: ''; position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 9000; opacity: 0.55;
+    }
+
+    /* ===== NAV DO INDEX ===== */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.1rem 3rem;
+      background: rgba(var(--ink), 0.85);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+      transition: background 0.3s ease;
+    }
+
+    .nav-logo {
+      font-family: 'Bebas Neue', sans-serif; font-size: 1.7rem; letter-spacing: 0.1em;
+      color: var(--paper); text-decoration: none; display: flex; align-items: center; gap: 10px;
+    }
+    .nav-logo span {
+      color: var(--gold); font-size: 1.1rem; letter-spacing: 0.3em;
+      font-family: 'Space Grotesk', sans-serif; font-weight: 300;
+      border-left: 1px solid var(--border); padding-left: 10px; opacity: 0.7;
+    }
+
+    .nav-links { display: flex; gap: 2.5rem; list-style: none; }
+    .nav-links a {
+      color: var(--text-muted); text-decoration: none; font-size: 0.82rem;
+      font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; transition: color 0.2s;
+    }
+    .nav-links a:hover, .nav-links a.active { color: var(--paper); }
+
+    .nav-actions { display: flex; align-items: center; gap: 12px; }
+
+    .btn-nav {
+      padding: 0.55rem 1.4rem; border-radius: 40px; font-size: 0.82rem; font-weight: 600;
+      text-decoration: none; letter-spacing: 0.05em; transition: all 0.2s;
+      border: 1.5px solid var(--border); color: var(--paper); background: transparent;
+    }
+    .btn-nav:hover { background: var(--red2); border-color: var(--red2); color: #fff; }
+
+    /* Theme Switcher Elements */
+    .theme-switcher-wrapper { position: relative; }
+    .theme-switcher-btn {
+      background: transparent; border: 1px solid var(--border); color: var(--text-muted);
+      width: 38px; height: 38px; border-radius: 50%; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; transition: all 0.3s ease;
+    }
+    .theme-switcher-btn:hover { background: rgba(232,50,90,0.12); border-color: var(--red2); color: var(--red2); transform: rotate(20deg); }
+    .theme-slider-glass {
+      position: absolute; top: calc(100% + 14px); right: 0; display: flex; align-items: center; gap: 10px;
+      padding: 8px 12px; border-radius: 40px; background: rgba(20,0,10,0.85); backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      opacity: 0; visibility: hidden; transform: translateY(-10px) scale(0.95); transition: all 0.3s; z-index: 600;
+    }
+    .theme-slider-glass.active { opacity: 1; visibility: visible; transform: translateY(0) scale(1); }
+    .theme-opt-nav {
+      width: 26px; height: 26px; border-radius: 50%; cursor: pointer; border: 2px solid transparent !important;
+      transition: transform 0.2s, box-shadow 0.2s; flex-shrink: 0;
+    }
+    .theme-opt-nav:hover { transform: scale(1.2); }
+    .theme-opt-nav.ativo { box-shadow: 0 0 0 2px white; }
+    .theme-nav-sep { width: 1px; height: 20px; background: rgba(255,255,255,0.15); flex-shrink: 0; }
+
+    /* ===== ANIMAÇÕES ===== */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ===== HERO PREMIUM ADAPTADO PARA O TEMA ===== */
+    .premium-hero {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 10rem 1rem 4rem 1rem; position: relative;
+    }
+
+    .premium-hero::before {
+      content: ''; position: absolute; width: 600px; height: 600px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(212,160,23,0.15) 0%, transparent 70%);
+      top: 40%; left: 50%; transform: translate(-50%, -50%); pointer-events: none;
+    }
+
     .premium-badge {
-      display: inline-block;
-      background: linear-gradient(135deg, #ffd700, #ff8c00);
-      color: #1a0008;
-      font-weight: 800;
-      padding: 0.5rem 1.5rem;
-      border-radius: 50px;
-      font-size: 0.9rem;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      margin-bottom: 2rem;
-      box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
-      opacity: 0;
-      animation: fadeUp 0.7s ease forwards 0.2s;
+      display: inline-block; background: linear-gradient(135deg, var(--gold), #e09000);
+      color: #1a0008; font-weight: 800; padding: 0.5rem 1.5rem; border-radius: 40px;
+      font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.2em;
+      margin-bottom: 2rem; box-shadow: 0 0 20px rgba(212,160,23,0.4);
+      opacity: 0; animation: fadeUp 0.7s ease forwards 0.2s;
     }
 
     .premium-hero h1 {
-      opacity: 0;
-      animation: fadeUp 0.7s ease forwards 0.4s;
+      font-family: 'Bebas Neue', sans-serif; font-size: clamp(4rem, 10vw, 8rem);
+      line-height: 0.9; opacity: 0; animation: fadeUp 0.7s ease forwards 0.4s;
+      letter-spacing: 0.02em;
     }
+    .premium-hero h1 em { font-style: normal; color: var(--gold); }
 
     .premium-hero .hero-sub {
-      margin: 1.5rem auto 0;
-      opacity: 0;
-      animation: fadeUp 0.7s ease forwards 0.6s;
+      font-family: 'Instrument Serif', serif; font-style: italic;
+      font-size: clamp(1rem, 2.2vw, 1.35rem); color: var(--text-muted);
+      max-width: 46ch; margin: 1.5rem auto 0; line-height: 1.65;
+      opacity: 0; animation: fadeUp 0.7s ease forwards 0.6s;
     }
 
-    /* ===== CARTÕES DE PLANOS ===== */
+    /* ===== CARTÕES DE PLANOS ADAPTADOS ===== */
     .plans-container {
-      display: flex;
-      justify-content: center;
-      align-items: stretch; /* Faz os cartões terem a mesma altura */
-      gap: 2rem;
-      padding: 2rem 2.5rem 6rem;
-      flex-wrap: wrap;
-      position: relative;
-      z-index: 1;
-      opacity: 0;
-      animation: fadeUp 0.7s ease forwards 0.8s;
-    }
-    .plan-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 24px;
-      padding: 3rem 2rem;
-      width: 100%;
-      max-width: 350px;
-      text-align: left;
-      transition: transform 0.3s, box-shadow 0.3s;
-      position: relative;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column; /* Permite empurrar o botão pro fundo */
+      display: flex; justify-content: center; align-items: stretch; gap: 2rem;
+      padding: 2rem 2.5rem 6rem; flex-wrap: wrap; position: relative; z-index: 1;
+      opacity: 0; animation: fadeUp 0.7s ease forwards 0.8s;
     }
 
-    .plan-card:hover {
-      transform: translateY(-10px);
+    .plan-card {
+      background: var(--card-bg); border: 1px solid var(--card-border);
+      border-radius: 24px; padding: 3rem 2rem; width: 100%; max-width: 350px;
+      text-align: left; transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
+      position: relative; overflow: hidden; display: flex; flex-direction: column;
+      backdrop-filter: blur(8px);
     }
+    .plan-card:hover { transform: translateY(-10px); border-color: var(--border); }
 
     .plan-card.pro {
-      border-color: var(--accent);
-      box-shadow: 0 10px 40px rgba(232, 50, 90, 0.2);
+      background: linear-gradient(145deg, rgba(212,160,23,0.08), rgba(192,24,42,0.05));
+      border-color: rgba(212,160,23,0.3); box-shadow: 0 10px 40px rgba(212,160,23,0.1);
     }
     .plan-card.pro:hover { border-color: var(--gold); box-shadow: 0 15px 50px rgba(212,160,23,0.2); }
 
     .plan-card.pro::before {
-      content: 'MAIS POPULAR';
-      position: absolute;
-      top: 20px;
-      right: -35px;
-      background: var(--accent);
-      color: white;
-      font-size: 0.7rem;
-      font-weight: 800;
-      padding: 5px 40px;
-      transform: rotate(45deg);
+      content: 'MAIS POPULAR'; position: absolute; top: 20px; right: -35px;
+      background: var(--gold); color: #1a0008; font-size: 0.65rem; font-weight: 800;
+      padding: 5px 40px; transform: rotate(45deg); letter-spacing: 0.1em;
     }
+
+    .plan-card h3 {
+      font-family: 'Bebas Neue', sans-serif; font-size: 2.2rem;
+      color: var(--paper); letter-spacing: 0.05em; margin-bottom: 0.5rem;
+    }
+    .plan-card.pro h3 { color: var(--gold); }
 
     .plan-price {
-      font-family: 'Syne', sans-serif;
-      font-size: 3rem;
-      font-weight: 800;
-      margin: 1.5rem 0;
-      color: var(--text);
+      font-family: 'Space Grotesk', sans-serif; font-size: 3rem; font-weight: 700;
+      margin: 1rem 0 2rem; color: var(--paper); display: flex; align-items: baseline; gap: 5px;
     }
+    .plan-price span { font-size: 1rem; color: var(--muted); font-weight: 400; }
 
-    .plan-price span {
-      font-size: 1rem;
-      color: var(--muted);
-      font-weight: 400;
-    }
-
-    /* ===== LISTA DE VANTAGENS ===== */
-    .plan-features {
-      list-style: none;
-      margin-bottom: 2.5rem;
-      flex-grow: 1; /* Preenche o espaço vazio empurrando o botão para baixo */
-    }
-
+    .plan-features { list-style: none; margin-bottom: 2.5rem; flex-grow: 1; }
     .plan-features li {
-      margin-bottom: 1rem;
-      color: var(--muted);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 0.95rem;
+      margin-bottom: 1rem; color: var(--text-muted); display: flex; align-items: center; gap: 10px; font-size: 0.95rem;
     }
+    .plan-features li::before { content: '✓'; color: var(--paper); font-weight: bold; width: 16px; text-align: center; }
+    .plan-features.pro-features li::before { color: var(--gold); }
 
-    .plan-features li::before {
-      content: '✓';
-      color: var(--accent2);
-      font-weight: bold;
-      width: 16px;
-      text-align: center;
-    }
-    
-    .plan-features.pro-features li::before {
-      color: var(--accent);
-    }
+    .plan-features li.disabled-feature { opacity: 0.4; }
+    .plan-features li.disabled-feature::before { content: '✕'; color: var(--muted); }
+    .plan-features.pro-features li { color: var(--paper); }
 
-    /* Itens desabilitados no plano grátis */
-    .plan-features li.disabled-feature {
-      opacity: 0.35;
-    }
-
-    .plan-features li.disabled-feature::before {
-      content: '✕';
-      color: var(--muted);
-    }
-
+    /* Botões dos cards */
     .btn-plan {
-      width: 100%;
-      text-align: center;
-      justify-content: center;
-      margin-top: auto; /* Trava o botão perfeitamente na base do cartão */
+      width: 100%; text-align: center; display: inline-flex; justify-content: center;
+      padding: 1rem; border-radius: 40px; font-size: 0.9rem; font-weight: 700;
+      text-decoration: none; transition: all 0.25s; cursor: pointer; border: none; margin-top: auto;
     }
-  </style>
-  <!-- ESTILO DO BOTÃO PREMIUM -->
-  <!-- ESTILO DO BOTÃO PREMIUM CORRIGIDO -->
-  <style>
+    .btn-ghost-plan { background: transparent; border: 1.5px solid var(--border); color: var(--paper); }
+    .btn-ghost-plan:hover { background: var(--card-bg); border-color: var(--paper); }
+
     .btn-assinar-premium {
-      position: relative;
-      display: inline-block;
-      overflow: hidden;
-      padding: 16px 40px;
-      font-family: inherit;
-      font-size: 18px;
-      font-weight: 700;
-      color: #ffffff;
-      text-decoration: none;
-      text-align: center;
-      border-radius: 8px;
-      background: rgba(255, 215, 0, 0.15); 
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      
-      /* CORREÇÃO: Borda fina e uniforme para manter tudo centralizado */
-      border: 1px solid rgba(255, 215, 0, 0.5); 
-      box-shadow: 0 4px 15px rgba(255, 215, 0, 0.15); /* Sombra amarela em volta */
-      
-      transition: all 0.3s ease;
-      cursor: pointer;
+      position: relative; display: inline-flex; justify-content: center; overflow: hidden;
+      padding: 1rem; font-family: inherit; font-size: 0.9rem; font-weight: 700;
+      color: #1a0008; text-decoration: none; text-align: center; border-radius: 40px;
+      background: linear-gradient(135deg, var(--gold), #e09000);
+      box-shadow: 0 4px 15px rgba(212,160,23,0.3); transition: all 0.3s ease; cursor: pointer; border: none;
     }
-
     .btn-assinar-premium::before {
-      content: "";
-      position: absolute;
-      top: 0;
-      left: -150%;
-      width: 50%;
-      height: 100%;
-      background: linear-gradient(
-        to right,
-        rgba(255, 255, 255, 0) 0%,
-        rgba(255, 255, 255, 0.6) 50%,
-        rgba(255, 255, 255, 0) 100%
-      );
-      transform: skewX(-25deg);
-      transition: left 0.6s ease;
+      content: ""; position: absolute; top: 0; left: -150%; width: 50%; height: 100%;
+      background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0) 100%);
+      transform: skewX(-25deg); transition: left 0.6s ease;
     }
-
     .btn-assinar-premium:hover {
-      transform: translateY(-3px);
-      background: rgba(255, 215, 0, 0.25);
-      box-shadow: 0 8px 25px rgba(255, 215, 0, 0.3);
-      border: 1px solid rgba(255, 215, 0, 0.8); /* Borda brilha mais no hover */
-      color: #ffffff;
+      transform: translateY(-3px); box-shadow: 0 8px 25px rgba(212,160,23,0.5); color: #1a0008;
     }
+    .btn-assinar-premium:hover::before { left: 150%; }
 
-    .btn-assinar-premium:hover::before {
-      left: 150%;
+    /* ===== FOOTER DO INDEX ===== */
+    footer {
+      border-top: 1px solid var(--border); padding: 2.5rem 8%;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .footer-logo { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; letter-spacing: 0.1em; color: var(--muted); }
+    .footer-copy { font-size: 0.78rem; color: var(--muted); }
+    .footer-by { font-size: 0.78rem; color: var(--muted); }
+
+    /* RESPONSIVO */
+    @media (max-width: 900px) {
+      nav { padding: 1rem 1.5rem; }
+      .nav-links { display: none; }
+      footer { flex-direction: column; gap: 1rem; text-align: center; }
     }
   </style>
 </head>
 <body>
 
-<div class="bg-orbs">
-  <div class="orb orb1"></div>
-  <div class="orb orb2"></div>
-  <div class="orb orb3"></div>
-</div>
-
   <nav>
-    <a class="logo" href="index.html">Vaza PUC</a>
+    <a class="nav-logo" href="index.html">
+      VazaPUC
+      <span>PREMIUM</span>
+    </a>
     <ul class="nav-links">
-      <li><a href="index.html">Home</a></li>
-      <li><a href="premium.html" style="color: var(--text); font-weight: 600;">Premium</a></li>
+      <li><a href="index.html#sobre">Quem somos</a></li>
+      <li><a href="index.html#feed">Vazamentos</a></li>
+      <li><a href="index.html#planos">Planos</a></li>
+      <li><a href="index.html#contato">Contato</a></li>
     </ul>
-    <div class="ms-lg-3">
-      <a class="btn custom-btn custom-border-btn" href="inicial/cadastro.html">
-        Entrar 👤
-      </a>
+    <div class="nav-actions">
+      <div class="theme-switcher-wrapper">
+        <button class="theme-switcher-btn" id="themeSwitcherBtn" title="Alterar Tema">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+        </button>
+        <div class="theme-slider-glass" id="themeSwitcherDropdown">
+          <div class="theme-opt-nav" data-theme="padrao"        style="background:#a31f4b" title="Vinho Escuro"></div>
+          <div class="theme-opt-nav" data-theme="azul"          style="background:#1f5aa3" title="Azul Escuro"></div>
+          <div class="theme-opt-nav" data-theme="cinza"         style="background:#888888" title="Cinza Escuro"></div>
+          <div class="theme-opt-nav" data-theme="amarelo"       style="background:#b8860b" title="Amarelo Escuro"></div>
+          <div class="theme-nav-sep"></div>
+          <div class="theme-opt-nav" data-theme="padrao-claro"  style="background:linear-gradient(135deg,#a31f4b 50%,#f4f6f8 50%)" title="Vinho Claro"></div>
+          <div class="theme-opt-nav" data-theme="azul-claro"    style="background:linear-gradient(135deg,#1f5aa3 50%,#f0f4f8 50%)" title="Azul Claro"></div>
+          <div class="theme-opt-nav" data-theme="cinza-claro"   style="background:linear-gradient(135deg,#555 50%,#f5f5f5 50%)"   title="Cinza Claro"></div>
+          <div class="theme-opt-nav" data-theme="amarelo-claro" style="background:linear-gradient(135deg,#b8860b 50%,#fcfbf7 50%)" title="Amarelo Claro"></div>
+        </div>
+      </div>
+      <a class="btn-nav" href="inicial/cadastro.html">Entrar 👤</a>
     </div>
   </nav>
 
   <section class="premium-hero">
-    <div class="hero-glow"></div>
-    <div class="hero-glow2"></div>
-    <div class="premium-badge">Vaza PUC Premium</div>
-    <h1>Eleve sua <em>Experiência</em></h1>
+    <div class="premium-badge">VazaPUC Premium</div>
+    <h1>Eleve sua<br><em>Experiência</em></h1>
     <p class="hero-sub">
       Desbloqueie recursos exclusivos, destaque seu perfil e saiba de tudo antes de todo mundo. Escolha o plano perfeito para você.
     </p>
   </section>
 
-  <div class="card-wrap">
+  <section class="plans-container">
     <div class="plan-card">
-      <h3 style="font-family: 'Syne', sans-serif; font-size: 1.5rem; color: var(--text);">Olheiro</h3>
+      <h3>Olheiro</h3>
       <div class="plan-price">Grátis</div>
       <ul class="plan-features">
         <li>Acesso ao feed principal</li>
@@ -264,33 +308,64 @@
         <li class="disabled-feature">Sem modo anônimo avançado</li>
         <li class="disabled-feature">Contem anúncios</li>
       </ul>
-      <a href="inicial/cadastro.html" class="btn btn-ghost btn-plan">Continuar Grátis</a>
+      <a href="inicial/cadastro.html" class="btn-plan btn-ghost-plan">Continuar Grátis</a>
     </div>
 
     <div class="plan-card pro">
-      <h3 style="font-family: 'Syne', sans-serif; font-size: 1.5rem; color: var(--accent);">Elite Universitária</h3>
+      <h3>Elite Universitária</h3>
       <div class="plan-price">R$ 9<span>,90/mês</span></div>
       <ul class="plan-features pro-features">
         <li>Acesso ao feed principal</li>
         <li>Curtir e comentar</li>
         <li>Modo anônimo básico</li>
         <li>Mensagens diretas ilimitadas</li>
-        <li style="color: var(--text);">Selo de verificado Premium</li>
-        <li style="color: var(--text);">Veja quem visitou seu perfil</li>
-        <li style="color: var(--text);">Posts em destaque no feed</li>
-        <li style="color: var(--text);">Modo anônimo avançado (Ghost)</li>
-        <li style="color: var(--text);">Sem anúncios</li>
+        <li>Selo de verificado Premium</li>
+        <li>Veja quem visitou seu perfil</li>
+        <li>Posts em destaque no feed</li>
+        <li>Modo anônimo avançado (Ghost)</li>
+        <li>Sem anúncios</li>
       </ul>
-     <a href="PaginaPrincipal/vazadinhos.html" onclick="localStorage.setItem('vazaPuc_isPremium','true');localStorage.setItem('vazaPuc_premiumSince',new Date().toISOString());" class="btn-assinar-premium">✦ Ativar Agora (Teste)</a>
+     <a href="#" class="btn-plan btn-assinar-premium">Assinar agora</a>
     </div>
   </section>
 
-  <div class="divider"></div>
-
   <footer>
-    <span>© 2026 Vazadinhos da PUC</span>
-    <span>Por Pedro L. e Pietro G.</span>
+    <div class="footer-logo">VAZAPUC</div>
+    <div class="footer-copy">© 2026 Vazadinhos da PUC</div>
+    <div class="footer-by">Por Pedro L. e Pietro G.</div>
   </footer>
+
+  <script>
+    const themeBtn      = document.getElementById('themeSwitcherBtn');
+    const themeDropdown = document.getElementById('themeSwitcherDropdown');
+    const themeOpts     = document.querySelectorAll('.theme-opt-nav');
+
+    themeBtn?.addEventListener('click', e => {
+      e.stopPropagation();
+      themeDropdown.classList.toggle('active');
+    });
+    document.addEventListener('click', e => {
+      if (!themeDropdown?.contains(e.target) && e.target !== themeBtn) {
+        themeDropdown?.classList.remove('active');
+      }
+    });
+
+    themeOpts.forEach(opt => {
+      opt.addEventListener('click', () => {
+        const theme = opt.dataset.theme;
+        if (theme === 'padrao') document.documentElement.removeAttribute('data-theme');
+        else document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('vazaPucTheme', theme);
+        themeOpts.forEach(o => o.classList.remove('ativo'));
+        opt.classList.add('ativo');
+        setTimeout(() => themeDropdown.classList.remove('active'), 600);
+      });
+    });
+
+    /* Marca o tema ativo visualmente ao carregar a página */
+    const temaAtual = localStorage.getItem('vazaPucTheme') || 'padrao';
+    document.querySelector(`.theme-opt-nav[data-theme="${temaAtual}"]`)?.classList.add('ativo');
+  </script>
 
 </body>
 </html>
