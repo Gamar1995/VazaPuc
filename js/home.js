@@ -9,10 +9,13 @@ import {
   isPremium,
   activatePremium,
   deactivatePremium,
-  recordProfileVisit,
-  getProfileVisitors,
   profileIsPremium,
 } from './premium.js';
+
+import {
+  recordProfileVisit,
+  getProfileVisitors,
+} from './visita_perfil.js';
 
 import {
   uploadPostMedia,

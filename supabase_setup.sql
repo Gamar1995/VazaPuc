@@ -446,3 +446,113 @@ BEGIN
   RETURN v_is_following;
 END;
 $$;
+
+-- ============================================================
+-- MIGRAÇÃO: Sistema de Visitantes de Perfil — VazaPUC
+-- Execute este script no SQL Editor do Supabase
+-- ============================================================
+
+-- 1. Cria tabela de visitas com coluna visit_date para deduplicação diária
+CREATE TABLE IF NOT EXISTS profile_visits (
+  id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  profile_id  UUID        NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  visitor_id  UUID        NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  visited_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  visit_date  DATE        NOT NULL DEFAULT CURRENT_DATE,
+  UNIQUE (profile_id, visitor_id, visit_date)
+);
+
+-- 2. Índices para performance
+CREATE INDEX IF NOT EXISTS idx_profile_visits_profile_id
+  ON profile_visits (profile_id, visited_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_profile_visits_visitor_id
+  ON profile_visits (visitor_id);
+
+-- 3. RLS
+ALTER TABLE profile_visits ENABLE ROW LEVEL SECURITY;
+
+-- Dono do perfil pode ver quem o visitou
+CREATE POLICY "Dono ve seus visitantes"
+  ON profile_visits FOR SELECT
+  USING (auth.uid() = profile_id);
+
+-- Qualquer usuário logado pode registrar visita
+CREATE POLICY "Registrar visita"
+  ON profile_visits FOR INSERT
+  WITH CHECK (auth.uid() = visitor_id);
+
+-- Permite upsert (UPDATE) pelo visitante
+CREATE POLICY "Atualizar visita"
+  ON profile_visits FOR UPDATE
+  USING (auth.uid() = visitor_id);
+
+-- 4. Colunas extras nos profiles (caso não existam)
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS is_premium BOOLEAN DEFAULT false;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS banner_url TEXT DEFAULT '';
+]
+-- ============================================================
+-- MIGRAÇÃO: Sistema de Visitantes — VazaPUC
+-- Execute TUDO isso no SQL Editor do Supabase
+-- ============================================================
+
+-- 1. Cria a tabela (se ainda não existir)
+CREATE TABLE IF NOT EXISTS profile_visits (
+  id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  profile_id  UUID        NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  visitor_id  UUID        NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  visited_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  visit_date  DATE        NOT NULL DEFAULT CURRENT_DATE,
+  UNIQUE (profile_id, visitor_id, visit_date)
+);
+
+-- 2. Se a tabela já existia SEM a coluna visit_date, adiciona ela
+ALTER TABLE profile_visits ADD COLUMN IF NOT EXISTS visit_date DATE NOT NULL DEFAULT CURRENT_DATE;
+
+-- 3. Garante que a unique constraint correta existe
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'profile_visits_profile_id_visitor_id_visit_date_key'
+  ) THEN
+    ALTER TABLE profile_visits
+      ADD CONSTRAINT profile_visits_profile_id_visitor_id_visit_date_key
+      UNIQUE (profile_id, visitor_id, visit_date);
+  END IF;
+END$$;
+
+-- 4. Índices para performance
+CREATE INDEX IF NOT EXISTS idx_profile_visits_profile_id
+  ON profile_visits (profile_id, visited_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_profile_visits_visitor_id
+  ON profile_visits (visitor_id);
+
+-- 5. Habilita RLS
+ALTER TABLE profile_visits ENABLE ROW LEVEL SECURITY;
+
+-- 6. Remove policies antigas para recriar corretamente
+DROP POLICY IF EXISTS "Dono ve seus visitantes"  ON profile_visits;
+DROP POLICY IF EXISTS "Registrar visita"         ON profile_visits;
+DROP POLICY IF EXISTS "Atualizar visita"         ON profile_visits;
+DROP POLICY IF EXISTS "Dono vê seus visitantes"  ON profile_visits;
+
+-- 7. SELECT: dono do perfil vê quem o visitou
+CREATE POLICY "Dono ve seus visitantes"
+  ON profile_visits FOR SELECT
+  USING (auth.uid() = profile_id);
+
+-- 8. INSERT: qualquer usuário logado pode registrar visita
+CREATE POLICY "Registrar visita"
+  ON profile_visits FOR INSERT
+  WITH CHECK (auth.uid() IS NOT NULL);
+
+-- 9. UPDATE: o visitante atualiza sua própria visita (para o upsert funcionar)
+CREATE POLICY "Atualizar visita"
+  ON profile_visits FOR UPDATE
+  USING (auth.uid() = visitor_id);
+
+-- 10. Colunas extras nos profiles
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS is_premium BOOLEAN DEFAULT false;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS banner_url TEXT DEFAULT '';
