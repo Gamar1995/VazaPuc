@@ -312,7 +312,7 @@ export function createMediaGridHTML(mediaUrls, postId) {
 // ============================================================
 // LIGHTBOX — visualizador de foto em tela cheia
 // ============================================================
-export function openMediaLightbox(mediaUrls, startIndex = 0) {
+export function openMediaLightbox(mediaUrls, startIndex = 0, postId = null) {
   document.getElementById('mediaLightbox')?.remove();
 
   let currentIndex = startIndex;
@@ -321,10 +321,8 @@ export function openMediaLightbox(mediaUrls, startIndex = 0) {
   lb.id = 'mediaLightbox';
   lb.style.cssText = `
     position:fixed;inset:0;z-index:5000;
-    background:rgba(0,0,0,0.92);
-    display:flex;flex-direction:column;
-    align-items:center;justify-content:center;
-    padding:20px;
+    background:rgba(0,0,0,0.95);
+    display:flex;align-items:stretch;justify-content:center;
     backdrop-filter:blur(8px);
   `;
 
@@ -335,50 +333,92 @@ export function openMediaLightbox(mediaUrls, startIndex = 0) {
       border:none;border-radius:50%;
       width:36px;height:36px;font-size:18px;
       cursor:pointer;display:flex;align-items:center;justify-content:center;
+      z-index:10;
     ">✕</button>
 
-    ${mediaUrls.length > 1 ? `
-      <button id="lbPrev" style="
-        position:fixed;left:16px;top:50%;transform:translateY(-50%);
-        background:rgba(255,255,255,0.12);color:white;
-        border:none;border-radius:50%;
-        width:40px;height:40px;font-size:20px;
-        cursor:pointer;display:flex;align-items:center;justify-content:center;
-      ">‹</button>
-      <button id="lbNext" style="
-        position:fixed;right:16px;top:50%;transform:translateY(-50%);
-        background:rgba(255,255,255,0.12);color:white;
-        border:none;border-radius:50%;
-        width:40px;height:40px;font-size:20px;
-        cursor:pointer;display:flex;align-items:center;justify-content:center;
-      ">›</button>
-    ` : ''}
+    <!-- Lado esquerdo: imagem -->
+    <div style="
+      flex:1;
+      display:flex;align-items:center;justify-content:center;
+      position:relative;
+      min-width:0;
+      background:#000;
+    ">
+      ${mediaUrls.length > 1 ? `
+        <button id="lbPrev" style="
+          position:absolute;left:16px;top:50%;transform:translateY(-50%);
+          background:rgba(255,255,255,0.15);color:white;
+          border:none;border-radius:50%;
+          width:40px;height:40px;font-size:22px;
+          cursor:pointer;display:flex;align-items:center;justify-content:center;
+          z-index:2;transition:background 0.2s;
+        "
+        onmouseover="this.style.background='rgba(255,255,255,0.3)'"
+        onmouseout="this.style.background='rgba(255,255,255,0.15)'">‹</button>
+        <button id="lbNext" style="
+          position:absolute;right:16px;top:50%;transform:translateY(-50%);
+          background:rgba(255,255,255,0.15);color:white;
+          border:none;border-radius:50%;
+          width:40px;height:40px;font-size:22px;
+          cursor:pointer;display:flex;align-items:center;justify-content:center;
+          z-index:2;transition:background 0.2s;
+        "
+        onmouseover="this.style.background='rgba(255,255,255,0.3)'"
+        onmouseout="this.style.background='rgba(255,255,255,0.15)'">›</button>
+      ` : ''}
 
-    <img id="lbImage" src="${mediaUrls[currentIndex]}"
-      style="
-        max-width:92vw;max-height:86vh;
-        border-radius:12px;object-fit:contain;
+      <img id="lbImage" src="${mediaUrls[currentIndex]}" style="
+        max-width:100%;max-height:100vh;
+        object-fit:contain;
         transition:opacity 0.18s;
+        display:block;
       ">
 
-    ${mediaUrls.length > 1 ? `
-      <div id="lbDots" style="
-        display:flex;gap:6px;margin-top:14px;
+      ${mediaUrls.length > 1 ? `
+        <div id="lbDots" style="
+          position:absolute;bottom:16px;left:50%;transform:translateX(-50%);
+          display:flex;gap:6px;
+        ">
+          ${mediaUrls.map((_, i) => `
+            <div class="lb-dot" data-index="${i}" style="
+              width:${i === currentIndex ? '18px' : '7px'};height:7px;
+              border-radius:4px;
+              background:${i === currentIndex ? 'white' : 'rgba(255,255,255,0.4)'};
+              cursor:pointer;transition:all 0.2s;
+            "></div>
+          `).join('')}
+        </div>
+      ` : ''}
+    </div>
+
+    <!-- Lado direito: comentários -->
+    ${postId ? `
+    <div id="lbComments" style="
+      width:380px;
+      flex-shrink:0;
+      background:var(--dark-bg-secondary, #1a1a2e);
+      border-left:1px solid rgba(255,255,255,0.08);
+      display:flex;flex-direction:column;
+      overflow:hidden;
+    ">
+      <div style="
+        padding:16px 20px;
+        border-bottom:1px solid rgba(255,255,255,0.08);
+        display:flex;align-items:center;gap:10px;
+        flex-shrink:0;
       ">
-        ${mediaUrls.map((_, i) => `
-          <div class="lb-dot" data-index="${i}" style="
-            width:${i === currentIndex ? '18px' : '7px'};height:7px;
-            border-radius:4px;
-            background:${i === currentIndex ? 'white' : 'rgba(255,255,255,0.35)'};
-            cursor:pointer;transition:all 0.2s;
-          "></div>
-        `).join('')}
+        <div id="lbPostAuthor" style="font-weight:700;font-size:15px;color:white;">Carregando...</div>
       </div>
-    ` : ''}
 
-    <p id="lbCounter" style="
-      color:rgba(255,255,255,0.5);font-size:13px;margin-top:8px;
-    ">${mediaUrls.length > 1 ? `${currentIndex + 1} / ${mediaUrls.length}` : ''}</p>
+      <div id="lbCommentsList" style="
+        flex:1;overflow-y:auto;padding:12px 0;
+      ">
+        <p style="text-align:center;padding:30px;color:rgba(255,255,255,0.4);font-size:14px;">
+          Carregando comentários...
+        </p>
+      </div>
+    </div>
+    ` : ''}
   `;
 
   document.body.appendChild(lb);
@@ -396,11 +436,8 @@ export function openMediaLightbox(mediaUrls, startIndex = 0) {
 
     document.querySelectorAll('.lb-dot').forEach((dot, i) => {
       dot.style.width = i === currentIndex ? '18px' : '7px';
-      dot.style.background = i === currentIndex ? 'white' : 'rgba(255,255,255,0.35)';
+      dot.style.background = i === currentIndex ? 'white' : 'rgba(255,255,255,0.4)';
     });
-
-    const counter = document.getElementById('lbCounter');
-    if (counter) counter.textContent = mediaUrls.length > 1 ? `${currentIndex + 1} / ${mediaUrls.length}` : '';
   }
 
   const closeLb = () => {
@@ -426,13 +463,289 @@ export function openMediaLightbox(mediaUrls, startIndex = 0) {
     if (e.key === 'ArrowRight') goTo(currentIndex + 1);
   });
 
-  // Swipe touch
   let touchStartX = 0;
   lb.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; });
   lb.addEventListener('touchend', (e) => {
     const diff = touchStartX - e.changedTouches[0].clientX;
     if (Math.abs(diff) > 50) goTo(diff > 0 ? currentIndex + 1 : currentIndex - 1);
   });
+
+  // Carrega autor e comentários se tiver postId
+  if (postId) {
+    loadLightboxComments(postId);
+  }
+}
+
+async function loadLightboxComments(postId) {
+  const authorEl = document.getElementById('lbPostAuthor');
+  const listEl = document.getElementById('lbCommentsList');
+
+  // REMOVE HEADER ANTIGO
+  if (authorEl) {
+    authorEl.parentElement.remove();
+  }
+
+  if (!listEl) return;
+
+  try {
+    const { supabase } = await import('./supabase.js');
+
+    // Busca post + autor
+    const { data: post } = await supabase
+      .from('posts')
+      .select(`
+        content,
+        created_at,
+        author:profiles(name, handle, avatar_url)
+      `)
+      .eq('id', postId)
+      .single();
+
+    // Busca comentários
+    const { data: replies } = await supabase
+      .from('replies')
+      .select(`
+        content,
+        created_at,
+        is_private,
+        author:profiles(name, handle, avatar_url)
+      `)
+      .eq('post_id', postId)
+      .eq('is_private', false)
+      .order('created_at', { ascending: true })
+      .limit(50);
+
+    const postAvatar =
+      post?.author?.avatar_url ||
+      `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author?.handle}`;
+
+    const getTime = (date) => {
+      const diffMin = Math.floor(
+        (Date.now() - new Date(date)) / 60000
+      );
+
+      if (diffMin < 1) return 'agora';
+      if (diffMin < 60) return `${diffMin}min`;
+      if (diffMin < 1440) return `${Math.floor(diffMin / 60)}h`;
+
+      return `${Math.floor(diffMin / 1440)}d`;
+    };
+
+    let html = '';
+
+    // POST ORIGINAL COMO PRIMEIRO "COMENTÁRIO"
+    html += `
+      <div style="
+        display:flex;
+        gap:12px;
+        padding:18px 16px;
+        border-bottom:1px solid rgba(255,255,255,0.06);
+      ">
+
+        <img src="${postAvatar}" style="
+          width:48px;
+          height:48px;
+          border-radius:50%;
+          object-fit:cover;
+          flex-shrink:0;
+        ">
+
+        <div style="
+          flex:1;
+          min-width:0;
+        ">
+
+          <div style="
+            display:flex;
+            align-items:center;
+            gap:6px;
+            flex-wrap:wrap;
+          ">
+
+            <span style="
+              font-weight:700;
+              font-size:24px;
+              color:white;
+            ">
+              ${escapeHtmlLocal(post.author?.name ?? 'Usuário')}
+            </span>
+
+            <span style="
+              font-size:20px;
+              color:rgba(255,255,255,0.45);
+            ">
+              @${escapeHtmlLocal(post.author?.handle ?? '')}
+            </span>
+
+            <span style="
+              font-size:16px;
+              color:rgba(255,255,255,0.25);
+            ">
+              • ${getTime(post.created_at)}
+            </span>
+
+          </div>
+
+          ${
+            post?.content
+              ? `
+                <p style="
+                  margin:6px 0 0;
+                  font-size:18px;
+                  line-height:1.6;
+                  color:rgba(255,255,255,0.92);
+                  word-break:break-word;
+                ">
+                  ${escapeHtmlLocal(post.content)}
+                </p>
+              `
+              : `
+                <p style="
+                  margin:6px 0 0;
+                  font-size:13px;
+                  color:rgba(255,255,255,0.35);
+                  font-style:italic;
+                ">
+                  Sem descrição.
+                </p>
+              `
+          }
+
+        </div>
+
+      </div>
+    `;
+
+    // SEM COMENTÁRIOS
+    if (!replies || replies.length === 0) {
+      html += `
+        <div style="
+          text-align:center;
+          padding:45px 20px;
+        ">
+          <div style="
+            font-size:38px;
+            margin-bottom:12px;
+            opacity:0.4;
+          ">
+            💬
+          </div>
+
+          <p style="
+            font-size:14px;
+            color:rgba(255,255,255,0.4);
+            margin:0;
+          ">
+            Nenhum comentário ainda.
+          </p>
+        </div>
+      `;
+
+      listEl.innerHTML = html;
+      return;
+    }
+
+    // COMENTÁRIOS
+    html += replies.map(r => {
+
+      const avatar =
+        r.author?.avatar_url ||
+        `https://api.dicebear.com/7.x/avataaars/svg?seed=${r.author?.handle}`;
+
+      return `
+        <div style="
+          display:flex;
+          gap:12px;
+          padding:14px 16px;
+        ">
+
+          <img src="${avatar}" style="
+            width:34px;
+            height:34px;
+            border-radius:50%;
+            object-fit:cover;
+            flex-shrink:0;
+            margin-top:2px;
+          " loading="lazy">
+
+          <div style="
+            flex:1;
+            min-width:0;
+          ">
+
+            <div style="
+              display:flex;
+              align-items:center;
+              gap:6px;
+              flex-wrap:wrap;
+            ">
+
+              <span style="
+                font-weight:700;
+                font-size:13px;
+                color:white;
+              ">
+                ${escapeHtmlLocal(r.author?.name ?? 'Usuário')}
+              </span>
+
+              <span style="
+                font-size:11px;
+                color:rgba(255,255,255,0.4);
+              ">
+                @${escapeHtmlLocal(r.author?.handle ?? '')}
+              </span>
+
+              <span style="
+                font-size:11px;
+                color:rgba(255,255,255,0.25);
+              ">
+                • ${getTime(r.created_at)}
+              </span>
+
+            </div>
+
+            <p style="
+              margin:4px 0 0;
+              font-size:13px;
+              line-height:1.6;
+              color:rgba(255,255,255,0.82);
+              word-break:break-word;
+            ">
+              ${escapeHtmlLocal(r.content)}
+            </p>
+
+          </div>
+
+        </div>
+      `;
+    }).join('');
+
+    listEl.innerHTML = html;
+
+    listEl.scrollTop = 0;
+
+  } catch (err) {
+    console.error('[lbComments]', err);
+
+    if (listEl) {
+      listEl.innerHTML = `
+        <p style="
+          text-align:center;
+          padding:20px;
+          color:rgba(255,0,0,0.6);
+        ">
+          Erro ao carregar.
+        </p>
+      `;
+    }
+  }
+}
+
+function escapeHtmlLocal(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }
 
 // ============================================================
@@ -445,7 +758,10 @@ export function attachMediaListeners(container, signal) {
       try {
         const urls = JSON.parse(decodeURIComponent(img.dataset.mediaUrls || '[]'));
         const index = parseInt(img.dataset.index || '0');
-        if (urls.length) openMediaLightbox(urls, index);
+        // Pega o postId do card pai
+        const postCard = img.closest('[data-post-id]');
+        const postId = postCard?.dataset?.postId ?? null;
+        if (urls.length) openMediaLightbox(urls, index, postId);
       } catch (_) {}
     }, { signal });
   });

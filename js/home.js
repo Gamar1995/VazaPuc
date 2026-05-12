@@ -1419,11 +1419,9 @@ async function openPostDetailModal(postId) {
       </div>
     `;
 
-    if (mediaHtml) {
-      const { attachMediaListeners: attachMedia } = await import('./Midia.js');
-      const modalContent = document.getElementById('postDetailContent');
-      if (modalContent) attachMedia(modalContent, new AbortController().signal);
-    }
+    const { attachMediaListeners: attachMedia } = await import('./Midia.js');
+    const modalContent = document.getElementById('postDetailContent');
+    if (modalContent) attachMedia(modalContent, new AbortController().signal);
 
     content.querySelectorAll('.bloco-badge-modal').forEach(badge => {
       badge.addEventListener('click', (e) => {
