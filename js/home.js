@@ -1152,7 +1152,113 @@ function attachPostEventListeners(container = document, context = 'feed') {
     }, { signal });
   });
 }
+async function openLikesModal(postId) {
+  document.getElementById('likesModal')?.remove();
 
+  const modal = document.createElement('div');
+  modal.id = 'likesModal';
+  modal.style.cssText = `
+    position:fixed;inset:0;z-index:5000;
+    background:rgba(0,0,0,0.75);
+    display:flex;align-items:center;justify-content:center;
+    padding:20px;backdrop-filter:blur(6px);
+  `;
+  modal.innerHTML = `
+    <div style="
+      background:var(--dark-bg-secondary);border:1px solid var(--border);
+      border-radius:24px;width:100%;max-width:400px;max-height:75vh;
+      display:flex;flex-direction:column;box-shadow:0 10px 30px rgba(0,0,0,0.5);
+    ">
+      <div style="display:flex;align-items:center;justify-content:space-between;
+                  padding:16px 24px;border-bottom:1px solid var(--border);">
+        <h3 style="font-size:17px;font-weight:800;color:var(--text-primary);margin:0;">❤️ Curtidas</h3>
+        <button id="closeLikesModal" style="background:none;border:none;color:var(--text-secondary);
+          font-size:20px;cursor:pointer;padding:4px 8px;border-radius:6px;
+          transition:color 0.2s;">✕</button>
+      </div>
+      <div id="likesModalContent" style="overflow-y:auto;flex:1;padding:8px 0;">
+        <p style="text-align:center;padding:30px;color:var(--text-secondary);">Carregando...</p>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  document.getElementById('closeLikesModal').addEventListener('click', () => modal.remove());
+  modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+
+  const content = document.getElementById('likesModalContent');
+
+  try {
+    const { data, error } = await supabase
+      .from('likes')
+      .select('user:profiles(id, name, handle, avatar_url, is_premium)')
+      .eq('post_id', postId)
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    if (error) throw error;
+
+    const users = (data || []).map(d => d.user).filter(Boolean);
+
+    if (users.length === 0) {
+      content.innerHTML = `
+        <div style="text-align:center;padding:40px 20px;color:var(--text-secondary);">
+          <div style="font-size:40px;margin-bottom:12px;">🤍</div>
+          <p style="font-size:15px;font-weight:600;color:var(--text-primary);margin:0 0 6px;">
+            Nenhuma curtida ainda
+          </p>
+          <p style="font-size:13px;margin:0;">Seja o primeiro a curtir este post!</p>
+        </div>`;
+      return;
+    }
+
+    content.innerHTML = users.map(u => {
+      const avatar = u.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.handle}`;
+      return `
+        <div class="likes-modal-item" data-handle="${escapeHtml(u.handle)}" style="
+          display:flex;align-items:center;gap:12px;
+          padding:12px 20px;cursor:pointer;
+          transition:background 0.15s;
+        "
+        onmouseover="this.style.background='var(--dark-bg, #0d0d0d)'"
+        onmouseout="this.style.background='transparent'">
+          <img src="${avatar}" style="
+            width:44px;height:44px;border-radius:50%;object-fit:cover;
+            border:2px solid ${u.is_premium ? '#ffd700' : 'var(--border)'};
+            flex-shrink:0;
+          " loading="lazy">
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:700;font-size:14px;color:var(--text-primary);
+                        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              ${escapeHtml(u.name ?? 'Usuário')}
+              ${u.is_premium ? '<span class="premium-badge-tag" title="Premium">✦</span>' : ''}
+            </div>
+            <div style="color:var(--text-secondary);font-size:13px;">@${escapeHtml(u.handle ?? '')}</div>
+          </div>
+          <span style="color:var(--text-secondary);font-size:18px;flex-shrink:0;">❤️</span>
+        </div>`;
+    }).join('');
+
+    content.querySelectorAll('.likes-modal-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const handle = item.dataset.handle;
+        if (!handle) return;
+        modal.remove();
+        document.getElementById('postDetailModal') && closePostDetailModal();
+        document.querySelectorAll('.page-container').forEach(p => p.classList.remove('active'));
+        document.getElementById('profile-page').classList.add('active');
+        loadProfileByHandle(handle);
+      });
+    });
+
+  } catch (err) {
+    console.error('[likesModal]', err);
+    content.innerHTML = `
+      <p style="text-align:center;padding:30px;color:var(--danger);">
+        Erro ao carregar curtidas.
+      </p>`;
+  }
+}
 // ============================================================
 // MODAL DE DETALHE DO POST
 // ============================================================
@@ -1265,7 +1371,14 @@ async function openPostDetailModal(postId) {
       </div>
       <div style="display:flex;gap:20px;padding:14px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:16px;">
         <span style="color:var(--text-secondary);font-size:14px;"><strong style="color:var(--text-primary);">${replyCount}</strong> Respostas</span>
-        <span style="color:var(--text-secondary);font-size:14px;"><strong id="detailLikeCountStat">${likeCount}</strong> Curtidas</span>
+         <span id="detailLikeCountWrapper" data-post-id="${postId}" style="
+          color:var(--text-secondary);font-size:14px;cursor:pointer;
+          transition:color 0.15s;
+        "
+        onmouseover="this.style.color='var(--text-primary)'"
+        onmouseout="this.style.color='var(--text-secondary)'">
+          <strong id="detailLikeCountStat">${likeCount}</strong> Curtidas
+        </span>
       </div>
       <div style="display:flex;gap:24px;padding-bottom:16px;border-bottom:1px solid var(--border);margin-bottom:16px;">
         <button id="detailLikeBtn" data-post-id="${postId}" data-author-id="${authorId}" data-liked="${isLiked}"
@@ -1401,6 +1514,22 @@ async function openPostDetailModal(postId) {
       } finally {
         allBtns.forEach(b => { b.style.pointerEvents = ''; });
       }
+    });
+
+    // Clique em "X Curtidas" — só premium ou dono do post vê
+    document.getElementById('detailLikeCountWrapper')?.addEventListener('click', () => {
+      const isOwner = currentProfile && currentProfile.id === authorId;
+      const userIsPremium = isPremium();
+
+      if (!currentProfile) {
+        showNotification('Faça login para ver quem curtiu! 🔐');
+        return;
+      }
+      if (!isOwner && !userIsPremium) {
+        openPremiumModalCurtida()
+        return;
+      }
+      openLikesModal(postId);
     });
 
     document.getElementById('detailReplyToggle')?.addEventListener('click', () => {
@@ -2202,57 +2331,487 @@ async function renderVisitorsWidget(profileId) {
 
 function openPremiumModal() {
   document.getElementById('premiumModal')?.remove();
+
   const alreadyPremium = isPremium();
+
+  const modal = document.createElement('div');
+  modal.id = 'premiumModal';
+
+  modal.style.cssText = `
+    position:fixed;
+    inset:0;
+    z-index:9999;
+    background:rgba(0,0,0,0.88);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    backdrop-filter:blur(10px);
+    animation:fadeIn .2s ease;
+  `;
+
+  modal.innerHTML = `
+    <div style="
+      background:linear-gradient(180deg,var(--dark-bg-secondary),#111);
+      border:1px solid rgba(255,215,0,0.18);
+      border-radius:28px;
+      width:100%;
+      max-width:470px;
+      padding:38px 32px;
+      position:relative;
+      box-shadow:
+        0 0 70px rgba(255,215,0,0.10),
+        0 10px 40px rgba(0,0,0,0.45);
+      text-align:center;
+      overflow:hidden;
+    ">
+
+      <div style="
+        position:absolute;
+        top:-120px;
+        right:-120px;
+        width:220px;
+        height:220px;
+        background:radial-gradient(circle,#ffd70033,transparent 70%);
+        pointer-events:none;
+      "></div>
+
+      <button id="closePremiumModal"
+        style="
+          position:absolute;
+          top:16px;
+          right:16px;
+          background:rgba(255,255,255,0.04);
+          border:1px solid rgba(255,255,255,0.06);
+          color:var(--text-secondary);
+          font-size:18px;
+          cursor:pointer;
+          width:34px;
+          height:34px;
+          border-radius:10px;
+          transition:.2s;
+        "
+        onmouseover="this.style.background='rgba(255,255,255,0.08)'"
+        onmouseout="this.style.background='rgba(255,255,255,0.04)'"
+      >
+        ✕
+      </button>
+
+      <div style="
+        width:82px;
+        height:82px;
+        margin:0 auto 18px;
+        border-radius:50%;
+        background:linear-gradient(135deg,#ffd700,#ff8c00);
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        font-size:38px;
+        color:#1a0008;
+        box-shadow:0 8px 30px rgba(255,215,0,0.25);
+      ">
+        ✦
+      </div>
+
+      <div style="
+        display:inline-block;
+        background:linear-gradient(135deg,#ffd700,#ff8c00);
+        color:#1a0008;
+        font-weight:900;
+        font-size:11px;
+        padding:5px 16px;
+        border-radius:999px;
+        letter-spacing:1px;
+        text-transform:uppercase;
+        margin-bottom:22px;
+      ">
+        VazaPUC Premium
+      </div>
+
+      <h2 style="
+        font-size:28px;
+        font-weight:900;
+        color:var(--text-primary);
+        margin:0 0 10px;
+        line-height:1.2;
+      ">
+        ${
+          alreadyPremium
+            ? 'Você já faz parte do Premium ✦'
+            : 'Desbloqueie recursos exclusivos'
+        }
+      </h2>
+
+      <p style="
+        color:var(--text-secondary);
+        font-size:15px;
+        line-height:1.7;
+        margin:0 0 30px;
+      ">
+        ${
+          alreadyPremium
+            ? 'Aproveite todos os benefícios premium da sua conta.'
+            : 'Tenha acesso a funcionalidades exclusivas, navegação avançada e recursos liberados apenas para membros Premium.'
+        }
+      </p>
+
+      <div style="
+        background:rgba(255,255,255,0.02);
+        border:1px solid var(--border);
+        border-radius:20px;
+        padding:20px;
+        margin-bottom:26px;
+        text-align:left;
+      ">
+
+        ${[
+          ['👁️','Ver quem visitou seu perfil'],
+          ['❤️','Ver curtidas exclusivas'],
+          ['👻','Modo Ghost invisível'],
+          ['💬','Mensagens ilimitadas'],
+          ['🚫','Experiência sem anúncios'],
+          ['⚡','Destaque nos posts'],
+        ].map(([icon,text]) => `
+          <div style="
+            display:flex;
+            align-items:center;
+            gap:12px;
+            padding:12px 0;
+            border-bottom:1px solid rgba(255,255,255,0.05);
+          ">
+
+            <div style="
+              min-width:34px;
+              height:34px;
+              border-radius:10px;
+              background:rgba(255,215,0,0.08);
+              display:flex;
+              align-items:center;
+              justify-content:center;
+              font-size:16px;
+            ">
+              ${icon}
+            </div>
+
+            <span style="
+              font-size:14px;
+              color:var(--text-primary);
+              font-weight:500;
+            ">
+              ${text}
+            </span>
+
+            <span style="
+              margin-left:auto;
+              color:#ffd700;
+              font-size:13px;
+              font-weight:700;
+            ">
+              ✓
+            </span>
+
+          </div>
+        `).join('')}
+
+      </div>
+
+      ${
+        alreadyPremium
+          ? `
+            <button id="deactivatePremiumBtn"
+              style="
+                width:100%;
+                padding:15px;
+                border-radius:18px;
+                font-size:14px;
+                font-weight:700;
+                cursor:pointer;
+                background:rgba(255,255,255,0.03);
+                border:1px solid var(--border);
+                color:var(--text-secondary);
+                transition:.2s;
+              "
+              onmouseover="this.style.opacity='0.8'"
+              onmouseout="this.style.opacity='1'"
+            >
+              Desativar Premium
+            </button>
+          `
+          : `
+            <button id="activatePremiumBtn"
+              style="
+                width:100%;
+                padding:17px;
+                border-radius:20px;
+                font-size:16px;
+                font-weight:900;
+                cursor:pointer;
+                border:none;
+                background:linear-gradient(135deg,#ffd700,#ff8c00);
+                color:#1a0008;
+                box-shadow:0 8px 30px rgba(255,215,0,0.25);
+                transition:.2s;
+              "
+              onmouseover="
+                this.style.transform='translateY(-2px)';
+                this.style.boxShadow='0 12px 35px rgba(255,215,0,0.35)';
+              "
+              onmouseout="
+                this.style.transform='translateY(0)';
+                this.style.boxShadow='0 8px 30px rgba(255,215,0,0.25)';
+              "
+            >
+              ✦ Quero ser Premium
+            </button>
+
+            <p style="
+              font-size:11px;
+              color:var(--text-secondary);
+              margin:12px 0 0;
+            ">
+              Novas vantagens exclusivas sendo adicionadas constantemente.
+            </p>
+          `
+      }
+
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  document.getElementById('closePremiumModal')
+    ?.addEventListener('click', () => modal.remove());
+
+  modal.addEventListener('click', e => {
+    if (e.target === modal) modal.remove();
+  });
+
+  document.getElementById('activatePremiumBtn')
+    ?.addEventListener('click', async () => {
+
+      activatePremium();
+
+      if (currentProfile) {
+        currentProfile = {
+          ...currentProfile,
+          is_premium: true
+        };
+
+        window.currentProfile = currentProfile;
+      }
+
+      modal.remove();
+
+      showNotification('✦ Premium ativado! Bem-vindo ao clube.');
+
+      await loadProfilePage();
+    });
+
+  document.getElementById('deactivatePremiumBtn')
+    ?.addEventListener('click', async () => {
+
+      deactivatePremium();
+
+      if (currentProfile) {
+        currentProfile = {
+          ...currentProfile,
+          is_premium: false
+        };
+
+        window.currentProfile = currentProfile;
+      }
+
+      modal.remove();
+
+      showNotification('Premium desativado.');
+
+      await loadProfilePage();
+    });
+}
+
+window.openPremiumModal = openPremiumModal;
+function openPremiumModalCurtida() {
+  document.getElementById('premiumModal')?.remove();
+
+  const alreadyPremium = isPremium();
+
   const modal = document.createElement('div');
   modal.id = 'premiumModal';
   modal.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px);';
+
   modal.innerHTML = `
     <div style="background:var(--dark-bg-secondary);border:1px solid #ffd70033;border-radius:24px;width:100%;max-width:460px;padding:36px 32px;position:relative;box-shadow:0 0 60px rgba(255,215,0,0.15);text-align:center;">
-      <button id="closePremiumModal" style="position:absolute;top:16px;right:16px;background:none;border:none;color:var(--text-secondary);font-size:20px;cursor:pointer;padding:4px 8px;border-radius:6px;">✕</button>
-      <div style="font-size:48px;margin-bottom:4px;">✦</div>
-      <div style="display:inline-block;background:linear-gradient(135deg,#ffd700,#ff8c00);color:#1a0008;font-weight:800;font-size:11px;padding:4px 14px;border-radius:20px;letter-spacing:1px;text-transform:uppercase;margin-bottom:20px;">VazaPUC Premium</div>
-      <h2 style="font-size:24px;font-weight:800;color:var(--text-primary);margin:0 0 8px;">${alreadyPremium ? 'Você já é Premium! ✦' : 'Eleve sua Experiência'}</h2>
-      <p style="color:var(--text-secondary);font-size:14px;line-height:1.6;margin:0 0 28px;">${alreadyPremium ? 'Aproveite todos os benefícios exclusivos da sua conta Premium.' : 'Ative gratuitamente para testar todos os recursos exclusivos.'}</p>
-      <div style="background:var(--dark-bg);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:24px;text-align:left;">
-        ${[
-          ['👁️','Ver quem visitou seu perfil',true],
-          ['👻','Modo Ghost — visite sem aparecer',true],
-          ['✦','Badge Premium no seu perfil',true],
-          ['💬','Mensagens diretas ilimitadas',true],
-          ['🚫','Navegação sem anúncios',true],
-          ['⚡','Posts em destaque no feed',false],
-        ].map(([icon,text,active])=>`
-          <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);opacity:${active?1:0.4};">
-            <span style="font-size:16px;width:24px;text-align:center;">${icon}</span>
-            <span style="font-size:14px;color:${active?'var(--text-primary)':'var(--text-secondary)'};">${text}</span>
-            <span style="margin-left:auto;color:${active?'#ffd700':'var(--text-secondary)'};font-size:13px;">${active?'✓':'Em breve'}</span>
-          </div>`).join('')}
+
+      <button id="closePremiumModal"
+        style="position:absolute;top:16px;right:16px;background:none;border:none;color:var(--text-secondary);font-size:20px;cursor:pointer;padding:4px 8px;border-radius:6px;">
+        ✕
+      </button>
+
+      <div style="font-size:52px;margin-bottom:8px;">🔒</div>
+
+      <div style="display:inline-block;
+        background:linear-gradient(135deg,#ffd700,#ff8c00);
+        color:#1a0008;
+        font-weight:800;
+        font-size:11px;
+        padding:5px 14px;
+        border-radius:20px;
+        letter-spacing:1px;
+        text-transform:uppercase;
+        margin-bottom:20px;">
+        VazaPUC Premium
       </div>
-      ${alreadyPremium
-        ? `<button id="deactivatePremiumBtn" style="width:100%;padding:14px;border-radius:20px;font-size:14px;font-weight:700;cursor:pointer;background:none;border:1px solid var(--border);color:var(--text-secondary);">Desativar Premium (modo teste)</button>`
-        : `<button id="activatePremiumBtn" style="width:100%;padding:16px;border-radius:20px;font-size:16px;font-weight:800;cursor:pointer;border:none;background:linear-gradient(135deg,#ffd700,#ff8c00);color:#1a0008;box-shadow:0 4px 20px rgba(255,215,0,0.3);" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">✦ Ativar Premium Gratuitamente</button>
-          <p style="font-size:11px;color:var(--text-secondary);margin:10px 0 0;">Modo de teste — sem cobranças. Pagamento em breve.</p>`
+
+      <h2 style="font-size:26px;font-weight:800;color:var(--text-primary);margin:0 0 10px;">
+        ${alreadyPremium
+          ? 'Você já possui o Premium ✦'
+          : 'Conteúdo exclusivo para Premium'}
+      </h2>
+
+      <p style="color:var(--text-secondary);font-size:15px;line-height:1.7;margin:0 0 28px;">
+        ${alreadyPremium
+          ? 'Aproveite todos os recursos exclusivos disponíveis na sua conta.'
+          : 'Quer ver quem curtiu os perfis de outras pessoas e desbloquear diversos benefícios exclusivos? Acesse agora nossa área Premium.'}
+      </p>
+
+      <div style="
+        background:var(--dark-bg);
+        border:1px solid var(--border);
+        border-radius:18px;
+        padding:20px;
+        margin-bottom:24px;
+        text-align:left;
+      ">
+        ${[
+          ['❤️','Ver curtidas de outros usuários'],
+          ['👁️','Ver quem visitou seu perfil'],
+          ['👻','Modo Ghost invisível'],
+          ['💬','Mensagens ilimitadas'],
+          ['🚫','Sem anúncios'],
+          ['⚡','Destaque no feed'],
+        ].map(([icon,text]) => `
+          <div style="
+            display:flex;
+            align-items:center;
+            gap:12px;
+            padding:10px 0;
+            border-bottom:1px solid var(--border);
+          ">
+            <span style="font-size:18px;width:24px;text-align:center;">
+              ${icon}
+            </span>
+
+            <span style="font-size:14px;color:var(--text-primary);">
+              ${text}
+            </span>
+
+            <span style="margin-left:auto;color:#ffd700;font-size:13px;">
+              ✓
+            </span>
+          </div>
+        `).join('')}
+      </div>
+
+      ${
+        alreadyPremium
+          ? `
+            <button id="deactivatePremiumBtn"
+              style="
+                width:100%;
+                padding:14px;
+                border-radius:18px;
+                font-size:14px;
+                font-weight:700;
+                cursor:pointer;
+                background:none;
+                border:1px solid var(--border);
+                color:var(--text-secondary);
+              ">
+              Desativar Premium
+            </button>
+          `
+          : `
+            <button id="activatePremiumBtn"
+              style="
+                width:100%;
+                padding:16px;
+                border-radius:20px;
+                font-size:16px;
+                font-weight:800;
+                cursor:pointer;
+                border:none;
+                background:linear-gradient(135deg,#ffd700,#ff8c00);
+                color:#1a0008;
+                box-shadow:0 4px 20px rgba(255,215,0,0.3);
+                transition:0.2s;
+              "
+              onmouseover="this.style.transform='translateY(-2px)'"
+              onmouseout="this.style.transform='translateY(0)'">
+              ✦ Quero acessar o Premium
+            </button>
+
+            <p style="font-size:11px;color:var(--text-secondary);margin:10px 0 0;">
+              Novos recursos exclusivos chegando em breve.
+            </p>
+          `
       }
-    </div>`;
+
+    </div>
+  `;
+
   document.body.appendChild(modal);
-  document.getElementById('closePremiumModal')?.addEventListener('click', () => modal.remove());
-  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
-  document.getElementById('activatePremiumBtn')?.addEventListener('click', async () => {
-    activatePremium();
-    if (currentProfile) { currentProfile = { ...currentProfile, is_premium: true }; window.currentProfile = currentProfile; }
-    modal.remove();
-    showNotification('✦ Premium ativado! Bem-vindo ao clube.');
-    await loadProfilePage();
+
+  document.getElementById('closePremiumModal')
+    ?.addEventListener('click', () => modal.remove());
+
+  modal.addEventListener('click', e => {
+    if (e.target === modal) modal.remove();
   });
-  document.getElementById('deactivatePremiumBtn')?.addEventListener('click', async () => {
-    deactivatePremium();
-    if (currentProfile) { currentProfile = { ...currentProfile, is_premium: false }; window.currentProfile = currentProfile; }
-    modal.remove();
-    showNotification('Premium desativado.');
-    await loadProfilePage();
-  });
+
+  document.getElementById('activatePremiumBtn')
+    ?.addEventListener('click', async () => {
+
+      activatePremium();
+
+      if (currentProfile) {
+        currentProfile = {
+          ...currentProfile,
+          is_premium: true
+        };
+
+        window.currentProfile = currentProfile;
+      }
+
+      modal.remove();
+
+      showNotification('✦ Premium ativado com sucesso!');
+
+      await loadProfilePage();
+    });
+
+  document.getElementById('deactivatePremiumBtn')
+    ?.addEventListener('click', async () => {
+
+      deactivatePremium();
+
+      if (currentProfile) {
+        currentProfile = {
+          ...currentProfile,
+          is_premium: false
+        };
+
+        window.currentProfile = currentProfile;
+      }
+
+      modal.remove();
+
+      showNotification('Premium desativado.');
+
+      await loadProfilePage();
+    });
 }
-window.openPremiumModal = openPremiumModal;
+
+window.openPremiumModalCurtida = openPremiumModalCurtida;
 function showVisitorPremiumModal() {
   document.getElementById('visitorPremiumModal')?.remove();
  
