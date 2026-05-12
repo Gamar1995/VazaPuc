@@ -186,14 +186,14 @@
           <p id="profileHandle">@seu_handle</p>
           <p id="profileBio">Bio do seu perfil aqui...</p>
           
-          <div class="profile-stats">
-            <div class="stat"><span class="stat-value">0</span><span class="stat-label">Seguindo</span></div>
-            <div class="stat"><span class="stat-value">0</span><span class="stat-label">Seguidores</span></div>
-          </div>
-        </div>
-        
-      </div>
-    </div>
+         <div class="profile-stats">
+  <div class="stat" id="btnShowFollowing" style="cursor: pointer; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">
+    <span class="stat-value">0</span><span class="stat-label">Seguindo</span>
+  </div>
+  <div class="stat" id="btnShowFollowers" style="cursor: pointer; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">
+    <span class="stat-value">0</span><span class="stat-label">Seguidores</span>
+  </div>
+</div>
     
     <div class="profile-tabs">
       <button class="profile-tab-btn active" data-tab="posts">Posts</button>

@@ -70,6 +70,7 @@ import {
   acceptFollowRequest, rejectFollowRequest,
   getPendingFollowRequests, getPendingRequestsCount,
   getFollowRequestStatus, canViewProfile,
+  getFollowing, getFollowers
 } from './profile.js';
 
 import { getConversations, getMessages, sendMessage, subscribeToMessages, getOrCreateConversation } from './messages.js';
@@ -409,6 +410,7 @@ try {
   setupSearch();
   setupTemas();
   setupPrivacySettings();
+  setupFollowListModal();
 } catch (erroInterface) {
   console.error('Erro ao carregar interface:', erroInterface);
 }
@@ -1864,6 +1866,24 @@ async function loadProfilePage() {
       vals[1].textContent = counts.followers_count;
     }
   });
+  const followCtrl = new AbortController();
+  profileBtnControllers.push(followCtrl);
+  const followSignal = followCtrl.signal;
+
+  const btnShowFollowing = document.getElementById('btnShowFollowing');
+  const btnShowFollowers = document.getElementById('btnShowFollowers');
+
+  if (btnShowFollowing) {
+    btnShowFollowing.addEventListener('click', () => {
+      openFollowListModal('following', profile.id);
+    }, { signal: followSignal });
+  }
+  
+  if (btnShowFollowers) {
+    btnShowFollowers.addEventListener('click', () => {
+      openFollowListModal('followers', profile.id);
+    }, { signal: followSignal });
+  }
  
   document.getElementById('msgProfileBtn')?.remove();
   document.getElementById('followProfileBtn')?.remove();
@@ -3775,3 +3795,87 @@ window.atualizarSenhaSupabase = async function() {
         alert("Erro de ligação ao alterar a senha.");
     }
 };
+// ============================================================
+// MODAL DE SEGUINDO E SEGUIDORES
+// ============================================================
+function setupFollowListModal() {
+  if (document.getElementById('followListModal')) return;
+
+  const modal = document.createElement('div');
+  modal.id = 'followListModal';
+  modal.style.cssText = `
+    display:none;position:fixed;inset:0;z-index:4000;
+    background:rgba(0,0,0,0.75);align-items:center;justify-content:center;
+    padding:20px;backdrop-filter:blur(6px);
+  `;
+  modal.innerHTML = `
+    <div style="background:var(--dark-bg-secondary);border:1px solid var(--border);border-radius:24px;width:100%;max-width:400px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 10px 30px rgba(0,0,0,0.5);">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:1px solid var(--border);">
+        <h3 id="followListTitle" style="font-size:18px;font-weight:800;color:var(--text-primary);">Lista</h3>
+        <button id="closeFollowListBtn" style="background:none;border:none;color:var(--text-secondary);font-size:20px;cursor:pointer;transition:color 0.2s;">✕</button>
+      </div>
+      <div id="followListContent" style="padding:12px;overflow-y:auto;flex:1;"></div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  document.getElementById('closeFollowListBtn').addEventListener('click', () => modal.style.display = 'none');
+  modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+}
+
+async function openFollowListModal(type, profileId) {
+  const modal = document.getElementById('followListModal');
+  const title = document.getElementById('followListTitle');
+  const content = document.getElementById('followListContent');
+  if (!modal || !content) return;
+
+  modal.style.display = 'flex';
+  title.textContent = type === 'followers' ? 'Seguidores' : 'Seguindo';
+  content.innerHTML = '<p style="text-align:center;padding:30px;color:var(--text-secondary);">Carregando...</p>';
+
+  try {
+    let users = [];
+    if (type === 'followers') {
+      users = await getFollowers(profileId);
+    } else {
+      users = await getFollowing(profileId);
+    }
+
+    if (!users || users.length === 0) {
+      content.innerHTML = '<p style="text-align:center;padding:30px;color:var(--text-secondary);">Nenhum usuário encontrado por aqui. 👀</p>';
+      return;
+    }
+
+    content.innerHTML = users.map(u => {
+      const avatar = u.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.handle}`;
+      return `
+        <div class="follow-list-item" data-handle="${escapeHtml(u.handle)}" style="display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;border-radius:12px;transition:background 0.2s;">
+          <img src="${avatar}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:1px solid var(--border);">
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:700;font-size:14px;color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                ${escapeHtml(u.name)}
+            </div>
+            <div style="color:var(--text-secondary);font-size:13px;">@${escapeHtml(u.handle)}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Ao clicar num usuário da lista, envia o usuário para o perfil dele
+    content.querySelectorAll('.follow-list-item').forEach(item => {
+      item.addEventListener('mouseenter', () => item.style.background = 'var(--dark-bg-tertiary)');
+      item.addEventListener('mouseleave', () => item.style.background = 'transparent');
+      item.addEventListener('click', () => {
+         const handle = item.dataset.handle;
+         if (!handle) return;
+         modal.style.display = 'none';
+         document.querySelectorAll('.page-container').forEach(p => p.classList.remove('active'));
+         document.getElementById('profile-page').classList.add('active');
+         loadProfileByHandle(handle);
+      });
+    });
+  } catch (err) {
+    console.error(err);
+    content.innerHTML = '<p style="text-align:center;padding:30px;color:var(--danger);">Erro ao carregar a lista.</p>';
+  }
+}
