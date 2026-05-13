@@ -1675,3 +1675,83 @@ body {
         transform: translateY(0) scale(1);
     }
 }
+/* =========================================
+   CORREÇÃO DE LEGIBILIDADE: BLOCO 10 (TEMAS CLAROS)
+   O Bloco 10 (#dddddd) fica invisível no fundo claro. 
+   Isso força um tom de cinza mais escuro quando o tema claro estiver ativo.
+========================================= */
+
+/* Força a cor do texto/hashtag para um cinza escuro */
+[data-theme$="-claro"] [data-bloco-id="bloco-10"],
+[data-theme$="-claro"] .hashtag-bloco[data-bloco-id="bloco-10"] {
+    color: #555555 !important;
+}
+
+/* Ajusta o fundo e a borda do botão na Sidebar */
+[data-theme$="-claro"] .bloco-sidebar-btn[data-bloco-id="bloco-10"] {
+    background: rgba(85, 85, 85, 0.08) !important;
+    border-color: rgba(85, 85, 85, 0.15) !important;
+}
+
+/* Ajusta o botão da Sidebar quando está ativo/clicado */
+[data-theme$="-claro"] .bloco-sidebar-btn[data-bloco-id="bloco-10"].ativo {
+    background: rgba(85, 85, 85, 0.15) !important;
+    box-shadow: inset 0 0 0 1.5px #555555 !important;
+}
+
+/* Ajusta a contagem numérica dentro do botão da Sidebar */
+[data-theme$="-claro"] .bloco-sidebar-btn[data-bloco-id="bloco-10"] .bloco-sidebar-count {
+    color: #555555 !important;
+    background: rgba(85, 85, 85, 0.15) !important;
+}
+
+/* Ajusta os badges (tags) nos posts do feed, modais e na tela de explorar */
+[data-theme$="-claro"] .bloco-badge-post[data-bloco-id="bloco-10"],
+[data-theme$="-claro"] .bloco-badge-modal[data-bloco-id="bloco-10"],
+[data-theme$="-claro"] .bloco-tag-btn[data-bloco-id="bloco-10"] {
+    background-color: rgba(85, 85, 85, 0.08) !important;
+    border-color: rgba(85, 85, 85, 0.25) !important;
+}
+
+/* Ajusta o badge na tela de explorar quando ele for o filtro selecionado */
+[data-theme$="-claro"] .bloco-tag-btn[data-bloco-id="bloco-10"].bloco-ativo {
+    background-color: rgba(85, 85, 85, 0.15) !important;
+    border-color: #555555 !important;
+    box-shadow: 0 0 0 2px #555555 !important;
+}
+/* =========================================
+   AJUSTES RESPONSIVOS PARA MENSAGENS / CHAT
+========================================= */
+@media (max-width: 900px) {
+    .messages-wrapper {
+        position: relative;
+    }
+    .conversations-list {
+        width: 100% !important; /* Ocupa a tela toda ao abrir a aba Mensagens */
+        transition: transform 0.3s ease;
+    }
+    .chat-area {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: var(--dark-bg);
+        transform: translateX(100%);
+        transition: transform 0.3s ease;
+        z-index: 10;
+    }
+    /* Classe adicionada via JS quando o usuário clica em uma conversa */
+    .messages-wrapper.mobile-chat-open .conversations-list {
+        transform: translateX(-30%);
+        opacity: 0;
+        pointer-events: none;
+    }
+    .messages-wrapper.mobile-chat-open .chat-area {
+        transform: translateX(0);
+    }
+    /* Mostra o botão "Voltar" (←) apenas no mobile */
+    .mobile-only-btn {
+        display: block !important;
+    }
+}
