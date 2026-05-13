@@ -220,13 +220,15 @@
     .theme-slider-glass.active { opacity: 1; visibility: visible; transform: translateY(0) scale(1); }
 
     .theme-opt-nav {
-      width: 26px; height: 26px; border-radius: 50%;
-      cursor: pointer; border: 2px solid transparent !important;
-      transition: transform 0.2s, box-shadow 0.2s;
-      flex-shrink: 0;
-    }
-    .theme-opt-nav:hover { transform: scale(1.2); }
-    .theme-opt-nav.ativo { box-shadow: 0 0 0 2px white; }
+  width: 26px; height: 26px; border-radius: 50%;
+  cursor: pointer; border: 2px solid transparent !important;
+  /* NOVO: Impede que o branco do gradiente vaze para a borda transparente */
+  background-clip: padding-box !important; 
+  transition: transform 0.2s, box-shadow 0.2s;
+  flex-shrink: 0;
+}
+.theme-opt-nav:hover { transform: scale(1.2); }
+.theme-opt-nav.ativo { box-shadow: 0 0 0 2px white; }
 
     .theme-nav-sep {
       width: 1px; height: 20px;

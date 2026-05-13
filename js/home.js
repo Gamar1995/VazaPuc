@@ -828,6 +828,37 @@ function createPostHTML(post) {
 
   const textoPost = renderizarTextoComBlocos(post.content);
 
+  // --- NOVO: LÓGICA DE TEXTO LONGO (LER MAIS) ---
+  const numLines = post.content ? (post.content.match(/\n/g) || []).length : 0;
+  // Aciona o botão "Ler mais" se o texto tiver mais de 250 caracteres OU mais de 4 linhas
+  const isLongText = (post.content && post.content.length > 250) || numLines > 4;
+
+  const textoPostElement = `
+    <div class="post-text-wrapper" style="width: 100%;">
+      <p class="post-text post-clickable-body ${isLongText ? 'collapsed-text' : ''}" data-post-id="${post.id}" style="
+        margin: 0;
+        font-size: 15px;
+        line-height: 1.5;
+        color: var(--text-primary);
+        word-break: break-word;
+        white-space: pre-wrap;
+        ${isLongText ? 'display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden;' : ''}
+      ">${textoPost}</p>
+      ${isLongText ? `<button class="toggle-text-btn" data-post-id="${post.id}" style="
+        background: transparent;
+        border: none;
+        color: var(--primary);
+        font-size: 14px;
+        font-weight: 700;
+        padding: 0;
+        margin-top: 6px;
+        cursor: pointer;
+        transition: opacity 0.2s;
+      " onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">Ler mais</button>` : ''}
+    </div>
+  `;
+  // ----------------------------------------------
+
   return `
     <div class="post-card" data-post-id="${post.id}" data-author-id="${post.author?.id ?? ''}" style="flex-direction:column;cursor:pointer;">
       ${repostIndicator}
@@ -844,7 +875,7 @@ function createPostHTML(post) {
               ${optionsMenu}
             </div>
           </div>
-          <p class="post-text post-clickable-body" data-post-id="${post.id}">${textoPost}</p>
+          ${textoPostElement}
           ${blocosBadges}
           ${mediaGrid}
           ${quoteCard}
@@ -1056,6 +1087,31 @@ function attachPostEventListeners(container = document, context = 'feed') {
     }, { signal });
   });
 
+  // --- NOVO: LÓGICA DO BOTÃO DE "LER MAIS / ESCONDER" ---
+  container.querySelectorAll('.toggle-text-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation(); // Previne que o card do post abra
+      const postId = btn.dataset.postId;
+      const textEl = container.querySelector(`.post-text[data-post-id="${postId}"]`);
+      if (!textEl) return;
+
+      const isCollapsed = textEl.classList.contains('collapsed-text');
+      if (isCollapsed) {
+        // Expandir
+        textEl.classList.remove('collapsed-text');
+        textEl.style.display = 'block';
+        textEl.style.webkitLineClamp = 'unset';
+        btn.textContent = 'Esconder';
+      } else {
+        // Encolher de volta
+        textEl.classList.add('collapsed-text');
+        textEl.style.display = '-webkit-box';
+        textEl.style.webkitLineClamp = '5';
+        btn.textContent = 'Ler mais';
+      }
+    }, { signal });
+  });
+
   container.querySelectorAll('.post-card').forEach(card => {
     card.addEventListener('click', (e) => {
       if (
@@ -1066,7 +1122,8 @@ function attachPostEventListeners(container = document, context = 'feed') {
         e.target.closest('.media-grid') ||
         e.target.closest('.quote-card') ||
         e.target.closest('.bloco-badge-post') ||
-        e.target.closest('.hashtag-bloco')
+        e.target.closest('.hashtag-bloco') ||
+        e.target.closest('.toggle-text-btn') // <-- Ignora o clique no Ler Mais
       ) return;
       const postId = card.dataset.postId;
       if (postId) openPostDetailModal(postId);
@@ -1857,15 +1914,22 @@ async function loadProfileTabContent(tabType) {
  
 async function renderProfileLocked(profile, profileInfo) {
   document.getElementById('ownPrivacyBadge')?.remove();
- 
+  document.getElementById('profileActionsWrapper')?.remove(); // Limpa botões antigos
+
   const controller = new AbortController();
   profileBtnControllers.push(controller);
   const signal = controller.signal;
- 
+
   if (currentProfile) {
-    await renderFollowButton(profile, profileInfo, signal);
+    // Cria um agrupador para os botões ficarem lado a lado
+    const actionsWrapper = document.createElement('div');
+    actionsWrapper.id = 'profileActionsWrapper';
+    actionsWrapper.style.cssText = 'position: absolute; top: 15px; right: 20px; display: flex; gap: 8px; z-index: 10;';
+    profileInfo.appendChild(actionsWrapper);
+
+    await renderFollowButton(profile, actionsWrapper, signal);
   }
- 
+
   const content = document.getElementById('profileContent');
   content.innerHTML = `
     <div id="privateProfileBanner" style="
@@ -1887,18 +1951,15 @@ async function renderProfileLocked(profile, profileInfo) {
     </div>`;
 }
 
-// ============================================================
-// LÓGICA DO PERFIL (FIX BACKGROUND E DUPLICAÇÕES)
-// ============================================================
 async function loadProfilePage() {
   profileBtnControllers.forEach(ctrl => ctrl.abort());
   profileBtnControllers = [];
- 
+
   document.getElementById('visitorsWidget')?.remove();
- 
+
   const editBtn = document.getElementById('editProfileBtn');
   const profile = viewingProfile || currentProfile;
- 
+
   if (!profile) {
     document.getElementById('profileName').textContent = 'Visitante';
     document.getElementById('profileHandle').textContent = '@anonimo';
@@ -1909,14 +1970,14 @@ async function loadProfilePage() {
     if (editBtn) { editBtn.textContent = 'Fazer Login'; editBtn.style.display = 'block'; }
     document.getElementById('msgProfileBtn')?.remove();
     document.getElementById('followProfileBtn')?.remove();
+    document.getElementById('profileActionsWrapper')?.remove();
     document.getElementById('profileContent').innerHTML =
       '<p style="padding:40px;text-align:center;color:var(--text-secondary);">Faça login para visualizar seus posts. 🚀</p>';
     return; 
   }
- 
+
   const isOwnProfile = currentProfile && profile.id === currentProfile.id;
 
-  // RENDERIZAR O BANNER DO PERFIL E LIMPAR CAIXAS ANTIGAS
   document.querySelectorAll('#profileBannerDisplay, .profile-banner, .profile-cover, .profile-bg').forEach(el => el.remove());
 
   const profileInfoContainer = document.querySelector('.profile-info');
@@ -1965,27 +2026,27 @@ async function loadProfilePage() {
 
       profileInfoContainer.parentElement.insertBefore(bannerEl, profileInfoContainer);
   }
- 
+
   const _nameEl = document.getElementById('profileName');
   if (_nameEl) {
     const _isViewedPremium = isOwnProfile ? isPremium() : profileIsPremium(profile);
     _nameEl.innerHTML = escapeHtml(profile.name) + (_isViewedPremium ? ` <span class="premium-badge-tag" title="Usuário Premium">✦ Premium</span>` : '');
   }
- 
+
   document.getElementById('profileHandle').textContent = `@${profile.handle}`;
   document.getElementById('profileBio').textContent = profile.bio || 'Sem bio.';
- 
+
   const profileAvatar = document.querySelector('.profile-avatar');
   if (profileAvatar) {
     profileAvatar.src = profile.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.handle}`;
   }
- 
+
   const statValues = document.querySelectorAll('.stat-value');
   if (statValues.length >= 2) {
     statValues[0].textContent = profile.following_count || 0;
     statValues[1].textContent = profile.followers_count || 0;
   }
- 
+
   syncProfileCounts(profile.id).then(counts => {
     if (!counts) return;
     const vals = document.querySelectorAll('.stat-value');
@@ -2012,14 +2073,15 @@ async function loadProfilePage() {
       openFollowListModal('followers', profile.id);
     }, { signal: followSignal });
   }
- 
+
   document.getElementById('msgProfileBtn')?.remove();
   document.getElementById('followProfileBtn')?.remove();
+  document.getElementById('profileActionsWrapper')?.remove();
   document.getElementById('privateProfileBanner')?.remove();
- 
+
   if (isOwnProfile) {
     if (editBtn) { editBtn.textContent = 'Editar Perfil'; editBtn.style.display = 'block'; }
- 
+
     let privacyBadge = document.getElementById('ownPrivacyBadge');
     if (!privacyBadge) {
       privacyBadge = document.createElement('span');
@@ -2035,38 +2097,45 @@ async function loadProfilePage() {
     privacyBadge.textContent = isPrivate ? '🔒 Conta privada' : '🌐 Conta pública';
     privacyBadge.style.background = isPrivate ? 'var(--primary)22' : '#17bf6322';
     privacyBadge.style.color = isPrivate ? 'var(--primary)' : '#17bf63';
- 
+
     const tabs = document.querySelectorAll('.profile-tab-btn');
     tabs.forEach(t => t.classList.remove('active'));
     document.querySelector('.profile-tab-btn[data-tab="posts"]')?.classList.add('active');
     loadProfileTabContent('posts');
- 
+
     renderVisitorsWidget(profile.id);
- 
+
   } else {
     if (editBtn) editBtn.style.display = 'none';
- 
+
     document.getElementById('ownPrivacyBadge')?.remove();
- 
-    // Registra visita (modo ghost: premium não aparece)
+
+    // Registra visita
     recordProfileVisit(profile.id);
- 
+
     const podeVer = await canViewProfile(profile.id);
- 
+
     if (!podeVer) {
       renderProfileLocked(profile, profileInfoContainer);
       return;
     }
- 
+
     if (currentProfile) {
       const controller = new AbortController();
       profileBtnControllers.push(controller);
       const signal = controller.signal;
- 
+
+      // Agrupador de botões
+      const actionsWrapper = document.createElement('div');
+      actionsWrapper.id = 'profileActionsWrapper';
+      actionsWrapper.style.cssText = 'position: absolute; top: 15px; right: 20px; display: flex; gap: 8px; z-index: 10;';
+      profileInfoContainer.appendChild(actionsWrapper);
+
       const msgBtn = document.createElement('button');
       msgBtn.id = 'msgProfileBtn';
       msgBtn.className = 'edit-profile-btn';
-      msgBtn.style.cssText = 'margin-left:8px;border-color:var(--primary);color:var(--primary);';
+      // Desativa o posicionamento absoluto dentro do contêiner para não empilhar
+      msgBtn.style.cssText = 'position: relative; top: 0; right: 0; border-color:var(--primary);color:var(--primary); margin: 0;';
       msgBtn.textContent = '✉ Mensagem';
       msgBtn.addEventListener('click', async () => {
         try {
@@ -2075,35 +2144,37 @@ async function loadProfilePage() {
           document.getElementById('messages-page').classList.add('active');
           await loadMessagesPage();
           openChat(conv.id, profile);
+          document.querySelector('.messages-wrapper')?.classList.add('mobile-chat-open');
         } catch (err) { showNotification('Erro ao abrir conversa.'); }
       }, { signal });
-      profileInfoContainer.appendChild(msgBtn);
- 
-      await renderFollowButton(profile, profileInfoContainer, signal);
+      actionsWrapper.appendChild(msgBtn);
+
+      await renderFollowButton(profile, actionsWrapper, signal);
     }
- 
+
     const tabs = document.querySelectorAll('.profile-tab-btn');
     tabs.forEach(t => t.classList.remove('active'));
     document.querySelector('.profile-tab-btn[data-tab="posts"]')?.classList.add('active');
     loadProfileTabContent('posts');
   }
 }
- 
-async function renderFollowButton(profile, profileInfo, signal) {
+
+async function renderFollowButton(profile, parentContainer, signal) {
   const followBtn = document.createElement('button');
   followBtn.id = 'followProfileBtn';
   followBtn.className = 'edit-profile-btn';
-  followBtn.style.cssText = 'margin-left:8px;';
- 
+  // Desativa o posicionamento absoluto dentro do contêiner para não empilhar
+  followBtn.style.cssText = 'position: relative; top: 0; right: 0; margin: 0;';
+
   let alreadyFollowing = false;
   let requestStatus = 'none';
   const isPrivate = profile.is_private ?? false;
- 
+
   try { alreadyFollowing = await isFollowing(profile.id); } catch (_) {}
   if (!alreadyFollowing && isPrivate) {
     try { requestStatus = await getFollowRequestStatus(profile.id); } catch (_) {}
   }
- 
+
   const setFollowState = (state) => {
     if (state === 'following') {
       followBtn.textContent = '✓ Seguindo';
@@ -2123,16 +2194,16 @@ async function renderFollowButton(profile, profileInfo, signal) {
       followBtn.dataset.state = 'none';
     }
   };
- 
+
   const initialState = alreadyFollowing ? 'following'
     : requestStatus === 'pending' ? 'pending'
     : 'none';
   setFollowState(initialState);
- 
+
   followBtn.addEventListener('click', async () => {
     followBtn.disabled = true;
     const state = followBtn.dataset.state;
- 
+
     try {
       if (state === 'following') {
         await unfollowUserAndSync(currentProfile.id, profile.id);
@@ -2140,20 +2211,21 @@ async function renderFollowButton(profile, profileInfo, signal) {
         const statVals = document.querySelectorAll('.stat-value');
         if (statVals.length >= 2)
           statVals[1].textContent = Math.max(0, parseInt(statVals[1].textContent) - 1);
- 
+
         if (isPrivate) {
           document.getElementById('msgProfileBtn')?.remove();
           document.getElementById('followProfileBtn')?.remove();
+          document.getElementById('profileActionsWrapper')?.remove();
           const info = document.querySelector('.profile-info');
           await renderProfileLocked(profile, info);
           return;
         }
- 
+
       } else if (state === 'pending') {
         await cancelFollowRequest(profile.id);
         setFollowState('none');
         showNotification('Solicitação cancelada.');
- 
+
       } else {
         if (isPrivate) {
           await requestFollow(profile.id);
@@ -2184,8 +2256,8 @@ async function renderFollowButton(profile, profileInfo, signal) {
       followBtn.disabled = false;
     }
   }, { signal });
- 
-  profileInfo.appendChild(followBtn);
+
+  parentContainer.appendChild(followBtn);
 }
  
 function setupPrivacySettings() {

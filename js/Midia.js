@@ -312,6 +312,9 @@ export function createMediaGridHTML(mediaUrls, postId) {
 // ============================================================
 // LIGHTBOX — visualizador de foto em tela cheia
 // ============================================================
+// ============================================================
+// LIGHTBOX — visualizador de foto em tela cheia
+// ============================================================
 export function openMediaLightbox(mediaUrls, startIndex = 0, postId = null) {
   document.getElementById('mediaLightbox')?.remove();
 
@@ -336,7 +339,6 @@ export function openMediaLightbox(mediaUrls, startIndex = 0, postId = null) {
       z-index:10;
     ">✕</button>
 
-    <!-- Lado esquerdo: imagem -->
     <div style="
       flex:1;
       display:flex;align-items:center;justify-content:center;
@@ -391,29 +393,28 @@ export function openMediaLightbox(mediaUrls, startIndex = 0, postId = null) {
       ` : ''}
     </div>
 
-    <!-- Lado direito: comentários -->
     ${postId ? `
     <div id="lbComments" style="
       width:380px;
       flex-shrink:0;
-      background:var(--dark-bg-secondary, #1a1a2e);
-      border-left:1px solid rgba(255,255,255,0.08);
+      background:var(--dark-bg-secondary);
+      border-left:1px solid var(--border);
       display:flex;flex-direction:column;
       overflow:hidden;
     ">
       <div style="
         padding:16px 20px;
-        border-bottom:1px solid rgba(255,255,255,0.08);
+        border-bottom:1px solid var(--border);
         display:flex;align-items:center;gap:10px;
         flex-shrink:0;
       ">
-        <div id="lbPostAuthor" style="font-weight:700;font-size:15px;color:white;">Carregando...</div>
+        <div id="lbPostAuthor" style="font-weight:700;font-size:15px;color:var(--text-primary);">Carregando...</div>
       </div>
 
       <div id="lbCommentsList" style="
         flex:1;overflow-y:auto;padding:12px 0;
       ">
-        <p style="text-align:center;padding:30px;color:rgba(255,255,255,0.4);font-size:14px;">
+        <p style="text-align:center;padding:30px;color:var(--text-secondary);font-size:14px;">
           Carregando comentários...
         </p>
       </div>
@@ -470,7 +471,6 @@ export function openMediaLightbox(mediaUrls, startIndex = 0, postId = null) {
     if (Math.abs(diff) > 50) goTo(diff > 0 ? currentIndex + 1 : currentIndex - 1);
   });
 
-  // Carrega autor e comentários se tiver postId
   if (postId) {
     loadLightboxComments(postId);
   }
@@ -539,7 +539,7 @@ async function loadLightboxComments(postId) {
         display:flex;
         gap:12px;
         padding:18px 16px;
-        border-bottom:1px solid rgba(255,255,255,0.06);
+        border-bottom:1px solid var(--border);
       ">
 
         <img src="${postAvatar}" style="
@@ -565,21 +565,21 @@ async function loadLightboxComments(postId) {
             <span style="
               font-weight:700;
               font-size:24px;
-              color:white;
+              color:var(--text-primary);
             ">
               ${escapeHtmlLocal(post.author?.name ?? 'Usuário')}
             </span>
 
             <span style="
               font-size:20px;
-              color:rgba(255,255,255,0.45);
+              color:var(--text-secondary);
             ">
               @${escapeHtmlLocal(post.author?.handle ?? '')}
             </span>
 
             <span style="
               font-size:16px;
-              color:rgba(255,255,255,0.25);
+              color:var(--text-secondary);
             ">
               • ${getTime(post.created_at)}
             </span>
@@ -593,7 +593,7 @@ async function loadLightboxComments(postId) {
                   margin:6px 0 0;
                   font-size:18px;
                   line-height:1.6;
-                  color:rgba(255,255,255,0.92);
+                  color:var(--text-primary);
                   word-break:break-word;
                 ">
                   ${escapeHtmlLocal(post.content)}
@@ -603,7 +603,7 @@ async function loadLightboxComments(postId) {
                 <p style="
                   margin:6px 0 0;
                   font-size:13px;
-                  color:rgba(255,255,255,0.35);
+                  color:var(--text-secondary);
                   font-style:italic;
                 ">
                   Sem descrição.
@@ -633,7 +633,7 @@ async function loadLightboxComments(postId) {
 
           <p style="
             font-size:14px;
-            color:rgba(255,255,255,0.4);
+            color:var(--text-secondary);
             margin:0;
           ">
             Nenhum comentário ainda.
@@ -683,21 +683,21 @@ async function loadLightboxComments(postId) {
               <span style="
                 font-weight:700;
                 font-size:13px;
-                color:white;
+                color:var(--text-primary);
               ">
                 ${escapeHtmlLocal(r.author?.name ?? 'Usuário')}
               </span>
 
               <span style="
                 font-size:11px;
-                color:rgba(255,255,255,0.4);
+                color:var(--text-secondary);
               ">
                 @${escapeHtmlLocal(r.author?.handle ?? '')}
               </span>
 
               <span style="
                 font-size:11px;
-                color:rgba(255,255,255,0.25);
+                color:var(--text-secondary);
               ">
                 • ${getTime(r.created_at)}
               </span>
@@ -708,7 +708,7 @@ async function loadLightboxComments(postId) {
               margin:4px 0 0;
               font-size:13px;
               line-height:1.6;
-              color:rgba(255,255,255,0.82);
+              color:var(--text-primary);
               word-break:break-word;
             ">
               ${escapeHtmlLocal(r.content)}
@@ -721,7 +721,6 @@ async function loadLightboxComments(postId) {
     }).join('');
 
     listEl.innerHTML = html;
-
     listEl.scrollTop = 0;
 
   } catch (err) {
@@ -732,7 +731,7 @@ async function loadLightboxComments(postId) {
         <p style="
           text-align:center;
           padding:20px;
-          color:rgba(255,0,0,0.6);
+          color:var(--danger, #e0245e);
         ">
           Erro ao carregar.
         </p>

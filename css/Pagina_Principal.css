@@ -908,6 +908,8 @@ footer {
   border-radius: 50%;
   cursor: pointer;
   border: 2px solid transparent;
+  /* NOVO: Impede que o branco do gradiente vaze para a borda transparente */
+  background-clip: padding-box;
   transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.2s;
   box-shadow: 0 4px 10px rgba(0,0,0,0.3);
 }
