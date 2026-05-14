@@ -3397,11 +3397,14 @@ async function openChat(convId, otherUser) {
   renderedMessageIds.clear();
   currentOpenConvId = convId;
 
-  chatArea.innerHTML = `
+ chatArea.innerHTML = `
     <div style="padding:16px;border-bottom:1px solid var(--border);background:var(--dark-bg-secondary);display:flex;align-items:center;gap:10px;flex-shrink:0;">
       <img src="${otherUser?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${otherUser?.handle}`}"
-           style="width:36px;height:36px;border-radius:50%;object-fit:cover;">
-      <div>
+           class="chat-header-avatar"
+           data-handle="${escapeHtml(otherUser?.handle ?? '')}"
+           style="width:36px;height:36px;border-radius:50%;object-fit:cover;cursor:pointer;transition:opacity 0.2s;"
+           onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+      <div style="cursor:pointer;" class="chat-header-name" data-handle="${escapeHtml(otherUser?.handle ?? '')}">
         <strong style="font-size:15px;">${escapeHtml(otherUser?.name ?? '')}</strong>
         <span style="color:var(--text-secondary);font-size:13px;margin-left:6px;">@${escapeHtml(otherUser?.handle ?? '')}</span>
       </div>
@@ -3415,6 +3418,18 @@ async function openChat(convId, otherUser) {
       <button id="sendMsgBtn" class="post-submit-btn" style="padding:0 24px;">Enviar</button>
     </div>
   `;
+  chatArea.querySelectorAll('.chat-header-avatar, .chat-header-name').forEach(el => {
+    el.addEventListener('click', () => {
+      const handle = el.dataset.handle;
+      if (!handle) return;
+      document.querySelectorAll('.page-container').forEach(p => p.classList.remove('active'));
+      document.getElementById('profile-page').classList.add('active');
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.querySelector('.nav-item[data-page="profile"]')?.classList.add('active');
+      viewingProfile = null;
+      loadProfileByHandle(handle);
+    });
+  });
 
   try {
     unsubscribeCurrentChat = subscribeToMessages(convId, (newMsg) => {
