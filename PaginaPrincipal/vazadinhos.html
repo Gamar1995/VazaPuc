@@ -177,14 +177,15 @@
         </div>
       </div>
 
-        <!-- ── PERFIL ── -->
+      <!-- ── PERFIL ── -->
       <div class="page-container" id="profile-page">
         <div class="profile-container">
           <div class="profile-header">
             <div class="profile-cover" id="profileCoverBg"></div>
             <div class="profile-info">
               <div class="profile-action-row">
-                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=currentuser" alt="Avatar" class="profile-avatar">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=currentuser" alt="Avatar"
+                  class="profile-avatar">
                 <button class="edit-profile-btn" id="editProfileBtn">Editar Perfil</button>
               </div>
               <div class="profile-details">
@@ -192,10 +193,12 @@
                 <p id="profileHandle">@seu_handle</p>
                 <p id="profileBio">Bio do seu perfil aqui...</p>
                 <div class="profile-stats">
-                  <div class="stat" id="btnShowFollowing" style="cursor:pointer;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">
+                  <div class="stat" id="btnShowFollowing" style="cursor:pointer;transition:opacity 0.2s;"
+                    onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">
                     <span class="stat-value">0</span><span class="stat-label">Seguindo</span>
                   </div>
-                  <div class="stat" id="btnShowFollowers" style="cursor:pointer;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">
+                  <div class="stat" id="btnShowFollowers" style="cursor:pointer;transition:opacity 0.2s;"
+                    onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">
                     <span class="stat-value">0</span><span class="stat-label">Seguidores</span>
                   </div>
                 </div>
@@ -213,163 +216,159 @@
 
       <!-- ── CONFIGURAÇÕES ── -->
       <div class="page-container" id="settings-page">
-              <header class="feed-header">
-                <h2>Configurações</h2>
-              </header>
+        <header class="feed-header">
+          <h2>Configurações</h2>
+        </header>
 
-              <div class="settings-container" style="display: flex; min-height: calc(100vh - 60px);">
+        <div class="settings-container" style="display: flex; min-height: calc(100vh - 60px);">
 
-                <div class="settings-sidebar"
-                  style="width: 250px; border-right: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; gap: 10px;">
-                  <button class="settings-tab-btn active" data-settings-tab="conta"
-                    style="background: none; border: none; text-align: left; padding: 12px; color: var(--text-primary); cursor: pointer; border-radius: 8px; font-size: 15px; font-weight: bold;">👤
-                    Sua Conta</button>
-                  <button class="settings-tab-btn" data-settings-tab="privacidade"
-                    style="background: none; border: none; text-align: left; padding: 12px; color: var(--text-secondary); cursor: pointer; border-radius: 8px; font-size: 15px;">🔒
-                    Privacidade</button>
-                  <button class="settings-tab-btn" data-settings-tab="notificacoes"
-                    style="background: none; border: none; text-align: left; padding: 12px; color: var(--text-secondary); cursor: pointer; border-radius: 8px; font-size: 15px;">🔔
-                    Notificações</button>
+          <div class="settings-sidebar"
+            style="width: 250px; border-right: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; gap: 10px;">
+            <button class="settings-tab-btn active" data-settings-tab="conta"
+              style="background: none; border: none; text-align: left; padding: 12px; color: var(--text-primary); cursor: pointer; border-radius: 8px; font-size: 15px; font-weight: bold;">👤
+              Sua Conta</button>
+            <button class="settings-tab-btn" data-settings-tab="privacidade"
+              style="background: none; border: none; text-align: left; padding: 12px; color: var(--text-secondary); cursor: pointer; border-radius: 8px; font-size: 15px;">🔒
+              Privacidade</button>
+            <button class="settings-tab-btn" data-settings-tab="notificacoes"
+              style="background: none; border: none; text-align: left; padding: 12px; color: var(--text-secondary); cursor: pointer; border-radius: 8px; font-size: 15px;">🔔
+              Notificações</button>
+          </div>
+
+          <div class="settings-content" style="flex: 1; position: relative;">
+
+            <div class="settings-section active" id="settings-conta">
+
+              <div class="feed-header"
+                style="border-bottom: 1px solid var(--border); padding: 15px 20px; display: flex; align-items: center; gap: 15px; position: sticky; top: 0; background: var(--dark-bg); z-index: 10;">
+                <button id="btnVoltarConfig" class="icon-btn"
+                  style="display: none; background: none; border: none; cursor: pointer; color: var(--text-primary);"
+                  onclick="mudarTelaConfig('config-lista')">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                    <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
+                  </svg>
+                </button>
+                <h3 id="configTitulo"
+                  style="font-size: 1.1rem; font-weight: 800; margin: 0; color: var(--text-primary);">Informações
+                  gerais</h3>
+              </div>
+
+              <div class="config-view active" id="config-lista">
+                <div class="config-option" onclick="mudarTelaConfig('config-info')"
+                  style="padding: 15px 20px; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+                  <div class="config-info" style="display: flex; flex-direction: column; gap: 4px;">
+                    <span class="config-title" style="font-weight: bold; color: var(--text-primary);">Informações
+                      da conta</span>
+                    <span class="config-desc" style="font-size: 0.85rem; color: var(--text-secondary);">Veja seu
+                      nome de usuário e e-mail.</span>
+                  </div>
+                  <span class="config-chevron" style="color: var(--text-secondary); font-size: 1.2rem;">›</span>
                 </div>
 
-                <div class="settings-content" style="flex: 1; position: relative;">
-
-                  <div class="settings-section active" id="settings-conta">
-
-                    <div class="feed-header"
-                      style="border-bottom: 1px solid var(--border); padding: 15px 20px; display: flex; align-items: center; gap: 15px; position: sticky; top: 0; background: var(--dark-bg); z-index: 10;">
-                      <button id="btnVoltarConfig" class="icon-btn"
-                        style="display: none; background: none; border: none; cursor: pointer; color: var(--text-primary);"
-                        onclick="mudarTelaConfig('config-lista')">
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                          <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
-                        </svg>
-                      </button>
-                      <h3 id="configTitulo"
-                        style="font-size: 1.1rem; font-weight: 800; margin: 0; color: var(--text-primary);">Informações
-                        gerais</h3>
-                    </div>
-
-                    <div class="config-view active" id="config-lista">
-                      <div class="config-option" onclick="mudarTelaConfig('config-info')"
-                        style="padding: 15px 20px; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
-                        <div class="config-info" style="display: flex; flex-direction: column; gap: 4px;">
-                          <span class="config-title" style="font-weight: bold; color: var(--text-primary);">Informações
-                            da conta</span>
-                          <span class="config-desc" style="font-size: 0.85rem; color: var(--text-secondary);">Veja seu
-                            nome de usuário e e-mail.</span>
-                        </div>
-                        <span class="config-chevron" style="color: var(--text-secondary); font-size: 1.2rem;">›</span>
-                      </div>
-
-                      <div class="config-option" onclick="mudarTelaConfig('config-senha')"
-                        style="padding: 15px 20px; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
-                        <div class="config-info" style="display: flex; flex-direction: column; gap: 4px;">
-                          <span class="config-title" style="font-weight: bold; color: var(--text-primary);">Alterar sua
-                            senha</span>
-                          <span class="config-desc" style="font-size: 0.85rem; color: var(--text-secondary);">Altere sua
-                            senha de acesso a qualquer momento.</span>
-                        </div>
-                        <span class="config-chevron" style="color: var(--text-secondary); font-size: 1.2rem;">›</span>
-                      </div>
-
-                      <div class="config-option"
-                        style="padding: 15px 20px; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
-                        <div class="config-info" style="display: flex; flex-direction: column; gap: 4px;">
-                          <span class="config-title" style="font-weight: bold; color: #f4212e;">Desativar sua
-                            conta</span>
-                          <span class="config-desc" style="font-size: 0.85rem; color: var(--text-secondary);">Veja como
-                            você pode encerrar sua conta.</span>
-                        </div>
-                        <span class="config-chevron" style="color: var(--text-secondary); font-size: 1.2rem;">›</span>
-                      </div>
-                    </div>
-
-                    <div class="config-view" id="config-info" style="display: none; padding: 20px;">
-                      <p class="config-help-text"
-                        style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 20px;">Estes são os
-                        detalhes da sua conta no VazaPUC.</p>
-                      <div class="form-group-config" style="margin-bottom: 15px;">
-                        <label
-                          style="display: block; font-size: 0.75rem; color: var(--primary); margin-bottom: 5px; text-transform: uppercase; font-weight: bold;">Nome
-                          de Usuário</label>
-                        <input type="text" id="configHandle" class="auth-input" disabled
-                          style="background: var(--dark-bg-tertiary); border: 1px solid var(--border); padding: 12px; width: 100%; border-radius: 8px; color: var(--text-secondary); cursor: not-allowed;">
-                      </div>
-                      <div class="form-group-config" style="margin-bottom: 15px;">
-                        <label
-                          style="display: block; font-size: 0.75rem; color: var(--primary); margin-bottom: 5px; text-transform: uppercase; font-weight: bold;">E-mail</label>
-                        <input type="text" id="configEmail" class="auth-input" disabled
-                          style="background: var(--dark-bg-tertiary); border: 1px solid var(--border); padding: 12px; width: 100%; border-radius: 8px; color: var(--text-secondary); cursor: not-allowed;">
-                      </div>
-                    </div>
-
-                    <div class="config-view" id="config-senha" style="display: none; padding: 20px;">
-                      <p class="config-help-text"
-                        style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 20px;">Você pode
-                        atualizar sua senha aqui. Use pelo menos 6 caracteres.</p>
-                      <div class="form-group-config" style="margin-bottom: 15px;">
-                        <label
-                          style="display: block; font-size: 0.75rem; color: var(--primary); margin-bottom: 5px; text-transform: uppercase; font-weight: bold;">Nova
-                          Senha</label>
-                        <input type="password" id="configNewPassword" class="auth-input"
-                          placeholder="Digite a nova senha"
-                          style="background: var(--dark-bg); border: 1px solid var(--border); padding: 12px; width: 100%; border-radius: 8px; color: var(--text-primary); outline: none;">
-                      </div>
-                      <div class="form-group-config" style="margin-bottom: 25px;">
-                        <label
-                          style="display: block; font-size: 0.75rem; color: var(--primary); margin-bottom: 5px; text-transform: uppercase; font-weight: bold;">Confirmar
-                          Senha</label>
-                        <input type="password" id="configConfirmPassword" class="auth-input"
-                          placeholder="Repita a nova senha"
-                          style="background: var(--dark-bg); border: 1px solid var(--border); padding: 12px; width: 100%; border-radius: 8px; color: var(--text-primary); outline: none;">
-                      </div>
-                      <button class="btn btn-primary"
-                        style="width: 100%; padding: 12px; border-radius: 99px; font-weight: bold; cursor: pointer; border: none; background: var(--primary); color: white;"
-                        onclick="atualizarSenhaSupabase()">Salvar Nova Senha</button>
-                    </div>
+                <div class="config-option" onclick="mudarTelaConfig('config-senha')"
+                  style="padding: 15px 20px; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+                  <div class="config-info" style="display: flex; flex-direction: column; gap: 4px;">
+                    <span class="config-title" style="font-weight: bold; color: var(--text-primary);">Alterar sua
+                      senha</span>
+                    <span class="config-desc" style="font-size: 0.85rem; color: var(--text-secondary);">Altere sua
+                      senha de acesso a qualquer momento.</span>
                   </div>
-                  <div class="settings-section" id="settings-privacidade">
+                  <span class="config-chevron" style="color: var(--text-secondary); font-size: 1.2rem;">›</span>
+                </div>
 
-                    <!-- Cabeçalho -->
-                    <div class="feed-header" style="
+                <div class="config-option"
+                  style="padding: 15px 20px; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+                  <div class="config-info" style="display: flex; flex-direction: column; gap: 4px;">
+                    <span class="config-title" style="font-weight: bold; color: #f4212e;">Desativar sua
+                      conta</span>
+                    <span class="config-desc" style="font-size: 0.85rem; color: var(--text-secondary);">Veja como
+                      você pode encerrar sua conta.</span>
+                  </div>
+                  <span class="config-chevron" style="color: var(--text-secondary); font-size: 1.2rem;">›</span>
+                </div>
+              </div>
+
+              <div class="config-view" id="config-info" style="display: none; padding: 20px;">
+                <p class="config-help-text"
+                  style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 20px;">Estes são os
+                  detalhes da sua conta no VazaPUC.</p>
+                <div class="form-group-config" style="margin-bottom: 15px;">
+                  <label
+                    style="display: block; font-size: 0.75rem; color: var(--primary); margin-bottom: 5px; text-transform: uppercase; font-weight: bold;">Nome
+                    de Usuário</label>
+                  <input type="text" id="configHandle" class="auth-input" disabled
+                    style="background: var(--dark-bg-tertiary); border: 1px solid var(--border); padding: 12px; width: 100%; border-radius: 8px; color: var(--text-secondary); cursor: not-allowed;">
+                </div>
+                <div class="form-group-config" style="margin-bottom: 15px;">
+                  <label
+                    style="display: block; font-size: 0.75rem; color: var(--primary); margin-bottom: 5px; text-transform: uppercase; font-weight: bold;">E-mail</label>
+                  <input type="text" id="configEmail" class="auth-input" disabled
+                    style="background: var(--dark-bg-tertiary); border: 1px solid var(--border); padding: 12px; width: 100%; border-radius: 8px; color: var(--text-secondary); cursor: not-allowed;">
+                </div>
+              </div>
+
+              <div class="config-view" id="config-senha" style="display: none; padding: 20px;">
+                <p class="config-help-text"
+                  style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 20px;">Você pode
+                  atualizar sua senha aqui. Use pelo menos 6 caracteres.</p>
+                <div class="form-group-config" style="margin-bottom: 15px;">
+                  <label
+                    style="display: block; font-size: 0.75rem; color: var(--primary); margin-bottom: 5px; text-transform: uppercase; font-weight: bold;">Nova
+                    Senha</label>
+                  <input type="password" id="configNewPassword" class="auth-input" placeholder="Digite a nova senha"
+                    style="background: var(--dark-bg); border: 1px solid var(--border); padding: 12px; width: 100%; border-radius: 8px; color: var(--text-primary); outline: none;">
+                </div>
+                <div class="form-group-config" style="margin-bottom: 25px;">
+                  <label
+                    style="display: block; font-size: 0.75rem; color: var(--primary); margin-bottom: 5px; text-transform: uppercase; font-weight: bold;">Confirmar
+                    Senha</label>
+                  <input type="password" id="configConfirmPassword" class="auth-input" placeholder="Repita a nova senha"
+                    style="background: var(--dark-bg); border: 1px solid var(--border); padding: 12px; width: 100%; border-radius: 8px; color: var(--text-primary); outline: none;">
+                </div>
+                <button class="btn btn-primary"
+                  style="width: 100%; padding: 12px; border-radius: 99px; font-weight: bold; cursor: pointer; border: none; background: var(--primary); color: white;"
+                  onclick="atualizarSenhaSupabase()">Salvar Nova Senha</button>
+              </div>
+            </div>
+            <div class="settings-section" id="settings-privacidade">
+
+              <!-- Cabeçalho -->
+              <div class="feed-header" style="
     border-bottom:1px solid var(--border);
     padding:15px 20px;
     position:sticky;top:0;
     background:var(--dark-bg);z-index:10;
   ">
-                      <h3 style="font-size:1.1rem;font-weight:800;margin:0;color:var(--text-primary);">
-                        Privacidade e Segurança
-                      </h3>
-                    </div>
+                <h3 style="font-size:1.1rem;font-weight:800;margin:0;color:var(--text-primary);">
+                  Privacidade e Segurança
+                </h3>
+              </div>
 
-                    <div style="padding:0;">
+              <div style="padding:0;">
 
-                      <!-- ── Toggle: Conta privada ─────────────────────────── -->
-                      <div style="
+                <!-- ── Toggle: Conta privada ─────────────────────────── -->
+                <div style="
       padding:18px 20px;
       border-bottom:1px solid var(--border);
       display:flex;justify-content:space-between;align-items:center;gap:16px;
     ">
-                        <div>
-                          <p style="font-weight:700;font-size:15px;color:var(--text-primary);margin:0 0 4px;">
-                            🔒 Conta privada
-                          </p>
-                          <p
-                            style="font-size:13px;color:var(--text-secondary);margin:0;line-height:1.5;max-width:380px;">
-                            Quando ativado, apenas pessoas que você aprovar poderão ver seus posts e seguir você.
-                            Solicitações de seguimento aparecem para você aprovar manualmente.
-                          </p>
-                        </div>
+                  <div>
+                    <p style="font-weight:700;font-size:15px;color:var(--text-primary);margin:0 0 4px;">
+                      🔒 Conta privada
+                    </p>
+                    <p style="font-size:13px;color:var(--text-secondary);margin:0;line-height:1.5;max-width:380px;">
+                      Quando ativado, apenas pessoas que você aprovar poderão ver seus posts e seguir você.
+                      Solicitações de seguimento aparecem para você aprovar manualmente.
+                    </p>
+                  </div>
 
-                        <!-- Toggle switch -->
-                        <label style="
+                  <!-- Toggle switch -->
+                  <label style="
         position:relative;display:flex;align-items:center;
         cursor:pointer;flex-shrink:0;
       ">
-                          <input type="checkbox" id="privacyToggle"
-                            style="position:absolute;opacity:0;width:0;height:0;">
-                          <span id="privacyTrack" style="
+                    <input type="checkbox" id="privacyToggle" style="position:absolute;opacity:0;width:0;height:0;">
+                    <span id="privacyTrack" style="
           display:inline-block;
           width:46px;height:26px;
           background:var(--border);
@@ -377,7 +376,7 @@
           transition:background 0.25s;
           position:relative;
         ">
-                            <span id="privacyThumb" style="
+                      <span id="privacyThumb" style="
             position:absolute;top:3px;left:3px;
             width:20px;height:20px;
             background:white;
@@ -385,81 +384,81 @@
             transition:transform 0.25s;
             box-shadow:0 1px 3px rgba(0,0,0,0.35);
           "></span>
-                          </span>
-                        </label>
-                      </div>
+                    </span>
+                  </label>
+                </div>
 
-                      <!-- ── Solicitações pendentes ─────────────────────────── -->
-                      <div style="
+                <!-- ── Solicitações pendentes ─────────────────────────── -->
+                <div style="
       padding:16px 20px;
       border-bottom:1px solid var(--border);
       display:flex;justify-content:space-between;align-items:center;
       cursor:pointer;
     " id="pendingRequestsRow" onclick="togglePendingPanel()">
-                        <div>
-                          <p style="font-weight:700;font-size:15px;color:var(--text-primary);margin:0 0 3px;">
-                            👥 Solicitações de seguimento
-                          </p>
-                          <p style="font-size:13px;color:var(--text-secondary);margin:0;">
-                            Aceite ou recuse quem quer seguir você.
-                          </p>
-                        </div>
-                        <div style="display:flex;align-items:center;gap:10px;">
-                          <span id="pendingRequestsBadge" style="
+                  <div>
+                    <p style="font-weight:700;font-size:15px;color:var(--text-primary);margin:0 0 3px;">
+                      👥 Solicitações de seguimento
+                    </p>
+                    <p style="font-size:13px;color:var(--text-secondary);margin:0;">
+                      Aceite ou recuse quem quer seguir você.
+                    </p>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <span id="pendingRequestsBadge" style="
           display:none;
           background:var(--primary);color:white;
           font-size:11px;font-weight:800;
           padding:2px 8px;border-radius:10px;
           min-width:20px;text-align:center;
         "></span>
-                          <span id="pendingChevron"
-                            style="color:var(--text-secondary);font-size:18px;transition:transform 0.2s;">›</span>
-                        </div>
-                      </div>
+                    <span id="pendingChevron"
+                      style="color:var(--text-secondary);font-size:18px;transition:transform 0.2s;">›</span>
+                  </div>
+                </div>
 
-                      <!-- Painel expansível de solicitações -->
-                      <div id="pendingRequestsPanel" style="
+                <!-- Painel expansível de solicitações -->
+                <div id="pendingRequestsPanel" style="
       display:none;
       border-bottom:1px solid var(--border);
     "></div>
 
-                      <!-- ── Posts privados (info) ──────────────────────────── -->
-                      <div style="
+                <!-- ── Posts privados (info) ──────────────────────────── -->
+                <div style="
       padding:16px 20px;
       border-bottom:1px solid var(--border);
     ">
-                        <p style="font-weight:700;font-size:15px;color:var(--text-primary);margin:0 0 4px;">
-                          📌 Como funciona a conta privada
-                        </p>
-                        <ul style="
+                  <p style="font-weight:700;font-size:15px;color:var(--text-primary);margin:0 0 4px;">
+                    📌 Como funciona a conta privada
+                  </p>
+                  <ul style="
         font-size:13px;color:var(--text-secondary);
         margin:8px 0 0;padding-left:20px;
         line-height:1.8;
       ">
-                          <li>Visitantes verão apenas seu nome, handle e foto.</li>
-                          <li>Posts, curtidas e seguidores ficam ocultos.</li>
-                          <li>Seguidores atuais continuam podendo ver seus posts.</li>
-                          <li>Novos seguidores precisam de sua aprovação.</li>
-                          <li>Você pode aceitar ou rejeitar cada solicitação individualmente.</li>
-                        </ul>
-                      </div>
-
-                    </div>
-                  </div>
-
-                  <div class="settings-section" id="settings-notificacoes" style="display: none; padding: 20px;">
-                    <h3>Notificações Push</h3>
-                    <p style="color:var(--text-secondary); margin-bottom:20px; font-size: 0.9rem;">Escolha o que você
-                      quer receber no seu feed e e-mail.</p>
-                    <div class="settings-placeholder-box"
-                      style="padding: 30px; border: 1px dashed var(--border); border-radius: 12px; text-align: center; color: var(--text-secondary);">
-                      <p>Em breve: Alertas de menções, curtidas e novos seguidores.</p>
-                    </div>
-                  </div>
-
+                    <li>Visitantes verão apenas seu nome, handle e foto.</li>
+                    <li>Posts, curtidas e seguidores ficam ocultos.</li>
+                    <li>Seguidores atuais continuam podendo ver seus posts.</li>
+                    <li>Novos seguidores precisam de sua aprovação.</li>
+                    <li>Você pode aceitar ou rejeitar cada solicitação individualmente.</li>
+                  </ul>
                 </div>
+
               </div>
             </div>
+
+            <div class="settings-section" id="settings-notificacoes" style="display: none; padding: 20px;">
+              <h3>Notificações Push</h3>
+              <p style="color:var(--text-secondary); margin-bottom:20px; font-size: 0.9rem;">Escolha o que você
+                quer receber no seu feed e e-mail.</p>
+              <div class="settings-placeholder-box"
+                style="padding: 30px; border: 1px dashed var(--border); border-radius: 12px; text-align: center; color: var(--text-secondary);">
+                <p>Em breve: Alertas de menções, curtidas e novos seguidores.</p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
     </main>
 
     <!-- ══════════════════════════════════════════════

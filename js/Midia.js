@@ -76,7 +76,7 @@ export async function getMediaPostsByUser(userId, limit = 30) {
     .from('posts')
     .select(`
       id, content, created_at, media_urls, likes_count, replies_count, reposts_count,
-      author:profiles!posts_user_id_fkey(id, name, handle, avatar_url)
+      author:profiles(id, name, handle, avatar_url)
     `)
     .eq('author_id', userId)
     .eq('has_media', true)
@@ -778,15 +778,7 @@ export function renderProfileMediaGrid(posts, containerElement) {
     return;
   }
 
-  // Coleta todas as mídias com referência ao post
-  const allMedia = [];
-  posts.forEach(post => {
-    (post.media_urls || []).forEach(url => {
-      allMedia.push({ url, post });
-    });
-  });
-
-  if (!allMedia.length) {
+  if (!posts.some(p => p.media_urls?.length)) {
     containerElement.innerHTML = `
       <p style="padding:40px;text-align:center;color:var(--text-secondary);">
         Nenhuma foto encontrada. 📷
@@ -794,46 +786,130 @@ export function renderProfileMediaGrid(posts, containerElement) {
     return;
   }
 
-  containerElement.innerHTML = `
-    <div style="
-      display:grid;
-      grid-template-columns:repeat(3, 1fr);
-      gap:3px;padding:3px;
-    ">
-      ${allMedia.map((item, i) => `
-        <div style="
-          position:relative;
-          aspect-ratio:1;
-          overflow:hidden;
-          background:var(--dark-bg-secondary);
-          cursor:pointer;
-        "
-        class="profile-media-item"
-        data-all-urls="${encodeURIComponent(JSON.stringify(allMedia.map(m => m.url)))}"
-        data-index="${i}"
-        >
-          <img
-            src="${item.url}"
-            loading="lazy"
-            style="
-              width:100%;height:100%;
-              object-fit:cover;
-              transition:transform 0.3s,opacity 0.2s;
-            "
-            onmouseover="this.style.transform='scale(1.04)';this.style.opacity='0.85'"
-            onmouseout="this.style.transform='scale(1)';this.style.opacity='1'"
-          >
-        </div>
-      `).join('')}
-    </div>
-  `;
+  containerElement.innerHTML = posts.map(post => {
+    if (!post.media_urls?.length) return '';
 
-  containerElement.querySelectorAll('.profile-media-item').forEach(item => {
-    item.addEventListener('click', () => {
+    const avatar = post.author?.avatar_url
+      || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author?.handle}`;
+
+    const diffMin = Math.floor((Date.now() - new Date(post.created_at)) / 60000);
+    const timeStr = diffMin < 1 ? 'agora' : diffMin < 60 ? `${diffMin}min atrás`
+      : diffMin < 1440 ? `${Math.floor(diffMin / 60)}h atrás` : `${Math.floor(diffMin / 1440)}d atrás`;
+
+    const imagens = post.media_urls.slice(0, 4);
+    const count = imagens.length;
+    const gridConfig = {
+      1: { cols: '1fr',     rows: 'auto' },
+      2: { cols: '1fr 1fr', rows: '180px' },
+      3: { cols: '1fr 1fr', rows: '140px 140px' },
+      4: { cols: '1fr 1fr', rows: '140px 140px' },
+    };
+    const cfg = gridConfig[count];
+
+    const fotosHTML = imagens.map((url, i) => {
+      const isFirstOf3 = i === 0 && count === 3;
+      return `
+        <div style="
+          position:relative;overflow:hidden;
+          ${isFirstOf3 ? 'grid-row: span 2;' : ''}
+          background:#000;
+        ">
+          <img
+            src="${url}"
+            loading="lazy"
+            class="media-photo"
+            data-media-urls="${encodeURIComponent(JSON.stringify(post.media_urls))}"
+            data-index="${i}"
+            data-post-id="${post.id}"
+            style="width:100%;height:100%;object-fit:cover;cursor:pointer;display:block;transition:opacity 0.2s;"
+            onmouseover="this.style.opacity='0.85'"
+            onmouseout="this.style.opacity='1'"
+          >
+          ${i === count - 1 && post.media_urls.length > 4 ? `
+            <div style="position:absolute;inset:0;background:rgba(0,0,0,0.55);
+              display:flex;align-items:center;justify-content:center;
+              font-size:22px;font-weight:800;color:white;pointer-events:none;">
+              +${post.media_urls.length - 4}
+            </div>` : ''}
+        </div>`;
+    }).join('');
+
+    return `
+      <div class="media-post-card" data-post-id="${post.id}" style="
+        background:var(--dark-bg-secondary);
+        border:1px solid var(--border);
+        border-radius:16px;
+        overflow:hidden;
+        margin-bottom:16px;
+        cursor:pointer;
+        transition:border-color 0.2s;
+      "
+      onmouseover="this.style.borderColor='var(--primary)'"
+      onmouseout="this.style.borderColor='var(--border)'">
+
+        <!-- Cabeçalho do post -->
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;">
+          <img src="${avatar}"
+            style="width:38px;height:38px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:700;font-size:14px;color:var(--text-primary);
+              white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              ${post.author?.name ?? 'Usuário'}
+            </div>
+            <div style="font-size:12px;color:var(--text-secondary);">
+              @${post.author?.handle ?? ''} · ${timeStr}
+            </div>
+          </div>
+        </div>
+
+        <!-- Texto do post (se houver) -->
+        ${post.content ? `
+          <div style="padding:0 16px 12px;font-size:14px;color:var(--text-primary);
+            line-height:1.5;word-break:break-word;
+            display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;">
+            ${post.content}
+          </div>` : ''}
+
+        <!-- Grade de fotos -->
+        <div style="
+          display:grid;
+          grid-template-columns:${cfg.cols};
+          grid-template-rows:${cfg.rows};
+          gap:2px;
+          max-height:320px;
+        ">
+          ${fotosHTML}
+        </div>
+
+        <!-- Rodapé com contagens -->
+        <div style="display:flex;gap:16px;padding:10px 16px;
+          border-top:1px solid var(--border);color:var(--text-secondary);font-size:13px;">
+          <span>❤️ ${post.likes_count || 0}</span>
+          <span>💬 ${post.replies_count || 0}</span>
+          <span>🔁 ${post.reposts_count || 0}</span>
+        </div>
+
+      </div>`;
+  }).join('');
+
+  // Clique no card abre o modal do post
+  containerElement.querySelectorAll('.media-post-card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('.media-photo')) return;
+      const postId = card.dataset.postId;
+      if (postId && window.renderPostPage) window.renderPostPage(postId);
+    });
+  });
+
+  // Clique na foto abre o lightbox
+  containerElement.querySelectorAll('.media-photo').forEach(img => {
+    img.addEventListener('click', (e) => {
+      e.stopPropagation();
       try {
-        const urls = JSON.parse(decodeURIComponent(item.dataset.allUrls || '[]'));
-        const index = parseInt(item.dataset.index || '0');
-        openMediaLightbox(urls, index);
+        const urls = JSON.parse(decodeURIComponent(img.dataset.mediaUrls || '[]'));
+        const index = parseInt(img.dataset.index || '0');
+        const postId = img.dataset.postId ?? null;
+        if (urls.length) openMediaLightbox(urls, index, postId);
       } catch (_) {}
     });
   });
