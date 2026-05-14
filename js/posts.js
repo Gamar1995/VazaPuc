@@ -121,9 +121,9 @@ export async function unlikePost(postId) {
 export async function getReplies(postId, currentUserId = null, postAuthorId = null) {
   const { data, error } = await supabase
     .from('replies')
-    .select('*, is_private, author:profiles(id, name, handle, avatar_url)')
+    .select('*, is_private, parent_reply_id, author:profiles(id, name, handle, avatar_url)')
     .eq('post_id', postId)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: true });
 
   if (error) throw error;
 
@@ -131,12 +131,12 @@ export async function getReplies(postId, currentUserId = null, postAuthorId = nu
     if (!r.is_private) return true;
     if (!currentUserId) return false;
     const isReplyAuthor = r.author_id === currentUserId;
-    const isPostAuthor  = currentUserId === postAuthorId;
+    const isPostAuthor = currentUserId === postAuthorId;
     return isReplyAuthor || isPostAuthor;
   });
 }
 
-export async function addReply(postId, content, isPrivate = false) {
+export async function addReply(postId, content, isPrivate = false, parentReplyId = null) {
   const user = await getCurrentUser();
   if (!user) throw new Error('Precisa estar logado para comentar.');
 
@@ -147,13 +147,17 @@ export async function addReply(postId, content, isPrivate = false) {
       author_id: user.id,
       content,
       is_private: isPrivate,
+      parent_reply_id: parentReplyId || null,
     })
     .select('*, author:profiles(id, name, handle, avatar_url)')
     .single();
 
   if (error) throw error;
 
-  await supabase.rpc('increment_replies', { post_id: postId });
+  // Só incrementa contador do post se for comentário raiz
+  if (!parentReplyId) {
+    await supabase.rpc('increment_replies', { post_id: postId });
+  }
 
   return data;
 }

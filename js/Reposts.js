@@ -480,16 +480,18 @@ function showRepostMenu(triggerBtn, postId, authorId, wasReposted, currentProfil
     try {
       await repostPost(postId);
       callbacks.showNotification?.('Post republicado! 🔁');
-       callbacks.onRepostSuccess?.(postId);
+      callbacks.onRepostSuccess?.(postId);
 
-      if (authorId && authorId !== currentProfile.id) {
-        callbacks.createNotification?.({
-          toUserId: authorId,
-          actorId: currentProfile.id,
-          type: 'REPOST',
-          postId,
-        });
-      }
+      
+
+      if (callbacks.createNotification && authorId && currentProfile && authorId !== currentProfile.id) {
+  callbacks.createNotification({
+    toUserId: authorId,
+    actorId: currentProfile.id,
+    type: 'repost',
+    postId: postId,
+  });
+}
     } catch (err) {
       if (err?.message === 'ALREADY_REPOSTED') {
         callbacks.showNotification?.('Você já repostou este post.');

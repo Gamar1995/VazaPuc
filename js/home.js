@@ -1643,14 +1643,12 @@ async function loadDetailReplies(postId, authorId = '') {
   container.innerHTML = '<p style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Carregando...</p>';
 
   try {
-    const replies = await getReplies(postId, currentProfile?.id, authorId);
+    const allReplies = await getReplies(postId, currentProfile?.id, authorId);
 
-    const repliesFiltradas = replies.filter(r => {
+    const repliesFiltradas = allReplies.filter(r => {
       if (!r.is_private) return true;
       if (!currentProfile) return false;
-      const isPostAuthor  = currentProfile.id === authorId;
-      const isReplyAuthor = currentProfile.id === r.author?.id;
-      return isPostAuthor || isReplyAuthor;
+      return currentProfile.id === authorId || currentProfile.id === r.author?.id;
     });
 
     if (repliesFiltradas.length === 0) {
@@ -1658,27 +1656,132 @@ async function loadDetailReplies(postId, authorId = '') {
       return;
     }
 
-    container.innerHTML = repliesFiltradas.map(r => {
-      const avatar = r.author?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${r.author?.handle}`;
-      return `
-        <div style="display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);">
-          <img src="${avatar}" class="detail-reply-avatar" data-handle="${r.author?.handle ?? ''}"
-               style="width:38px;height:38px;border-radius:50%;object-fit:cover;cursor:pointer;flex-shrink:0;">
-          <div style="flex:1;min-width:0;">
-            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
-              <span class="detail-reply-avatar" data-handle="${r.author?.handle ?? ''}"
-                style="font-weight:700;font-size:14px;color:var(--text-primary);cursor:pointer;">
-                ${escapeHtml(r.author?.name ?? 'Usuário')}
-              </span>
-              <span style="color:var(--text-secondary);font-size:13px;">@${escapeHtml(r.author?.handle ?? '')}</span>
-              <span style="color:var(--text-secondary);font-size:11px;">· ${formatTimeAgo(r.created_at)}</span>
-            </div>
-            <p style="font-size:14px;color:var(--text-primary);line-height:1.5;word-break:break-word;">${escapeHtml(r.content)}</p>
-          </div>
-        </div>
-      `;
-    }).join('');
+    // Separa raiz e filhos
+    const raiz = repliesFiltradas.filter(r => !r.parent_reply_id);
+    const filhos = repliesFiltradas.filter(r => r.parent_reply_id);
+    const MAX_FILHOS_VISIVEIS = 2;
 
+    const renderReply = (r, isChild = false) => {
+  const avatar = r.author?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${r.author?.handle}`;
+  const isMyReply = currentProfile && currentProfile.id === r.author?.id;
+  const childReplies = filhos.filter(f => f.parent_reply_id === r.id);
+  const filhosVisiveis = childReplies.slice(0, MAX_FILHOS_VISIVEIS);
+  const filhosOcultos = childReplies.slice(MAX_FILHOS_VISIVEIS);
+
+  const filhosHTML = filhosVisiveis.map(child => renderReply(child, true)).join('');
+
+  const verMaisBtn = filhosOcultos.length > 0 ? `
+    <button class="ver-mais-respostas-btn" data-parent-id="${r.id}"
+      style="
+        background:none;border:none;cursor:pointer;
+        color:var(--primary);font-size:12px;font-weight:700;
+        padding:4px 8px 4px 48px;display:block;
+        transition:opacity 0.2s;margin-bottom:4px;
+      "
+      onmouseover="this.style.opacity='0.7'"
+      onmouseout="this.style.opacity='1'">
+      ↳ Ver mais ${filhosOcultos.length} resposta${filhosOcultos.length > 1 ? 's' : ''}
+    </button>
+  ` : '';
+
+  const hiddenFilhosHTML = filhosOcultos.length > 0 ? `
+    <div class="respostas-ocultas" data-parent-id="${r.id}" style="display:none;">
+      ${filhosOcultos.map(child => renderReply(child, true)).join('')}
+    </div>
+  ` : '';
+
+  return `
+    <div class="reply-thread-item" data-reply-id="${r.id}" style="
+      display:flex;gap:10px;padding:${isChild ? '10px 0 10px 48px' : '14px 0 6px'};
+      border-bottom:${isChild ? 'none' : '1px solid var(--border)'};
+      position:relative;
+    ">
+      ${isChild ? `<div style="position:absolute;left:36px;top:-6px;bottom:0;width:2px;background:var(--border);border-radius:2px;"></div>` : ''}
+      <img src="${avatar}" class="detail-reply-avatar" data-handle="${r.author?.handle ?? ''}"
+           style="width:${isChild ? '30px' : '38px'};height:${isChild ? '30px' : '38px'};border-radius:50%;object-fit:cover;cursor:pointer;flex-shrink:0;">
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px;">
+          <span class="detail-reply-avatar" data-handle="${r.author?.handle ?? ''}"
+            style="font-weight:700;font-size:${isChild ? '13px' : '14px'};color:var(--text-primary);cursor:pointer;">
+            ${escapeHtml(r.author?.name ?? 'Usuário')}
+          </span>
+          <span style="color:var(--text-secondary);font-size:12px;">@${escapeHtml(r.author?.handle ?? '')}</span>
+          <span style="color:var(--text-secondary);font-size:11px;">· ${formatTimeAgo(r.created_at)}</span>
+          ${r.is_private ? '<span style="font-size:10px;background:var(--primary)22;color:var(--primary);padding:1px 6px;border-radius:8px;font-weight:700;">🔒</span>' : ''}
+          ${isMyReply ? `
+            <button class="delete-reply-btn" data-reply-id="${r.id}" data-post-id="${postId}" data-is-child="${isChild}"
+              style="margin-left:auto;background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:12px;padding:2px 6px;border-radius:6px;transition:color 0.2s;"
+              onmouseover="this.style.color='var(--danger,#e0245e)'" onmouseout="this.style.color='var(--text-secondary)'">🗑️</button>
+          ` : ''}
+        </div>
+        <p style="font-size:${isChild ? '13px' : '14px'};color:var(--text-primary);line-height:1.5;word-break:break-word;margin:0 0 8px;">
+          ${escapeHtml(r.content)}
+        </p>
+        ${!isChild ? `
+          <button class="reply-to-comment-btn"
+            data-handle="${escapeHtml(r.author?.handle ?? '')}"
+            data-reply-id="${r.id}"
+            data-post-id="${postId}"
+            data-author-id="${authorId}"
+            style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:12px;display:flex;align-items:center;gap:4px;padding:3px 8px;border-radius:8px;transition:background 0.15s,color 0.15s;margin-bottom:4px;"
+            onmouseover="this.style.background='var(--primary)15';this.style.color='var(--primary)'"
+            onmouseout="this.style.background='none';this.style.color='var(--text-secondary)'">
+            💬 Responder
+          </button>
+        ` : ''}
+        ${filhosHTML}
+        ${verMaisBtn}
+        ${hiddenFilhosHTML}
+      </div>
+    </div>
+  `;
+};
+
+container.innerHTML = raiz.map(r => renderReply(r, false)).join('');
+
+    container.innerHTML = raiz.map(r => renderReply(r, false)).join('');
+    container.querySelectorAll('.ver-mais-respostas-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const parentId = btn.dataset.parentId;
+    const ocultas = container.querySelector(`.respostas-ocultas[data-parent-id="${parentId}"]`);
+    if (ocultas) {
+      ocultas.style.display = 'block';
+      // Re-attacha listeners dos avatares nos filhos recém mostrados
+      ocultas.querySelectorAll('.detail-reply-avatar').forEach(el => {
+        el.addEventListener('click', () => {
+          const h = el.dataset.handle;
+          if (!h) return;
+          closePostDetailModal();
+          document.querySelectorAll('.page-container').forEach(p => p.classList.remove('active'));
+          document.getElementById('profile-page').classList.add('active');
+          loadProfileByHandle(h);
+        });
+      });
+      // Re-attacha delete nos filhos ocultos
+      ocultas.querySelectorAll('.delete-reply-btn').forEach(delBtn => {
+        delBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          if (!confirm('Apagar este comentário?')) return;
+          const replyId = delBtn.dataset.replyId;
+          const pid = delBtn.dataset.postId;
+          delBtn.disabled = true;
+          try {
+            const { error } = await supabase.from('replies').delete().eq('id', replyId);
+            if (error) throw error;
+            showNotification('Comentário apagado 🗑️');
+            await loadDetailReplies(pid, authorId);
+          } catch (err) {
+            console.error(err);
+            showNotification('Erro ao apagar comentário.');
+            delBtn.disabled = false;
+          }
+        });
+      });
+    }
+    btn.remove();
+  });
+});
+    // Clique no avatar vai pro perfil
     container.querySelectorAll('.detail-reply-avatar').forEach(el => {
       el.addEventListener('click', () => {
         const h = el.dataset.handle;
@@ -1689,7 +1792,140 @@ async function loadDetailReplies(postId, authorId = '') {
         loadProfileByHandle(h);
       });
     });
+
+    // Botão RESPONDER no comentário raiz
+    container.querySelectorAll('.reply-to-comment-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!currentProfile) { showNotification('Faça login para responder! 🔐'); return; }
+
+        const handle = btn.dataset.handle;
+        const replyId = btn.dataset.replyId;
+        const pid = btn.dataset.postId;
+        const aid = btn.dataset.authorId;
+
+        // Remove composer inline anterior se existir
+        document.querySelectorAll('.inline-reply-composer').forEach(el => el.remove());
+
+        const userAvatar = currentProfile.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=anon`;
+        const replyItem = btn.closest('.reply-thread-item');
+
+        const composerDiv = document.createElement('div');
+        composerDiv.className = 'inline-reply-composer';
+        composerDiv.style.cssText = 'display:flex;gap:10px;padding:10px 0 10px 48px;border-bottom:1px solid var(--border);';
+        composerDiv.innerHTML = `
+          <img src="${userAvatar}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+          <div style="flex:1;">
+            <textarea class="inline-reply-input" placeholder="Respondendo @${handle}..."
+              style="width:100%;resize:none;background:var(--dark-bg);border:1px solid var(--border);border-radius:10px;
+                     padding:8px 12px;color:var(--text-primary);font-size:13px;outline:none;font-family:inherit;min-height:60px;">@${handle} </textarea>
+            <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:6px;">
+              <button class="cancel-inline-reply" style="background:none;border:1px solid var(--border);color:var(--text-secondary);border-radius:20px;padding:6px 14px;font-size:13px;cursor:pointer;">Cancelar</button>
+              <button class="submit-inline-reply" data-reply-id="${replyId}" data-post-id="${pid}" data-author-id="${aid}" data-target-handle="${handle}"
+                style="background:var(--primary);color:white;border:none;border-radius:20px;padding:6px 14px;font-size:13px;font-weight:700;cursor:pointer;">Responder</button>
+            </div>
+          </div>
+        `;
+
+        replyItem.insertAdjacentElement('afterend', composerDiv);
+        composerDiv.querySelector('.inline-reply-input').focus();
+
+        composerDiv.querySelector('.cancel-inline-reply').addEventListener('click', () => composerDiv.remove());
+
+        composerDiv.querySelector('.submit-inline-reply').addEventListener('click', async (e) => {
+          const submitBtn = e.currentTarget;
+          const input = composerDiv.querySelector('.inline-reply-input');
+          const text = input.value.trim();
+          if (!text) return;
+
+          const parentReplyId = submitBtn.dataset.replyId;
+          const postIdBtn = submitBtn.dataset.postId;
+          const targetHandle = submitBtn.dataset.targetHandle;
+
+          submitBtn.disabled = true;
+          submitBtn.textContent = '...';
+
+          try {
+            // Busca o author_id do comentário pai para notificar
+            const { data: parentReply } = await supabase
+              .from('replies')
+              .select('author_id')
+              .eq('id', parentReplyId)
+              .single();
+
+            await addReply(postIdBtn, text, false, parentReplyId);
+
+            // Notifica o dono do comentário pai (não a si mesmo)
+            if (parentReply?.author_id && parentReply.author_id !== currentProfile.id) {
+              await createNotification({
+                toUserId: parentReply.author_id,
+                actorId: currentProfile.id,
+                type: NOTIF_TYPES.REPLY,
+                postId: postIdBtn,
+              });
+            }
+
+            composerDiv.remove();
+            showNotification('Resposta enviada! 💬');
+            await loadDetailReplies(postIdBtn, authorId);
+          } catch (err) {
+            console.error(err);
+            showNotification('Erro ao enviar resposta.');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Responder';
+          }
+        });
+
+        // Highlight no comentário sendo respondido
+        container.querySelectorAll('.reply-thread-item').forEach(item => item.style.background = '');
+        replyItem.style.background = 'var(--primary)08';
+        replyItem.style.borderRadius = '8px';
+        setTimeout(() => { replyItem.style.background = ''; replyItem.style.borderRadius = ''; }, 2000);
+      });
+    });
+
+    // Botão APAGAR — funciona pra raiz e pra respostas de comentário
+    container.querySelectorAll('.delete-reply-btn').forEach(btn => {
+  btn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    if (!confirm('Apagar este comentário?')) return;
+
+    const replyId = btn.dataset.replyId;
+    const pid = btn.dataset.postId;
+    const isChild = btn.dataset.isChild === 'true';
+
+    btn.disabled = true;
+
+    try {
+      const { error } = await supabase
+        .from('replies')
+        .delete()
+        .eq('id', replyId);
+
+      if (error) {
+        console.error('[delete reply error]', error);
+        throw error;
+      }
+
+          // Só decrementa contador do post se for comentário raiz
+          if (!isChild) {
+            await supabase.rpc('decrement_replies', { post_id: pid });
+            document.querySelectorAll(`.reply-action[data-post-id="${pid}"] .reply-count`).forEach(el => {
+              el.textContent = Math.max(0, parseInt(el.textContent || '0') - 1);
+            });
+          }
+
+          showNotification('Comentário apagado 🗑️');
+          await loadDetailReplies(pid, authorId);
+        } catch (err) {
+          console.error(err);
+          showNotification('Erro ao apagar comentário.');
+          btn.disabled = false;
+        }
+      });
+    });
+
   } catch (err) {
+    console.error(err);
     container.innerHTML = '<p style="color:var(--danger);text-align:center;padding:16px;">Erro ao carregar respostas.</p>';
   }
 }
@@ -3660,7 +3896,10 @@ async function renderNotifList() {
       </div>` : '';
 
     return `
-      <div class="notif-item ${n.read ? '' : 'unread'}" data-notif-id="${n.id}">
+       <div class="notif-item ${n.read ? '' : 'unread'}" 
+       data-notif-id="${n.id}" 
+       data-post-id="${n.post_id ?? ''}" 
+       data-notif-type="${n.type}">
         <img src="${avatar}" class="notif-item-avatar notif-avatar-clickable" 
              data-handle="${escapeHtml(handle)}" alt="Avatar"
              style="cursor:pointer;" title="Ver perfil de @${escapeHtml(handle)}">
@@ -3747,19 +3986,27 @@ async function renderNotifList() {
     });
   });
 
-  listEl.querySelectorAll('.notif-item').forEach(item => {
-    item.addEventListener('click', async (e) => {
-      if (
-        e.target.closest('.notif-accept-btn') ||
-        e.target.closest('.notif-reject-btn') ||
-        e.target.closest('.notif-avatar-clickable')
-      ) return;
-      item.classList.remove('unread');
-      await markAsRead(item.dataset.notifId);
-      await refreshNotifBadge();
-    });
-  });
+ listEl.querySelectorAll('.notif-item').forEach(item => {
+  item.addEventListener('click', async (e) => {
+    if (
+      e.target.closest('.notif-accept-btn') ||
+      e.target.closest('.notif-reject-btn') ||
+      e.target.closest('.notif-avatar-clickable')
+    ) return;
 
+    item.classList.remove('unread');
+    await markAsRead(item.dataset.notifId);
+    await refreshNotifBadge();
+
+    const postId = item.dataset.postId;
+    const type = item.dataset.notifType;
+
+    if (postId && (type === 'like' || type === 'reply' || type === 'repost' || type === 'mention')) {
+      document.getElementById('notifPanel')?.classList.remove('active');
+      await openPostDetailModal(postId);
+    }
+  });
+});
 }
 
 function showNotifToast(notif) {

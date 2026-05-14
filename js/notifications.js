@@ -13,7 +13,8 @@ export const NOTIF_TYPES = {
   FOLLOW:  'follow',
   MENTION: 'mention',
   PROFILE_VISIT: 'profile_visit',
-  FOLLOW_REQUEST: 'follow_request'
+  FOLLOW_REQUEST: 'follow_request',
+  REPOST: 'repost',
 
 };
 
@@ -167,6 +168,8 @@ export function getNotifText(notif) {
       return `${actor} curtiu seu post ${preview}`;
     case NOTIF_TYPES.REPLY:
       return `${actor} comentou no seu post ${preview}`;
+      case NOTIF_TYPES.REPOST:
+  return `${actor} repostou seu post ${preview}`;
     case NOTIF_TYPES.FOLLOW:
       return `${actor} começou a te seguir`;
     case NOTIF_TYPES.FOLLOW_REQUEST: 
@@ -187,6 +190,7 @@ export function getNotifIcon(type) {
     case NOTIF_TYPES.REPLY:   return '💬';
     case NOTIF_TYPES.FOLLOW:  return '👤';
     case NOTIF_TYPES.MENTION: return '📣';
+    case NOTIF_TYPES.REPOST: return '🔁';
     case 'profile_visit': return '👁️';
     case NOTIF_TYPES.FOLLOW_REQUEST: return '👥';
     default:                   return '🔔';
