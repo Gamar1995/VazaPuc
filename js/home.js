@@ -1368,24 +1368,56 @@ async function openPostDetailModal(postId) {
   content.innerHTML = '<p style="text-align:center;padding:40px;color:var(--text-secondary);">Carregando...</p>';
 
   try {
-    const postCard = document.querySelector(`.post-card[data-post-id="${postId}"]`);
-    const authorName = postCard?.querySelector('.post-author')?.textContent?.trim() ?? 'Usuário';
-    const authorHandle = postCard?.querySelector('.post-handle')?.textContent?.trim() ?? '';
-    const postText = (postCard?.querySelector('.post-text')?.textContent ?? '').replace(/\s+/g, ' ').trim();
-    const postTime = postCard?.querySelector('.post-time')?.textContent?.trim() ?? '';
-    const authorAvatar = postCard?.querySelector('.avatar')?.src ?? '';
-    const likeBtn = postCard?.querySelector('.like-action');
-    const likeCount = likeBtn?.querySelector('.like-count')?.textContent ?? '0';
-    const replyCount = postCard?.querySelector('.reply-count')?.textContent ?? '0';
-    const isLiked = likedPostIds.has(postId);
-    const authorId = postCard?.dataset?.authorId ?? likeBtn?.dataset?.authorId ?? '';
-    const mediaGrid = postCard?.querySelector('.media-grid');
-    const mediaHtml = mediaGrid ? mediaGrid.outerHTML : '';
-    const quoteCard = postCard?.querySelector('.quote-card');
-    const quoteCardHtml = quoteCard ? quoteCard.outerHTML : '';
-    const userAvatar = currentProfile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=anon`;
-    const handle = authorHandle.replace('@', '');
+    // ── Busca o post direto do banco ──────────────────────────
+    const { data: postData, error: postError } = await supabase
+      .from('posts')
+      .select(`
+        *,
+        author:profiles!author_id (id, name, handle, avatar_url, is_premium),
+        likes:likes(count),
+        replies:replies(count)
+      `)
+      .eq('id', postId)
+      .single();
 
+    if (postError || !postData) throw postError || new Error('Post não encontrado');
+
+    const authorName   = postData.author?.name ?? 'Usuário';
+    const authorHandle = `@${postData.author?.handle ?? ''}`;
+    const postText     = postData.content ?? '';
+    const authorAvatar = postData.author?.avatar_url
+      || `https://api.dicebear.com/7.x/avataaars/svg?seed=${postData.author?.handle}`;
+    const authorId     = postData.author?.id ?? postData.author_id ?? '';
+    const handle       = postData.author?.handle ?? '';
+    const isLiked      = likedPostIds.has(postId);
+
+    // Conta likes e replies vindos do join
+    const likeCount  = postData.likes_count  ?? postData.likes?.[0]?.count  ?? 0;
+    const replyCount = postData.replies_count ?? postData.replies?.[0]?.count ?? 0;
+
+    const userAvatar = currentProfile?.avatar_url
+      || `https://api.dicebear.com/7.x/avataaars/svg?seed=anon`;
+
+    // Formata a data
+    const postDate = new Date(postData.created_at);
+    const postTime = postDate.toLocaleString('pt-BR', {
+      day: '2-digit', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+
+    // Mídia
+    const mediaHtml = postData.media_urls?.length
+      ? createMediaGridHTML(postData.media_urls, postId)
+      : '';
+
+    // Quote card
+    const quoteCardHtml = postData.is_quote && postData.quoted_post_id
+      ? `<div class="quote-placeholder" data-quoted-id="${postData.quoted_post_id}">
+          <div style="margin-top:10px;border:1px solid var(--border);border-radius:12px;padding:10px 14px;background:var(--dark-bg);color:var(--text-secondary);font-size:13px;">Carregando post citado...</div>
+         </div>`
+      : '';
+
+    // Blocos
     const blocosDoPost = detectarBlocosNoPost(postText);
     const blocosBadgesModal = blocosDoPost.length > 0
       ? `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;">
@@ -1395,11 +1427,11 @@ async function openPostDetailModal(postId) {
               background:${b.cor}18;color:${b.cor};
               border:1px solid ${b.cor}55;border-radius:12px;
               padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer;
-              transition:background 0.15s;
-            "
+              transition:background 0.15s;"
             onmouseover="this.style.background='${b.cor}33'"
-            onmouseout="this.style.background='${b.cor}18'"
-            >${b.emoji} ${b.label}</span>
+            onmouseout="this.style.background='${b.cor}18'">
+              ${b.emoji} ${b.label}
+            </span>
           `).join('')}
          </div>`
       : '';
@@ -1415,10 +1447,11 @@ async function openPostDetailModal(postId) {
             <span class="detail-clickable-avatar" data-handle="${handle}"
               style="font-weight:700;font-size:15px;color:var(--text-primary);cursor:pointer;">
               ${escapeHtml(authorName)}
+              ${postData.author?.is_premium ? '<span class="premium-badge-tag" title="Premium">✦</span>' : ''}
             </span>
             <span style="color:var(--text-secondary);font-size:14px;">${escapeHtml(authorHandle)}</span>
           </div>
-         <p style="font-size:20px;color:var(--text-primary);line-height:1.5;margin-top:12px;word-break:break-word;">
+          <p style="font-size:18px;color:var(--text-primary);line-height:1.6;margin-top:12px;word-break:break-word;white-space:pre-wrap;">
             ${textoDestacado}
           </p>
           ${blocosBadgesModal}
@@ -1427,29 +1460,37 @@ async function openPostDetailModal(postId) {
           <p style="color:var(--text-secondary);font-size:13px;margin-top:12px;">${postTime}</p>
         </div>
       </div>
+
       <div style="display:flex;gap:20px;padding:14px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:16px;">
-        <span style="color:var(--text-secondary);font-size:14px;"><strong style="color:var(--text-primary);">${replyCount}</strong> Respostas</span>
-         <span id="detailLikeCountWrapper" data-post-id="${postId}" style="
-          color:var(--text-secondary);font-size:14px;cursor:pointer;
-          transition:color 0.15s;
-        "
-        onmouseover="this.style.color='var(--text-primary)'"
-        onmouseout="this.style.color='var(--text-secondary)'">
+        <span style="color:var(--text-secondary);font-size:14px;">
+          <strong style="color:var(--text-primary);">${replyCount}</strong> Respostas
+        </span>
+        <span id="detailLikeCountWrapper" data-post-id="${postId}" style="
+          color:var(--text-secondary);font-size:14px;cursor:pointer;transition:color 0.15s;"
+          onmouseover="this.style.color='var(--text-primary)'"
+          onmouseout="this.style.color='var(--text-secondary)'">
           <strong id="detailLikeCountStat">${likeCount}</strong> Curtidas
         </span>
       </div>
+
       <div style="display:flex;gap:24px;padding-bottom:16px;border-bottom:1px solid var(--border);margin-bottom:16px;">
-        <button id="detailLikeBtn" data-post-id="${postId}" data-author-id="${authorId}" data-liked="${isLiked}"
+        <button id="detailLikeBtn"
+          data-post-id="${postId}"
+          data-author-id="${authorId}"
+          data-liked="${isLiked}"
           class="like-action ${isLiked ? 'liked' : ''}"
           style="background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;
                  color:${isLiked ? 'var(--danger,#e0245e)' : 'var(--text-secondary)'};font-size:15px;font-weight:600;padding:0;">
-          ${isLiked ? '❤️' : '🤍'} <span class="like-count">${likeCount}</span>
+          <span id="detailLikeEmoji">${isLiked ? '❤️' : '🤍'}</span>
+          <span class="like-count">${likeCount}</span>
         </button>
-
-        <button id="detailReplyToggle" style="background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;color:var(--text-secondary);font-size:15px;font-weight:600;">
+        <button id="detailReplyToggle"
+          style="background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;
+                 color:var(--text-secondary);font-size:15px;font-weight:600;">
           💬 Responder
         </button>
       </div>
+
       <div id="detailReplyComposer" style="display:none;margin-bottom:16px;">
         <div style="display:flex;gap:12px;">
           <img src="${userAvatar}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;">
@@ -1457,7 +1498,7 @@ async function openPostDetailModal(postId) {
             <textarea id="detailReplyInput" placeholder="Postar sua resposta..." rows="3"
               style="width:100%;resize:none;background:var(--dark-bg);border:1px solid var(--border);
                      border-radius:12px;padding:10px 14px;color:var(--text-primary);font-size:14px;
-                     outline:none;font-family:inherit;"></textarea>
+                     outline:none;font-family:inherit;box-sizing:border-box;"></textarea>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
               <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);cursor:pointer;">
                 <input type="checkbox" id="detailReplyPrivate" style="accent-color:var(--primary);">
@@ -1472,23 +1513,29 @@ async function openPostDetailModal(postId) {
           </div>
         </div>
       </div>
+
       <div id="detailRepliesList">
         <p style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Carregando respostas...</p>
       </div>
     `;
 
-    const { attachMediaListeners: attachMedia } = await import('./Midia.js');
-    const modalContent = document.getElementById('postDetailContent');
-    if (modalContent) attachMedia(modalContent, new AbortController().signal);
+    // Carrega quote card se existir
+    if (postData.is_quote && postData.quoted_post_id) {
+      const tempContainer = document.createElement('div');
+      tempContainer.innerHTML = content.innerHTML;
+      await loadQuoteCards(content);
+    }
 
+    // Media listeners
+    const { attachMediaListeners: attachMedia } = await import('./Midia.js');
+    attachMedia(content, new AbortController().signal);
+
+    // Bloco badges
     content.querySelectorAll('.bloco-badge-modal').forEach(badge => {
       badge.addEventListener('click', (e) => {
         e.stopPropagation();
         const blocoId = badge.dataset.blocoId;
-        if (blocoId) {
-          closePostDetailModal();
-          navegarParaBloco(blocoId);
-        }
+        if (blocoId) { closePostDetailModal(); navegarParaBloco(blocoId); }
       });
     });
 
@@ -1496,13 +1543,11 @@ async function openPostDetailModal(postId) {
       tag.addEventListener('click', (e) => {
         e.stopPropagation();
         const blocoId = tag.dataset.blocoId;
-        if (blocoId) {
-          closePostDetailModal();
-          navegarParaBloco(blocoId);
-        }
+        if (blocoId) { closePostDetailModal(); navegarParaBloco(blocoId); }
       });
     });
 
+    // Avatar clickável
     content.querySelectorAll('.detail-clickable-avatar').forEach(el => {
       el.addEventListener('click', () => {
         const h = el.dataset.handle;
@@ -1514,7 +1559,10 @@ async function openPostDetailModal(postId) {
       });
     });
 
+    // ── Botão de curtir ───────────────────────────────────────
     const detailLikeBtn = document.getElementById('detailLikeBtn');
+    const detailLikeEmoji = document.getElementById('detailLikeEmoji');
+
     detailLikeBtn?.addEventListener('click', async (e) => {
       e.stopPropagation();
       if (!currentProfile) { showNotification('Faça login para curtir! 🔐'); return; }
@@ -1522,24 +1570,28 @@ async function openPostDetailModal(postId) {
       const pid = detailLikeBtn.dataset.postId;
       const aid = detailLikeBtn.dataset.authorId;
       const wasLiked = detailLikeBtn.dataset.liked === 'true';
-      const currentCount = parseInt(detailLikeBtn.querySelector('.like-count')?.textContent) || 0;
+      const countEl = detailLikeBtn.querySelector('.like-count');
+      const statEl  = document.getElementById('detailLikeCountStat');
+      const currentCount = parseInt(countEl?.textContent || '0');
       const newLiked = !wasLiked;
       const newCount = Math.max(0, currentCount + (newLiked ? 1 : -1));
 
-      const allBtns = document.querySelectorAll(`.like-action[data-post-id="${pid}"]`);
-      allBtns.forEach(b => {
+      // UI imediata
+      detailLikeBtn.dataset.liked = String(newLiked);
+      detailLikeBtn.classList.toggle('liked', newLiked);
+      detailLikeBtn.style.color = newLiked ? 'var(--danger,#e0245e)' : 'var(--text-secondary)';
+      if (detailLikeEmoji) detailLikeEmoji.textContent = newLiked ? '❤️' : '🤍';
+      if (countEl) countEl.textContent = newCount;
+      if (statEl)  statEl.textContent  = newCount;
+      detailLikeBtn.style.pointerEvents = 'none';
+
+      // Sincroniza botão no feed também
+      document.querySelectorAll(`.like-action[data-post-id="${pid}"]`).forEach(b => {
         b.dataset.liked = String(newLiked);
         b.classList.toggle('liked', newLiked);
-        b.style.pointerEvents = 'none';
         const c = b.querySelector('.like-count');
         if (c) c.textContent = newCount;
       });
-
-      const statEl = document.getElementById('detailLikeCountStat');
-      if (statEl) statEl.textContent = newCount;
-      const iconSpan = detailLikeBtn.childNodes[0];
-      if (iconSpan) iconSpan.textContent = newLiked ? '❤️' : '🤍';
-      detailLikeBtn.style.color = newLiked ? 'var(--danger,#e0245e)' : 'var(--text-secondary)';
 
       if (newLiked) likedPostIds.add(pid);
       else likedPostIds.delete(pid);
@@ -1554,40 +1606,30 @@ async function openPostDetailModal(postId) {
           await unlikePost(pid);
         }
       } catch (err) {
-        allBtns.forEach(b => {
-          b.dataset.liked = String(wasLiked);
-          b.classList.toggle('liked', wasLiked);
-          const c = b.querySelector('.like-count');
-          if (c) c.textContent = currentCount;
-        });
-        if (statEl) statEl.textContent = currentCount;
-        const iconSpanRev = detailLikeBtn.childNodes[0];
-        if (iconSpanRev) iconSpanRev.textContent = wasLiked ? '❤️' : '🤍';
+        // Reverte
+        detailLikeBtn.dataset.liked = String(wasLiked);
+        detailLikeBtn.classList.toggle('liked', wasLiked);
         detailLikeBtn.style.color = wasLiked ? 'var(--danger,#e0245e)' : 'var(--text-secondary)';
+        if (detailLikeEmoji) detailLikeEmoji.textContent = wasLiked ? '❤️' : '🤍';
+        if (countEl) countEl.textContent = currentCount;
+        if (statEl)  statEl.textContent  = currentCount;
         if (wasLiked) likedPostIds.add(pid);
         else likedPostIds.delete(pid);
         if (err?.status !== 409) showNotification('Erro ao curtir.');
       } finally {
-        allBtns.forEach(b => { b.style.pointerEvents = ''; });
+        detailLikeBtn.style.pointerEvents = '';
       }
     });
 
-    // Clique em "X Curtidas" — só premium ou dono do post vê
+    // ── Ver quem curtiu ───────────────────────────────────────
     document.getElementById('detailLikeCountWrapper')?.addEventListener('click', () => {
       const isOwner = currentProfile && currentProfile.id === authorId;
-      const userIsPremium = isPremium();
-
-      if (!currentProfile) {
-        showNotification('Faça login para ver quem curtiu! 🔐');
-        return;
-      }
-      if (!isOwner && !userIsPremium) {
-        openPremiumModalCurtida()
-        return;
-      }
+      if (!currentProfile) { showNotification('Faça login para ver quem curtiu! 🔐'); return; }
+      if (!isOwner && !isPremium()) { openPremiumModalCurtida(); return; }
       openLikesModal(postId);
     });
 
+    // ── Toggle composer de resposta ───────────────────────────
     document.getElementById('detailReplyToggle')?.addEventListener('click', () => {
       const composer = document.getElementById('detailReplyComposer');
       if (!composer) return;
@@ -1595,6 +1637,7 @@ async function openPostDetailModal(postId) {
       if (composer.style.display === 'block') document.getElementById('detailReplyInput')?.focus();
     });
 
+    // ── Enviar resposta ao post ───────────────────────────────
     document.getElementById('detailReplySubmit')?.addEventListener('click', async (e) => {
       if (!currentProfile) { showNotification('Faça login para comentar! 🔐'); return; }
       const btn = e.currentTarget;
@@ -1605,7 +1648,6 @@ async function openPostDetailModal(postId) {
       if (!text) return;
 
       const isPrivate = document.getElementById('detailReplyPrivate')?.checked ?? false;
-
       btn.disabled = true;
       btn.textContent = '...';
 
@@ -1614,9 +1656,16 @@ async function openPostDetailModal(postId) {
         if (input) input.value = '';
         document.getElementById('detailReplyComposer').style.display = 'none';
         showNotification('Resposta enviada! 💬');
+
+        // Atualiza contador
+        const repliesCountEl = content.querySelector('strong');
+        if (repliesCountEl) {
+          repliesCountEl.textContent = parseInt(repliesCountEl.textContent || '0') + 1;
+        }
         document.querySelectorAll(`.reply-action[data-post-id="${pid}"] .reply-count`).forEach(el => {
           el.textContent = parseInt(el.textContent || '0') + 1;
         });
+
         if (aid && aid !== currentProfile.id) {
           await createNotification({ toUserId: aid, actorId: currentProfile.id, type: NOTIF_TYPES.REPLY, postId: pid });
         }
@@ -1631,6 +1680,7 @@ async function openPostDetailModal(postId) {
     });
 
     await loadDetailReplies(postId, authorId);
+
   } catch (err) {
     console.error('Erro ao abrir post:', err);
     content.innerHTML = '<p style="color:var(--danger);text-align:center;padding:40px;">Erro ao carregar post.</p>';
@@ -1718,17 +1768,34 @@ async function loadDetailReplies(postId, authorId = '') {
           ${escapeHtml(r.content)}
         </p>
         ${!isChild ? `
-          <button class="reply-to-comment-btn"
-            data-handle="${escapeHtml(r.author?.handle ?? '')}"
-            data-reply-id="${r.id}"
-            data-post-id="${postId}"
-            data-author-id="${authorId}"
-            style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:12px;display:flex;align-items:center;gap:4px;padding:3px 8px;border-radius:8px;transition:background 0.15s,color 0.15s;margin-bottom:4px;"
-            onmouseover="this.style.background='var(--primary)15';this.style.color='var(--primary)'"
-            onmouseout="this.style.background='none';this.style.color='var(--text-secondary)'">
-            💬 Responder
-          </button>
-        ` : ''}
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+    <button class="reply-like-btn"
+      data-reply-id="${r.id}"
+      data-reply-content="${escapeHtml((r.content || '').slice(0, 80))}"
+      data-post-id="${postId}"
+      data-author-id="${r.author?.id ?? ''}"
+      data-liked="${myLikedReplyIds.has(r.id)}"
+      style="background:none;border:none;cursor:pointer;
+             color:${myLikedReplyIds.has(r.id) ? '#e0245e' : 'var(--text-secondary)'};
+             font-size:13px;display:flex;align-items:center;gap:4px;padding:3px 8px;
+             border-radius:8px;transition:color 0.15s;">
+      <span class="reply-like-emoji">${myLikedReplyIds.has(r.id) ? '❤️' : '🤍'}</span>
+      <span class="reply-like-count">${r.likes_count ?? 0}</span>
+    </button>
+    <button class="reply-to-comment-btn"
+      data-handle="${escapeHtml(r.author?.handle ?? '')}"
+      data-reply-id="${r.id}"
+      data-post-id="${postId}"
+      data-author-id="${authorId}"
+      style="background:none;border:none;cursor:pointer;color:var(--text-secondary);
+             font-size:12px;display:flex;align-items:center;gap:4px;padding:3px 8px;
+             border-radius:8px;transition:background 0.15s,color 0.15s;"
+      onmouseover="this.style.background='var(--primary)15';this.style.color='var(--primary)'"
+      onmouseout="this.style.background='none';this.style.color='var(--text-secondary)'">
+      💬 Responder
+    </button>
+  </div>
+` : ''}
         ${filhosHTML}
         ${verMaisBtn}
         ${hiddenFilhosHTML}
@@ -1736,6 +1803,16 @@ async function loadDetailReplies(postId, authorId = '') {
     </div>
   `;
 };
+let myLikedReplyIds = new Set();
+if (currentProfile && repliesFiltradas.length > 0) {
+  const replyIds = repliesFiltradas.map(r => r.id);
+  const { data: myLikes } = await supabase
+    .from('reply_likes')
+    .select('reply_id')
+    .eq('user_id', currentProfile.id)
+    .in('reply_id', replyIds);
+  if (myLikes) myLikes.forEach(l => myLikedReplyIds.add(l.reply_id));
+}
 
 container.innerHTML = raiz.map(r => renderReply(r, false)).join('');
 
@@ -1832,48 +1909,48 @@ container.innerHTML = raiz.map(r => renderReply(r, false)).join('');
         composerDiv.querySelector('.cancel-inline-reply').addEventListener('click', () => composerDiv.remove());
 
         composerDiv.querySelector('.submit-inline-reply').addEventListener('click', async (e) => {
-          const submitBtn = e.currentTarget;
-          const input = composerDiv.querySelector('.inline-reply-input');
-          const text = input.value.trim();
-          if (!text) return;
+  const submitBtn = e.currentTarget;
+  const input = composerDiv.querySelector('.inline-reply-input');
+  const text = input.value.trim();
+  if (!text) return;
 
-          const parentReplyId = submitBtn.dataset.replyId;
-          const postIdBtn = submitBtn.dataset.postId;
-          const targetHandle = submitBtn.dataset.targetHandle;
+  const parentReplyId = submitBtn.dataset.replyId;
+  const postIdBtn = submitBtn.dataset.postId;
 
-          submitBtn.disabled = true;
-          submitBtn.textContent = '...';
+  submitBtn.disabled = true;
+  submitBtn.textContent = '...';
 
-          try {
-            // Busca o author_id do comentário pai para notificar
-            const { data: parentReply } = await supabase
-              .from('replies')
-              .select('author_id')
-              .eq('id', parentReplyId)
-              .single();
+  try {
+    const { data: parentReply } = await supabase
+      .from('replies')
+      .select('author_id, content')
+      .eq('id', parentReplyId)
+      .single();
 
-            await addReply(postIdBtn, text, false, parentReplyId);
+    await addReply(postIdBtn, text, false, parentReplyId);
 
-            // Notifica o dono do comentário pai (não a si mesmo)
-            if (parentReply?.author_id && parentReply.author_id !== currentProfile.id) {
-              await createNotification({
-                toUserId: parentReply.author_id,
-                actorId: currentProfile.id,
-                type: NOTIF_TYPES.REPLY,
-                postId: postIdBtn,
-              });
-            }
+    // Notifica o dono do COMENTÁRIO PAI (estilo Instagram: "X respondeu seu comentário")
+    if (parentReply?.author_id && parentReply.author_id !== currentProfile.id) {
+      await createNotification({
+        toUserId:     parentReply.author_id,
+        actorId:      currentProfile.id,
+        type:         NOTIF_TYPES.COMMENT_REPLY,
+        postId:       postIdBtn,
+        replyId:      parentReplyId,
+        replyContent: parentReply.content, // prévia do comentário que foi respondido
+      });
+    }
 
-            composerDiv.remove();
-            showNotification('Resposta enviada! 💬');
-            await loadDetailReplies(postIdBtn, authorId);
-          } catch (err) {
-            console.error(err);
-            showNotification('Erro ao enviar resposta.');
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Responder';
-          }
-        });
+    composerDiv.remove();
+    showNotification('Resposta enviada! 💬');
+    await loadDetailReplies(postIdBtn, authorId);
+  } catch (err) {
+    console.error(err);
+    showNotification('Erro ao enviar resposta.');
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Responder';
+  }
+});
 
         // Highlight no comentário sendo respondido
         container.querySelectorAll('.reply-thread-item').forEach(item => item.style.background = '');
@@ -1882,6 +1959,75 @@ container.innerHTML = raiz.map(r => renderReply(r, false)).join('');
         setTimeout(() => { replyItem.style.background = ''; replyItem.style.borderRadius = ''; }, 2000);
       });
     });
+   container.querySelectorAll('.reply-like-btn').forEach(btn => {
+  btn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    if (!currentProfile) { showNotification('Faça login para curtir! 🔐'); return; }
+
+    const replyId      = btn.dataset.replyId;
+    const authorId_r   = btn.dataset.authorId;
+    const replyContent = btn.dataset.replyContent;
+    const wasLiked     = btn.dataset.liked === 'true';
+    const emojiEl      = btn.querySelector('.reply-like-emoji');
+    const countEl      = btn.querySelector('.reply-like-count');
+    const newLiked     = !wasLiked;
+    const currentCount = parseInt(countEl?.textContent || '0');
+    const newCount     = Math.max(0, currentCount + (newLiked ? 1 : -1));
+
+    // Feedback imediato na UI
+    btn.dataset.liked = String(newLiked);
+    if (emojiEl) emojiEl.textContent = newLiked ? '❤️' : '🤍';
+    if (countEl) countEl.textContent = newCount;
+    btn.style.color = newLiked ? '#e0245e' : 'var(--text-secondary)';
+    btn.disabled = true;
+try {
+  if (newLiked) {
+    const { error } = await supabase
+      .from('reply_likes')
+      .insert({ reply_id: replyId, user_id: currentProfile.id });
+
+    // 23505 = já curtiu (unique violation) — ignora silenciosamente
+    if (error && error.code !== '23505') throw error;
+
+    // Só incrementa se não era duplicata
+    if (!error) {
+      await supabase.rpc('increment_reply_likes', { reply_id: replyId });
+    }
+
+    if (authorId_r && authorId_r !== currentProfile.id) {
+      await createNotification({
+        toUserId:     authorId_r,
+        actorId:      currentProfile.id,
+        type:         NOTIF_TYPES.REPLY_LIKE,
+        postId:       btn.dataset.postId,
+        replyId:      replyId,
+        replyContent: replyContent,
+      }).catch(() => {}); // Notificação falha silenciosamente
+    }
+  } else {
+    const { error } = await supabase
+      .from('reply_likes')
+      .delete()
+      .eq('reply_id', replyId)
+      .eq('user_id', currentProfile.id);
+
+    if (error) throw error;
+
+    await supabase.rpc('decrement_reply_likes', { reply_id: replyId });
+  }
+} catch (err) {
+  // Reverte tudo se der erro
+  btn.dataset.liked = String(wasLiked);
+  if (emojiEl) emojiEl.textContent = wasLiked ? '❤️' : '🤍';
+  if (countEl) countEl.textContent = currentCount;
+  btn.style.color = wasLiked ? '#e0245e' : 'var(--text-secondary)';
+  console.error('[reply like]', err);
+  showNotification('Erro ao curtir comentário.');
+} finally {
+  btn.disabled = false;
+}
+  });
+});
 
     // Botão APAGAR — funciona pra raiz e pra respostas de comentário
     container.querySelectorAll('.delete-reply-btn').forEach(btn => {
@@ -3899,6 +4045,7 @@ async function renderNotifList() {
        <div class="notif-item ${n.read ? '' : 'unread'}" 
        data-notif-id="${n.id}" 
        data-post-id="${n.post_id ?? ''}" 
+         data-reply-id="${n.reply_id ?? ''}" 
        data-notif-type="${n.type}">
         <img src="${avatar}" class="notif-item-avatar notif-avatar-clickable" 
              data-handle="${escapeHtml(handle)}" alt="Avatar"
@@ -3986,7 +4133,7 @@ async function renderNotifList() {
     });
   });
 
- listEl.querySelectorAll('.notif-item').forEach(item => {
+listEl.querySelectorAll('.notif-item').forEach(item => {
   item.addEventListener('click', async (e) => {
     if (
       e.target.closest('.notif-accept-btn') ||
@@ -3998,12 +4145,38 @@ async function renderNotifList() {
     await markAsRead(item.dataset.notifId);
     await refreshNotifBadge();
 
-    const postId = item.dataset.postId;
-    const type = item.dataset.notifType;
+    const postId    = item.dataset.postId;
+    const replyId   = item.dataset.replyId;
+    const type      = item.dataset.notifType;
 
-    if (postId && (type === 'like' || type === 'reply' || type === 'repost' || type === 'mention')) {
-      document.getElementById('notifPanel')?.classList.remove('active');
+    document.getElementById('notifPanel')?.classList.remove('active');
+
+    // Tipos que envolvem um post
+    const postTypes = ['like', 'reply', 'repost', 'mention', 'reply_like', 'comment_reply'];
+
+    if (postId && postTypes.includes(type)) {
       await openPostDetailModal(postId);
+
+      // Se tem replyId, scrolla até o comentário específico depois de abrir o modal
+      if (replyId) {
+        // Aguarda o modal renderizar as respostas
+        setTimeout(() => {
+          const replyEl = document.querySelector(
+            `#detailRepliesList [data-reply-id="${replyId}"]`
+          );
+          if (replyEl) {
+            replyEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Destaca o comentário brevemente (estilo Instagram)
+            replyEl.style.transition = 'background 0.3s';
+            replyEl.style.background = 'var(--primary)15';
+            replyEl.style.borderRadius = '10px';
+            setTimeout(() => {
+              replyEl.style.background = '';
+              replyEl.style.borderRadius = '';
+            }, 2000);
+          }
+        }, 800); // aguarda renderização das replies
+      }
     }
   });
 });

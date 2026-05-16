@@ -8,31 +8,33 @@ import { supabase, getCurrentUser } from './supabase.js';
 // TIPOS DE NOTIFICAÇÃO
 // ============================================================
 export const NOTIF_TYPES = {
-  LIKE:    'like',
-  REPLY:   'reply',
-  FOLLOW:  'follow',
-  MENTION: 'mention',
-  PROFILE_VISIT: 'profile_visit',
+  LIKE:           'like',
+  REPLY:          'reply',
+  FOLLOW:         'follow',
+  MENTION:        'mention',
+  PROFILE_VISIT:  'profile_visit',
   FOLLOW_REQUEST: 'follow_request',
-  REPOST: 'repost',
-
+  REPOST:         'repost',
+  REPLY_LIKE:     'reply_like',     // ← NOVO: curtida num comentário
+  COMMENT_REPLY:  'comment_reply',  // ← NOVO: resposta num comentário seu
 };
 
 // ============================================================
 // CRIAR UMA NOTIFICAÇÃO NO BANCO
 // Chamado sempre que alguém curte, comenta, etc.
 // ============================================================
-export async function createNotification({ toUserId, type, postId = null, actorId }) {
-  // Não notifica a si mesmo
+export async function createNotification({ toUserId, type, postId = null, actorId, replyId = null, replyContent = null }) {
   if (toUserId === actorId) return;
 
   const { error } = await supabase.from('notifications').insert({
-    user_id:    toUserId,   // quem vai receber
-    actor_id:   actorId,    // quem gerou a ação
-    type,                   // 'like' | 'reply' | 'follow' | 'mention'
-    post_id:    postId,     // post relacionado (opcional)
-    read:       false,
-    created_at: new Date().toISOString(),
+    user_id:       toUserId,
+    actor_id:      actorId,
+    type,
+    post_id:       postId,
+    reply_id:      replyId,       // ← NOVO (coluna nova no banco)
+    reply_content: replyContent,  // ← NOVO (coluna nova no banco)
+    read:          false,
+    created_at:    new Date().toISOString(),
   });
 
   if (error) console.error('[VazaPUC] Erro ao criar notificação:', error);
@@ -162,38 +164,45 @@ export function getNotifText(notif) {
   const preview = notif.post?.content
     ? `"${notif.post.content.slice(0, 40)}${notif.post.content.length > 40 ? '...' : ''}"`
     : '';
+  const replyPreview = notif.reply_content
+    ? `"${notif.reply_content.slice(0, 40)}${notif.reply_content.length > 40 ? '...' : ''}"`
+    : '';
 
   switch (notif.type) {
     case NOTIF_TYPES.LIKE:
       return `${actor} curtiu seu post ${preview}`;
     case NOTIF_TYPES.REPLY:
       return `${actor} comentou no seu post ${preview}`;
-      case NOTIF_TYPES.REPOST:
-  return `${actor} repostou seu post ${preview}`;
+    case NOTIF_TYPES.REPOST:
+      return `${actor} repostou seu post ${preview}`;
     case NOTIF_TYPES.FOLLOW:
       return `${actor} começou a te seguir`;
-    case NOTIF_TYPES.FOLLOW_REQUEST: 
+    case NOTIF_TYPES.FOLLOW_REQUEST:
       return `${actor} quer te seguir`;
     case NOTIF_TYPES.MENTION:
       return `${actor} mencionou você ${preview}`;
+    case NOTIF_TYPES.REPLY_LIKE:
+      return `${actor} curtiu seu comentário ${replyPreview}`;
+    case NOTIF_TYPES.COMMENT_REPLY:
+      return `${actor} respondeu seu comentário ${replyPreview}`;
     case 'profile_visit':
-       return `${actor} visitou seu perfil`;
+      return `${actor} visitou seu perfil`;
     default:
       return `${actor} interagiu com você`;
-  
   }
 }
-
 export function getNotifIcon(type) {
   switch (type) {
-    case NOTIF_TYPES.LIKE:    return '❤️';
-    case NOTIF_TYPES.REPLY:   return '💬';
-    case NOTIF_TYPES.FOLLOW:  return '👤';
-    case NOTIF_TYPES.MENTION: return '📣';
-    case NOTIF_TYPES.REPOST: return '🔁';
-    case 'profile_visit': return '👁️';
+    case NOTIF_TYPES.LIKE:           return '❤️';
+    case NOTIF_TYPES.REPLY:          return '💬';
+    case NOTIF_TYPES.FOLLOW:         return '👤';
+    case NOTIF_TYPES.MENTION:        return '📣';
+    case NOTIF_TYPES.REPOST:         return '🔁';
+    case NOTIF_TYPES.REPLY_LIKE:     return '❤️';   // ← NOVO
+    case NOTIF_TYPES.COMMENT_REPLY:  return '↩️';   // ← NOVO
+    case 'profile_visit':            return '👁️';
     case NOTIF_TYPES.FOLLOW_REQUEST: return '👥';
-    default:                   return '🔔';
+    default:                         return '🔔';
   }
 }
 export async function deleteNotification(notifId) {
