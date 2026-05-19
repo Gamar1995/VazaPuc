@@ -14,7 +14,7 @@ import { supabase, getCurrentUser } from './supabase.js';
 // - Visita ao próprio perfil → não registra
 // - Usuário premium → modo ghost, não aparece
 // ============================================================
-export async function recordProfileVisit(supabase, getCurrentUser, profileId) {
+export async function recordProfileVisit(profileId) {
   try {
     const user = await getCurrentUser();
  
@@ -63,7 +63,7 @@ export async function recordProfileVisit(supabase, getCurrentUser, profileId) {
 // ============================================================
 // BUSCAR VISITANTES
 // ============================================================
-export async function getProfileVisitors(supabase, profileId, limit = 12) {
+export async function getProfileVisitors(profileId, limit = 12) {
   try {
     const { data: visits, error } = await supabase
       .from('profile_visits')

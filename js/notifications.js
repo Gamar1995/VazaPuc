@@ -23,21 +23,53 @@ export const NOTIF_TYPES = {
 // CRIAR UMA NOTIFICAÇÃO NO BANCO
 // Chamado sempre que alguém curte, comenta, etc.
 // ============================================================
-export async function createNotification({ toUserId, type, postId = null, actorId, replyId = null, replyContent = null }) {
+export async function createNotification({
+  toUserId,
+  type,
+  postId = null,
+  actorId,
+  replyId = null,
+  replyContent = null
+}) {
   if (toUserId === actorId) return;
 
-  const { error } = await supabase.from('notifications').insert({
-    user_id:       toUserId,
-    actor_id:      actorId,
-    type,
-    post_id:       postId,
-    reply_id:      replyId,       // ← NOVO (coluna nova no banco)
-    reply_content: replyContent,  // ← NOVO (coluna nova no banco)
-    read:          false,
-    created_at:    new Date().toISOString(),
-  });
+  // =========================================
+  // EVITA FOLLOW/FOLLOW_REQUEST DUPLICADOS
+  // =========================================
+  if (
+    type === NOTIF_TYPES.FOLLOW ||
+    type === NOTIF_TYPES.FOLLOW_REQUEST
+  ) {
+    const { data: existing } = await supabase
+      .from('notifications')
+      .select('id')
+      .eq('user_id', toUserId)
+      .eq('actor_id', actorId)
+      .eq('type', type)
+      .maybeSingle();
 
-  if (error) console.error('[VazaPUC] Erro ao criar notificação:', error);
+    if (existing) {
+      console.log('Notificação duplicada evitada');
+      return;
+    }
+  }
+
+  const { error } = await supabase
+    .from('notifications')
+    .insert({
+      user_id: toUserId,
+      actor_id: actorId,
+      type,
+      post_id: postId,
+      reply_id: replyId,
+      reply_content: replyContent,
+      read: false,
+      created_at: new Date().toISOString(),
+    });
+
+  if (error) {
+    console.error('[VazaPUC] Erro ao criar notificação:', error);
+  }
 }
 
 // ============================================================

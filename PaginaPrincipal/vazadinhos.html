@@ -899,21 +899,6 @@
       };
 
     })();
-    (async () => {
-      const mod = await import('/VazaPuc/js/supabase.js');
-      const sb = mod.supabase;
-      const user = await mod.getCurrentUser();
-
-      const { error } = await sb.from('notifications').insert({
-        user_id: user.id,
-        actor_id: '77dfefb3-663a-4e7f-8ba9-772a9d9d7e57',
-        type: 'follow',
-        read: false,
-        created_at: new Date().toISOString()
-      });
-
-      console.log('erro:', error);
-    })();
   </script>
 </body>
 
