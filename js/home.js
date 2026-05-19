@@ -1819,7 +1819,6 @@ if (currentProfile && repliesFiltradas.length > 0) {
 
 container.innerHTML = raiz.map(r => renderReply(r, false)).join('');
 
-    container.innerHTML = raiz.map(r => renderReply(r, false)).join('');
     container.querySelectorAll('.ver-mais-respostas-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const parentId = btn.dataset.parentId;
@@ -1933,16 +1932,18 @@ container.innerHTML = raiz.map(r => renderReply(r, false)).join('');
     await addReply(postIdBtn, text, false, parentReplyId);
 
     // Notifica o dono do COMENTÁRIO PAI (estilo Instagram: "X respondeu seu comentário")
-    if (parentReply?.author_id && parentReply.author_id !== currentProfile.id) {
-      await createNotification({
-        toUserId:     parentReply.author_id,
-        actorId:      currentProfile.id,
-        type:         NOTIF_TYPES.COMMENT_REPLY,
-        postId:       postIdBtn,
-        replyId:      parentReplyId,
-        replyContent: parentReply.content, // prévia do comentário que foi respondido
-      });
-    }
+    // DEPOIS — por isto:
+const { error: insertError } = await supabase
+  .from('replies')
+  .insert({
+    post_id:         postIdBtn,
+    author_id:       currentProfile.id,
+    content:         text,
+    is_private:      false,
+    parent_reply_id: parentReplyId   // ← era ignorado antes
+  });
+
+if (insertError) throw insertError;
 
     composerDiv.remove();
     showNotification('Resposta enviada! 💬');
@@ -2336,6 +2337,64 @@ async function renderProfileLocked(profile, profileInfo) {
     </div>`;
 }
 
+// ============================================================
+// VISUALIZADOR DE IMAGENS (MODAL DE ZOOM PARA AVATAR/BANNER)
+// ============================================================
+window.openImageViewer = function(imageUrl) {
+    if (!imageUrl) return;
+
+    let viewer = document.getElementById('imageViewerModal');
+    
+    // Cria o modal dinamicamente se ele ainda não existir
+    if (!viewer) {
+        viewer = document.createElement('div');
+        viewer.id = 'imageViewerModal';
+        viewer.style.cssText = `
+            position: fixed; inset: 0; z-index: 99999;
+            background: rgba(0,0,0,0.85); display: flex;
+            align-items: center; justify-content: center;
+            backdrop-filter: blur(8px); opacity: 0; transition: opacity 0.2s ease;
+        `;
+        
+        viewer.innerHTML = `
+            <button id="closeImageViewer" style="
+                position: absolute; top: 20px; right: 24px; background: rgba(0,0,0,0.5); 
+                border: none; color: white; width: 40px; height: 40px; border-radius: 50%;
+                font-size: 24px; cursor: pointer; z-index: 100000; transition: background 0.2s;
+                display: flex; align-items: center; justify-content: center;
+            " onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(0,0,0,0.5)'">✕</button>
+            <img id="imageViewerImg" src="" style="
+                max-width: 90vw; max-height: 90vh; border-radius: 12px; 
+                box-shadow: 0 10px 40px rgba(0,0,0,0.5); object-fit: contain; 
+                transform: scale(0.9); transition: transform 0.2s ease;
+            ">
+        `;
+        document.body.appendChild(viewer);
+        
+        // Função para fechar o visualizador com animação
+        const closeFn = () => {
+            viewer.style.opacity = '0';
+            document.getElementById('imageViewerImg').style.transform = 'scale(0.9)';
+            setTimeout(() => viewer.style.display = 'none', 200);
+        };
+        
+        document.getElementById('closeImageViewer').addEventListener('click', closeFn);
+        viewer.addEventListener('click', (e) => { if (e.target === viewer) closeFn(); });
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && viewer.style.display === 'flex') closeFn(); });
+    }
+    
+    // Atualiza a imagem e mostra o modal
+    const imgEl = document.getElementById('imageViewerImg');
+    imgEl.src = imageUrl;
+    viewer.style.display = 'flex';
+    void viewer.offsetWidth; // Força renderização
+    viewer.style.opacity = '1';
+    imgEl.style.transform = 'scale(1)';
+};
+
+// ============================================================
+// CARREGAR PÁGINA DE PERFIL
+// ============================================================
 async function loadProfilePage() {
   profileBtnControllers.forEach(ctrl => ctrl.abort());
   profileBtnControllers = [];
@@ -2383,10 +2442,13 @@ async function loadProfilePage() {
       bannerEl.id = 'profileBannerDisplay';
       const defaultBanner = 'https://images.unsplash.com/photo-1614850523459-c2f4c699c52e?q=80&w=1200&auto=format&fit=crop';
       
+      // GUARDA O URL FINAL DO BANNER PARA USAR NO CLIQUE
+      const finalBannerUrl = profile.banner_url || defaultBanner;
+      
       bannerEl.style.cssText = `
         width: 100%;
         height: 220px;
-        background-image: linear-gradient(to bottom, rgba(0,0,0,0.0) 40%, rgba(0,0,0,0.75) 100%), url('${profile.banner_url || defaultBanner}');
+        background-image: linear-gradient(to bottom, rgba(0,0,0,0.0) 40%, rgba(0,0,0,0.75) 100%), url('${finalBannerUrl}');
         background-size: cover;
         background-position: center;
         border-radius: 16px 16px 0 0;
@@ -2395,7 +2457,11 @@ async function loadProfilePage() {
         margin-bottom: -50px; 
         position: relative;
         z-index: 1;
+        cursor: pointer;
       `;
+
+      // ADICIONA O EVENTO DE CLIQUE AO BANNER
+      bannerEl.onclick = () => window.openImageViewer(finalBannerUrl);
 
       profileInfoContainer.style.position = 'relative';
       profileInfoContainer.style.zIndex = '2';
@@ -2423,7 +2489,16 @@ async function loadProfilePage() {
 
   const profileAvatar = document.querySelector('.profile-avatar');
   if (profileAvatar) {
-    profileAvatar.src = profile.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.handle}`;
+    // GUARDA O URL DA FOTO PARA USAR NO CLIQUE
+    const finalAvatarUrl = profile.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.handle}`;
+    profileAvatar.src = finalAvatarUrl;
+    
+    // ADICIONA O EVENTO DE CLIQUE À FOTO DE PERFIL
+    profileAvatar.style.cursor = 'pointer';
+    profileAvatar.onclick = (e) => {
+        e.stopPropagation();
+        window.openImageViewer(finalAvatarUrl);
+    };
   }
 
   const statValues = document.querySelectorAll('.stat-value');
@@ -2440,6 +2515,7 @@ async function loadProfilePage() {
       vals[1].textContent = counts.followers_count;
     }
   });
+  
   const followCtrl = new AbortController();
   profileBtnControllers.push(followCtrl);
   const followSignal = followCtrl.signal;
@@ -2519,7 +2595,6 @@ async function loadProfilePage() {
       const msgBtn = document.createElement('button');
       msgBtn.id = 'msgProfileBtn';
       msgBtn.className = 'edit-profile-btn';
-      // Desativa o posicionamento absoluto dentro do contêiner para não empilhar
       msgBtn.style.cssText = 'position: relative; top: 0; right: 0; border-color:var(--primary);color:var(--primary); margin: 0;';
       msgBtn.textContent = '✉ Mensagem';
       msgBtn.addEventListener('click', async () => {
@@ -2543,7 +2618,6 @@ async function loadProfilePage() {
     loadProfileTabContent('posts');
   }
 }
-
 async function renderFollowButton(profile, parentContainer, signal) {
   const followBtn = document.createElement('button');
   followBtn.id = 'followProfileBtn';
@@ -4479,6 +4553,69 @@ function criarThumb(file, onRemove) {
 // ============================================================
 // UTILITÁRIOS
 // ============================================================
+// ============================================================
+// VISUALIZADOR DE IMAGENS (MODAL DE ZOOM PARA AVATAR/BANNER)
+// ============================================================
+window.openImageViewer = function(imageUrl) {
+    if (!imageUrl) return;
+
+    let viewer = document.getElementById('imageViewerModal');
+    
+    // Se o visualizador ainda não existir no HTML, cria-o dinamicamente
+    if (!viewer) {
+        viewer = document.createElement('div');
+        viewer.id = 'imageViewerModal';
+        viewer.style.cssText = `
+            position: fixed; inset: 0; z-index: 99999;
+            background: rgba(0,0,0,0.85); display: flex;
+            align-items: center; justify-content: center;
+            backdrop-filter: blur(8px); opacity: 0; transition: opacity 0.2s ease;
+        `;
+        
+        viewer.innerHTML = `
+            <button id="closeImageViewer" style="
+                position: absolute; top: 20px; right: 24px; background: rgba(0,0,0,0.5); 
+                border: none; color: white; width: 40px; height: 40px; border-radius: 50%;
+                font-size: 24px; cursor: pointer; z-index: 100000; transition: background 0.2s;
+                display: flex; align-items: center; justify-content: center;
+            " onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(0,0,0,0.5)'">✕</button>
+            <img id="imageViewerImg" src="" style="
+                max-width: 90vw; max-height: 90vh; border-radius: 12px; 
+                box-shadow: 0 10px 40px rgba(0,0,0,0.5); object-fit: contain; 
+                transform: scale(0.9); transition: transform 0.2s ease;
+            ">
+        `;
+        document.body.appendChild(viewer);
+        
+        // Lógica para fechar
+        const closeFn = () => {
+            viewer.style.opacity = '0';
+            document.getElementById('imageViewerImg').style.transform = 'scale(0.9)';
+            setTimeout(() => viewer.style.display = 'none', 200); // Espera a animação acabar
+        };
+        
+        document.getElementById('closeImageViewer').addEventListener('click', closeFn);
+        viewer.addEventListener('click', (e) => {
+            if (e.target === viewer) closeFn(); // Fecha ao clicar fora da imagem
+        });
+        
+        // Fecha com a tecla ESC
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && viewer.style.display === 'flex') closeFn();
+        });
+    }
+    
+    // Atualiza a imagem e mostra o modal com animação
+    const imgEl = document.getElementById('imageViewerImg');
+    imgEl.src = imageUrl;
+    viewer.style.display = 'flex';
+    
+    // Força o browser a registar o display:flex antes de animar a opacidade
+    void viewer.offsetWidth; 
+    
+    viewer.style.opacity = '1';
+    imgEl.style.transform = 'scale(1)';
+};
 function escapeHtml(text) {
   if (!text) return '';
   const div = document.createElement('div');
