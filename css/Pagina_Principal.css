@@ -917,3 +917,93 @@ footer {
 .theme-opt:hover {
   transform: scale(1.15);
 }
+/* =========================================
+   AJUSTES DO PREMIUM PARA TEMAS CLAROS
+   ========================================= */
+[data-theme$="-claro"] .card-premium,
+[data-theme$="-claro"] .nav-premium-btn,
+[data-theme$="-claro"] .premium-box-feed /* nome hipotético */ {
+    background: linear-gradient(145deg, var(--dark-bg-secondary) 0%, rgba(255, 215, 0, 0.1) 100%);
+    border: 1px solid rgba(255, 215, 0, 0.4);
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.1);
+    color: #b8860b; /* Dourado escuro para legibilidade */
+}
+
+[data-theme$="-claro"] .premium-text-glow {
+    color: #b8860b;
+    text-shadow: none;
+}
+
+[data-theme$="-claro"] .premium-icon {
+    color: #b8860b;
+    text-shadow: none;
+}
+/* =========================================
+   CABEÇALHO PREMIUM E BOTÃO VOLTAR
+========================================= */
+
+/* Agrupa o botão e o título na mesma linha, lado esquerdo */
+.premium-top-header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 20px 30px;
+    width: 100%;
+}
+
+/* O título ao lado do botão */
+.premium-title-text {
+    font-family: 'Syne', sans-serif;
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.premium-title-text .destaque-ouro {
+    color: #ffd700;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+}
+
+/* Botão Voltar Animado que se adapta aos temas */
+.btn-voltar-animado {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    color: var(--text-secondary); /* Cor neutra adaptável */
+    border: 1px solid var(--border); /* Borda dinâmica baseada no tema */
+    padding: 8px 18px;
+    border-radius: 20px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* A setinha em si */
+.btn-voltar-animado .seta-voltar {
+    display: inline-block;
+    font-size: 18px;
+    transition: transform 0.3s ease;
+}
+
+/* Efeito ao passar o rato (Hover) */
+.btn-voltar-animado:hover {
+    background: var(--primary); /* Puxa a cor principal do tema ativo (Vinho, Azul, etc) */
+    color: #ffffff; /* O texto fica branco para dar contraste */
+    border-color: var(--primary);
+    transform: translateX(-3px); /* Move a caixa toda levemente para a esquerda */
+    box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.3); /* Sombra colorida suave */
+}
+
+/* Anima a seta indo um pouco mais para a esquerda do que o botão */
+.btn-voltar-animado:hover .seta-voltar {
+    transform: translateX(-4px);
+}
+
+/* Ajustes no modo claro para manter o brilho do título comportado */
+[data-theme$="-claro"] .premium-title-text .destaque-ouro {
+    color: #b8860b;
+    text-shadow: none;
+} 

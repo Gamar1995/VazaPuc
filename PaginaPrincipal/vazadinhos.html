@@ -84,12 +84,9 @@
           </div>
         </div>
       </nav>
-      <button class="nav-premium-btn" onclick="openPremiumModal()">
+<button class="nav-premium-btn" onclick="window.location.href='../premium.html'">
         <span>✦</span>
         <span>Premium</span>
-      </button>
-      <button class="post-btn" id="postBtnSidebar">
-        <span>Novo Post</span>
       </button>
 
       <!-- Painel de Notificações -->
@@ -898,6 +895,21 @@
         // Será sobrescrita pelo home.js quando carregar
       };
 
+    })();
+    (async () => {
+      const mod = await import('/VazaPuc/js/supabase.js');
+      const sb = mod.supabase;
+      const user = await mod.getCurrentUser();
+
+      const { error } = await sb.from('notifications').insert({
+        user_id: user.id,
+        actor_id: '77dfefb3-663a-4e7f-8ba9-772a9d9d7e57',
+        type: 'follow',
+        read: false,
+        created_at: new Date().toISOString()
+      });
+
+      console.log('erro:', error);
     })();
   </script>
 </body>

@@ -1755,3 +1755,178 @@ body {
         display: block !important;
     }
 }
+/* =========================================
+   CORREÇÃO DO DESIGN PREMIUM EM TEMAS CLAROS
+   ========================================= */
+
+/* Ajuste do fundo e borda da caixa/card Premium */
+[data-theme$="-claro"] .card-premium,
+[data-theme$="-claro"] .premium-promo-box /* caso tenha uma classe específica */ {
+  background: linear-gradient(145deg, var(--dark-bg-secondary) 0%, rgba(255, 215, 0, 0.15) 100%) !important;
+  border: 1px solid rgba(200, 160, 0, 0.5) !important;
+  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.15), inset 0 0 10px rgba(255, 215, 0, 0.05) !important;
+}
+
+[data-theme$="-claro"] .card-premium:hover {
+  border-color: rgba(200, 160, 0, 0.8) !important;
+  box-shadow: 0 6px 20px rgba(255, 215, 0, 0.25) !important;
+}
+
+/* Escurecer os textos e ícones Premium para garantir legibilidade no fundo branco */
+[data-theme$="-claro"] .card-premium .premium-text-glow,
+[data-theme$="-claro"] .premium-text-glow,
+[data-theme$="-claro"] .card-premium .premium-icon,
+[data-theme$="-claro"] .nav-premium-btn {
+  color: #a87b00 !important; /* Dourado mais escuro e legível */
+  text-shadow: none !important;
+}
+
+/* O texto padrão da caixa precisa ser da cor escura primária do tema */
+[data-theme$="-claro"] .card-premium p,
+[data-theme$="-claro"] .card-premium h3 {
+  color: var(--text-primary) !important;
+}
+
+/* Botão de assinar dentro da caixa no modo claro */
+[data-theme$="-claro"] .btn-premium-action,
+[data-theme$="-claro"] .btn-assinar-premium {
+  background: linear-gradient(135deg, #f5c71a, #e69500) !important;
+  color: #ffffff !important; /* Texto branco no botão amarelo escuro */
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(230, 150, 0, 0.3) !important;
+}
+
+[data-theme$="-claro"] .btn-premium-action:hover,
+[data-theme$="-claro"] .btn-assinar-premium:hover {
+  background: linear-gradient(135deg, #e6b800, #cc8400) !important;
+  box-shadow: 0 6px 16px rgba(230, 150, 0, 0.4) !important;
+}
+/* =========================================
+   CORREÇÃO DO DESIGN PREMIUM EM TEMAS CLAROS
+   (Adaptação elegante para fundo branco)
+========================================= */
+
+/* 1. Ajuste do fundo e borda das caixas Premium (Cards/Banners) */
+[data-theme$="-claro"] .card-premium,
+[data-theme$="-claro"] .btn-assinar-premium,
+[data-theme$="-claro"] .nav-premium-btn {
+    /* Fundo com leve tom de dourado/creme, sem ser agressivo */
+    background: linear-gradient(145deg, var(--dark-bg-secondary) 0%, rgba(255, 215, 0, 0.08) 100%) !important;
+    border: 1px solid rgba(200, 160, 0, 0.4) !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-theme$="-claro"] .card-premium:hover {
+    border-color: rgba(200, 160, 0, 0.7) !important;
+    box-shadow: 0 8px 24px rgba(218, 165, 32, 0.15) !important;
+}
+
+/* 2. Escurecer os textos dourados para garantir a leitura no branco */
+[data-theme$="-claro"] .premium-text-glow,
+[data-theme$="-claro"] .card-premium .premium-icon,
+[data-theme$="-claro"] .nav-premium-btn {
+    color: #b38b00 !important; /* Dourado mais escuro (Dark Goldenrod) */
+    text-shadow: none !important; /* Remove o brilho neon que borra no claro */
+}
+
+/* 3. Garante que textos comuns dentro do banner fiquem escuros */
+[data-theme$="-claro"] .card-premium p,
+[data-theme$="-claro"] .card-premium h3,
+[data-theme$="-claro"] .card-premium span {
+    color: var(--text-primary) !important;
+}
+
+/* 4. Ajusta o botão principal de ação Premium no modo claro */
+[data-theme$="-claro"] .btn-premium-action {
+    /* Gradiente voltado para o laranja/dourado escuro */
+    background: linear-gradient(135deg, #e6b800, #cc8400) !important;
+    color: #ffffff !important; /* Texto fica branco e bem legível */
+    border: none !important;
+    box-shadow: 0 4px 12px rgba(204, 132, 0, 0.3) !important;
+}
+
+[data-theme$="-claro"] .btn-premium-action:hover {
+    background: linear-gradient(135deg, #d4a000, #b37400) !important;
+    box-shadow: 0 6px 16px rgba(204, 132, 0, 0.4) !important;
+    color: #ffffff !important;
+}
+
+/* 5. Ajuste do selinho pequeno "Premium" */
+[data-theme$="-claro"] .premium-badge-small,
+[data-theme$="-claro"] .premium-badge-tag {
+    background: linear-gradient(135deg, #e6b800, #cc8400) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(204, 132, 0, 0.3) !important;
+}
+/* =========================================
+   DESIGN PREMIUM - MODO CLARO (Elegante e Limpo)
+========================================= */
+
+/* 1. Caixa/Botão Premium na Sidebar (Em cima do Novo Post) */
+[data-theme$="-claro"] .nav-premium-btn {
+    /* Fundo suave com um toque de ouro */
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.12), rgba(212, 175, 55, 0.03)) !important;
+    /* Borda dourada delicada */
+    border: 1px solid rgba(212, 175, 55, 0.4) !important;
+    /* Texto em um dourado mais escuro para perfeita leitura no branco */
+    color: #9c7b16 !important; 
+    box-shadow: 0 4px 12px rgba(212, 175, 55, 0.08) !important;
+    font-weight: 800 !important;
+}
+
+/* Efeito ao passar o mouse na Sidebar */
+[data-theme$="-claro"] .nav-premium-btn:hover {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.20), rgba(212, 175, 55, 0.08)) !important;
+    border-color: rgba(212, 175, 55, 0.7) !important;
+    box-shadow: 0 6px 16px rgba(212, 175, 55, 0.15) !important;
+    color: #7a6010 !important; /* Escurece mais um pouco o texto no hover */
+    transform: translateX(3px) !important;
+}
+
+/* O ícone de estrela/brilho ✦ dentro da caixa na Sidebar */
+[data-theme$="-claro"] .nav-premium-btn span:first-child {
+    color: #d4af37 !important; /* Ouro mais vivo para o ícone */
+    text-shadow: 0 0 8px rgba(212, 175, 55, 0.4) !important;
+}
+
+/* =========================================
+   PROTEÇÃO PARA OUTROS ITENS PREMIUM
+========================================= */
+/* Cards na Home e Textos Glow */
+[data-theme$="-claro"] .card-premium {
+    background: linear-gradient(145deg, var(--dark-bg-secondary) 0%, rgba(212, 175, 55, 0.05) 100%) !important;
+    border: 1px solid rgba(212, 175, 55, 0.4) !important;
+}
+
+[data-theme$="-claro"] .card-premium:hover {
+    border-color: rgba(212, 175, 55, 0.8) !important;
+    box-shadow: 0 8px 24px rgba(212, 175, 55, 0.15) !important;
+}
+
+[data-theme$="-claro"] .premium-text-glow,
+[data-theme$="-claro"] .card-premium .premium-icon {
+    color: #9c7b16 !important;
+    text-shadow: none !important;
+}
+
+/* Botões de Assinar Premium (Preenchidos) */
+[data-theme$="-claro"] .btn-assinar-premium,
+[data-theme$="-claro"] .btn-premium-action {
+    background: linear-gradient(135deg, #d4af37, #b5952f) !important;
+    color: #ffffff !important; /* Fica branco para destacar no ouro */
+    border: none !important;
+    box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3) !important;
+}
+
+[data-theme$="-claro"] .btn-assinar-premium:hover,
+[data-theme$="-claro"] .btn-premium-action:hover {
+    background: linear-gradient(135deg, #b5952f, #9c7b16) !important;
+    box-shadow: 0 6px 16px rgba(212, 175, 55, 0.4) !important;
+}
+
+/* Selo de Premium perto do nome */
+[data-theme$="-claro"] .premium-badge-tag {
+    background: linear-gradient(135deg, #d4af37, #b5952f) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 6px rgba(212, 175, 55, 0.3) !important;
+}
