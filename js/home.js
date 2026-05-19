@@ -1714,153 +1714,77 @@ async function loadDetailReplies(postId, authorId = '') {
     const filhos = repliesFiltradas.filter(r => r.parent_reply_id);
     const MAX_FILHOS_VISIVEIS = 2;
 
+    // ✅ RENDERIZAR FUNÇÃO
     const renderReply = (r, isChild = false) => {
-  const avatar = r.author?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${r.author?.handle}`;
-  const isMyReply = currentProfile && currentProfile.id === r.author?.id;
-  const childReplies = filhos.filter(f => f.parent_reply_id === r.id);
-  const filhosVisiveis = childReplies.slice(0, MAX_FILHOS_VISIVEIS);
-  const filhosOcultos = childReplies.slice(MAX_FILHOS_VISIVEIS);
+      const avatar = r.author?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${r.author?.handle}`;
+      const isMyReply = currentProfile && currentProfile.id === r.author?.id;
+      const childReplies = filhos.filter(f => f.parent_reply_id === r.id);
+      const filhosVisiveis = childReplies.slice(0, MAX_FILHOS_VISIVEIS);
+      const filhosOcultos = childReplies.slice(MAX_FILHOS_VISIVEIS);
 
-  const filhosHTML = filhosVisiveis.map(child => renderReply(child, true)).join('');
+      const filhosHTML = filhosVisiveis.map(child => renderReply(child, true)).join('');
 
-  const verMaisBtn = filhosOcultos.length > 0 ? `
-    <button class="ver-mais-respostas-btn" data-parent-id="${r.id}"
-      style="
-        background:none;border:none;cursor:pointer;
-        color:var(--primary);font-size:12px;font-weight:700;
-        padding:4px 8px 4px 48px;display:block;
-        transition:opacity 0.2s;margin-bottom:4px;
-      "
-      onmouseover="this.style.opacity='0.7'"
-      onmouseout="this.style.opacity='1'">
-      ↳ Ver mais ${filhosOcultos.length} resposta${filhosOcultos.length > 1 ? 's' : ''}
-    </button>
-  ` : '';
+      const verMaisBtn = filhosOcultos.length > 0 ? `
+        <button class="ver-mais-respostas-btn" data-parent-id="${r.id}"
+          style="background:none;border:none;cursor:pointer;color:var(--primary);font-size:12px;font-weight:700;padding:4px 8px 4px 48px;display:block;transition:opacity 0.2s;margin-bottom:4px;"
+          onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">
+          ↳ Ver mais ${filhosOcultos.length} resposta${filhosOcultos.length > 1 ? 's' : ''}
+        </button>
+      ` : '';
 
-  const hiddenFilhosHTML = filhosOcultos.length > 0 ? `
-    <div class="respostas-ocultas" data-parent-id="${r.id}" style="display:none;">
-      ${filhosOcultos.map(child => renderReply(child, true)).join('')}
-    </div>
-  ` : '';
-
-  return `
-    <div class="reply-thread-item" data-reply-id="${r.id}" style="
-      display:flex;gap:10px;padding:${isChild ? '10px 0 10px 48px' : '14px 0 6px'};
-      border-bottom:${isChild ? 'none' : '1px solid var(--border)'};
-      position:relative;
-    ">
-      ${isChild ? `<div style="position:absolute;left:36px;top:-6px;bottom:0;width:2px;background:var(--border);border-radius:2px;"></div>` : ''}
-      <img src="${avatar}" class="detail-reply-avatar" data-handle="${r.author?.handle ?? ''}"
-           style="width:${isChild ? '30px' : '38px'};height:${isChild ? '30px' : '38px'};border-radius:50%;object-fit:cover;cursor:pointer;flex-shrink:0;">
-      <div style="flex:1;min-width:0;">
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px;">
-          <span class="detail-reply-avatar" data-handle="${r.author?.handle ?? ''}"
-            style="font-weight:700;font-size:${isChild ? '13px' : '14px'};color:var(--text-primary);cursor:pointer;">
-            ${escapeHtml(r.author?.name ?? 'Usuário')}
-          </span>
-          <span style="color:var(--text-secondary);font-size:12px;">@${escapeHtml(r.author?.handle ?? '')}</span>
-          <span style="color:var(--text-secondary);font-size:11px;">· ${formatTimeAgo(r.created_at)}</span>
-          ${r.is_private ? '<span style="font-size:10px;background:var(--primary)22;color:var(--primary);padding:1px 6px;border-radius:8px;font-weight:700;">🔒</span>' : ''}
-          ${isMyReply ? `
-            <button class="delete-reply-btn" data-reply-id="${r.id}" data-post-id="${postId}" data-is-child="${isChild}"
-              style="margin-left:auto;background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:12px;padding:2px 6px;border-radius:6px;transition:color 0.2s;"
-              onmouseover="this.style.color='var(--danger,#e0245e)'" onmouseout="this.style.color='var(--text-secondary)'">🗑️</button>
-          ` : ''}
+      const hiddenFilhosHTML = filhosOcultos.length > 0 ? `
+        <div class="respostas-ocultas" data-parent-id="${r.id}" style="display:none;">
+          ${filhosOcultos.map(child => renderReply(child, true)).join('')}
         </div>
-        <p style="font-size:${isChild ? '13px' : '14px'};color:var(--text-primary);line-height:1.5;word-break:break-word;margin:0 0 8px;">
-          ${escapeHtml(r.content)}
-        </p>
-        ${!isChild ? `
-  <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-    <button class="reply-like-btn"
-      data-reply-id="${r.id}"
-      data-reply-content="${escapeHtml((r.content || '').slice(0, 80))}"
-      data-post-id="${postId}"
-      data-author-id="${r.author?.id ?? ''}"
-      data-liked="${myLikedReplyIds.has(r.id)}"
-      style="background:none;border:none;cursor:pointer;
-             color:${myLikedReplyIds.has(r.id) ? '#e0245e' : 'var(--text-secondary)'};
-             font-size:13px;display:flex;align-items:center;gap:4px;padding:3px 8px;
-             border-radius:8px;transition:color 0.15s;">
-      <span class="reply-like-emoji">${myLikedReplyIds.has(r.id) ? '❤️' : '🤍'}</span>
-      <span class="reply-like-count">${r.likes_count ?? 0}</span>
-    </button>
-    <button class="reply-to-comment-btn"
-      data-handle="${escapeHtml(r.author?.handle ?? '')}"
-      data-reply-id="${r.id}"
-      data-post-id="${postId}"
-      data-author-id="${authorId}"
-      style="background:none;border:none;cursor:pointer;color:var(--text-secondary);
-             font-size:12px;display:flex;align-items:center;gap:4px;padding:3px 8px;
-             border-radius:8px;transition:background 0.15s,color 0.15s;"
-      onmouseover="this.style.background='var(--primary)15';this.style.color='var(--primary)'"
-      onmouseout="this.style.background='none';this.style.color='var(--text-secondary)'">
-      💬 Responder
-    </button>
-  </div>
-` : ''}
-        ${filhosHTML}
-        ${verMaisBtn}
-        ${hiddenFilhosHTML}
-      </div>
-    </div>
-  `;
-};
-let myLikedReplyIds = new Set();
-if (currentProfile && repliesFiltradas.length > 0) {
-  const replyIds = repliesFiltradas.map(r => r.id);
-  const { data: myLikes } = await supabase
-    .from('reply_likes')
-    .select('reply_id')
-    .eq('user_id', currentProfile.id)
-    .in('reply_id', replyIds);
-  if (myLikes) myLikes.forEach(l => myLikedReplyIds.add(l.reply_id));
-}
+      ` : '';
 
-container.innerHTML = raiz.map(r => renderReply(r, false)).join('');
+      return `
+        <div class="reply-thread-item" data-reply-id="${r.id}" style="display:flex;gap:10px;padding:${isChild ? '10px 0 10px 48px' : '14px 0 6px'};border-bottom:${isChild ? 'none' : '1px solid var(--border)'};position:relative;">
+          ${isChild ? `<div style="position:absolute;left:36px;top:-6px;bottom:0;width:2px;background:var(--border);border-radius:2px;"></div>` : ''}
+          <img src="${avatar}" class="detail-reply-avatar" data-handle="${r.author?.handle ?? ''}"
+               style="width:${isChild ? '30px' : '38px'};height:${isChild ? '30px' : '38px'};border-radius:50%;object-fit:cover;cursor:pointer;flex-shrink:0;">
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px;">
+              <span class="detail-reply-avatar" data-handle="${r.author?.handle ?? ''}"
+                style="font-weight:700;font-size:${isChild ? '13px' : '14px'};color:var(--text-primary);cursor:pointer;">
+                ${escapeHtml(r.author?.name ?? 'Usuário')}
+              </span>
+              <span style="color:var(--text-secondary);font-size:12px;">@${escapeHtml(r.author?.handle ?? '')}</span>
+              <span style="color:var(--text-secondary);font-size:11px;">· ${formatTimeAgo(r.created_at)}</span>
+              ${r.is_private ? '<span style="font-size:10px;background:var(--primary)22;color:var(--primary);padding:1px 6px;border-radius:8px;font-weight:700;">🔒</span>' : ''}
+              ${isMyReply ? `
+                <button class="delete-reply-btn" data-reply-id="${r.id}" data-post-id="${postId}" data-is-child="${isChild}"
+                  style="margin-left:auto;background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:12px;padding:2px 6px;border-radius:6px;transition:color 0.2s;"
+                  onmouseover="this.style.color='var(--danger,#e0245e)'" onmouseout="this.style.color='var(--text-secondary)'">🗑️</button>
+              ` : ''}
+            </div>
+            <p style="font-size:${isChild ? '13px' : '14px'};color:var(--text-primary);line-height:1.5;word-break:break-word;margin:0 0 8px;">
+              ${escapeHtml(r.content)}
+            </p>
+            ${filhosHTML}
+            ${verMaisBtn}
+            ${hiddenFilhosHTML}
+          </div>
+        </div>
+      `;
+    };
 
+    // ✅ RENDERIZAR NO CONTAINER
+    container.innerHTML = raiz.map(r => renderReply(r, false)).join('');
+
+    // ✅ EXPANDIR REPLIES OCULTAS
     container.querySelectorAll('.ver-mais-respostas-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const parentId = btn.dataset.parentId;
-    const ocultas = container.querySelector(`.respostas-ocultas[data-parent-id="${parentId}"]`);
-    if (ocultas) {
-      ocultas.style.display = 'block';
-      // Re-attacha listeners dos avatares nos filhos recém mostrados
-      ocultas.querySelectorAll('.detail-reply-avatar').forEach(el => {
-        el.addEventListener('click', () => {
-          const h = el.dataset.handle;
-          if (!h) return;
-          closePostDetailModal();
-          document.querySelectorAll('.page-container').forEach(p => p.classList.remove('active'));
-          document.getElementById('profile-page').classList.add('active');
-          loadProfileByHandle(h);
-        });
+      btn.addEventListener('click', () => {
+        const parentId = btn.dataset.parentId;
+        const ocultas = container.querySelector(`.respostas-ocultas[data-parent-id="${parentId}"]`);
+        if (ocultas) {
+          ocultas.style.display = 'block';
+          btn.remove();
+        }
       });
-      // Re-attacha delete nos filhos ocultos
-      ocultas.querySelectorAll('.delete-reply-btn').forEach(delBtn => {
-        delBtn.addEventListener('click', async (e) => {
-          e.stopPropagation();
-          if (!confirm('Apagar este comentário?')) return;
-          const replyId = delBtn.dataset.replyId;
-          const pid = delBtn.dataset.postId;
-          delBtn.disabled = true;
-          try {
-            const { error } = await supabase.from('replies').delete().eq('id', replyId);
-            if (error) throw error;
-            showNotification('Comentário apagado 🗑️');
-            await loadDetailReplies(pid, authorId);
-          } catch (err) {
-            console.error(err);
-            showNotification('Erro ao apagar comentário.');
-            delBtn.disabled = false;
-          }
-        });
-      });
-    }
-    btn.remove();
-  });
-});
-    // Clique no avatar vai pro perfil
+    });
+
+    // ✅ AVATARES CLICÁVEIS
     container.querySelectorAll('.detail-reply-avatar').forEach(el => {
       el.addEventListener('click', () => {
         const h = el.dataset.handle;
@@ -1872,191 +1796,23 @@ container.innerHTML = raiz.map(r => renderReply(r, false)).join('');
       });
     });
 
-    // Botão RESPONDER no comentário raiz
-    container.querySelectorAll('.reply-to-comment-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        if (!currentProfile) { showNotification('Faça login para responder! 🔐'); return; }
+    // ✅ BOTÃO APAGAR
+    container.querySelectorAll('.delete-reply-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (!confirm('Apagar este comentário?')) return;
 
-        const handle = btn.dataset.handle;
         const replyId = btn.dataset.replyId;
         const pid = btn.dataset.postId;
-        const aid = btn.dataset.authorId;
+        const isChild = btn.dataset.isChild === 'true';
 
-        // Remove composer inline anterior se existir
-        document.querySelectorAll('.inline-reply-composer').forEach(el => el.remove());
+        btn.disabled = true;
 
-        const userAvatar = currentProfile.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=anon`;
-        const replyItem = btn.closest('.reply-thread-item');
+        try {
+          const { error } = await supabase.from('replies').delete().eq('id', replyId);
+          if (error) throw error;
 
-        const composerDiv = document.createElement('div');
-        composerDiv.className = 'inline-reply-composer';
-        composerDiv.style.cssText = 'display:flex;gap:10px;padding:10px 0 10px 48px;border-bottom:1px solid var(--border);';
-        composerDiv.innerHTML = `
-          <img src="${userAvatar}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0;">
-          <div style="flex:1;">
-            <textarea class="inline-reply-input" placeholder="Respondendo @${handle}..."
-              style="width:100%;resize:none;background:var(--dark-bg);border:1px solid var(--border);border-radius:10px;
-                     padding:8px 12px;color:var(--text-primary);font-size:13px;outline:none;font-family:inherit;min-height:60px;">@${handle} </textarea>
-            <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:6px;">
-              <button class="cancel-inline-reply" style="background:none;border:1px solid var(--border);color:var(--text-secondary);border-radius:20px;padding:6px 14px;font-size:13px;cursor:pointer;">Cancelar</button>
-              <button class="submit-inline-reply" data-reply-id="${replyId}" data-post-id="${pid}" data-author-id="${aid}" data-target-handle="${handle}"
-                style="background:var(--primary);color:white;border:none;border-radius:20px;padding:6px 14px;font-size:13px;font-weight:700;cursor:pointer;">Responder</button>
-            </div>
-          </div>
-        `;
-
-        replyItem.insertAdjacentElement('afterend', composerDiv);
-        composerDiv.querySelector('.inline-reply-input').focus();
-
-        composerDiv.querySelector('.cancel-inline-reply').addEventListener('click', () => composerDiv.remove());
-
-        composerDiv.querySelector('.submit-inline-reply').addEventListener('click', async (e) => {
-  const submitBtn = e.currentTarget;
-  const input = composerDiv.querySelector('.inline-reply-input');
-  const text = input.value.trim();
-  if (!text) return;
-
-  const parentReplyId = submitBtn.dataset.replyId;
-  const postIdBtn = submitBtn.dataset.postId;
-
-  submitBtn.disabled = true;
-  submitBtn.textContent = '...';
-
-  try {
-    const { data: parentReply } = await supabase
-      .from('replies')
-      .select('author_id, content')
-      .eq('id', parentReplyId)
-      .single();
-
-    await addReply(postIdBtn, text, false, parentReplyId);
-
-    // Notifica o dono do COMENTÁRIO PAI (estilo Instagram: "X respondeu seu comentário")
-    // DEPOIS — por isto:
-const { error: insertError } = await supabase
-  .from('replies')
-  .insert({
-    post_id:         postIdBtn,
-    author_id:       currentProfile.id,
-    content:         text,
-    is_private:      false,
-    parent_reply_id: parentReplyId   // ← era ignorado antes
-  });
-
-if (insertError) throw insertError;
-
-    composerDiv.remove();
-    showNotification('Resposta enviada! 💬');
-    await loadDetailReplies(postIdBtn, authorId);
-  } catch (err) {
-    console.error(err);
-    showNotification('Erro ao enviar resposta.');
-    submitBtn.disabled = false;
-    submitBtn.textContent = 'Responder';
-  }
-});
-
-        // Highlight no comentário sendo respondido
-        container.querySelectorAll('.reply-thread-item').forEach(item => item.style.background = '');
-        replyItem.style.background = 'var(--primary)08';
-        replyItem.style.borderRadius = '8px';
-        setTimeout(() => { replyItem.style.background = ''; replyItem.style.borderRadius = ''; }, 2000);
-      });
-    });
-   container.querySelectorAll('.reply-like-btn').forEach(btn => {
-  btn.addEventListener('click', async (e) => {
-    e.stopPropagation();
-    if (!currentProfile) { showNotification('Faça login para curtir! 🔐'); return; }
-
-    const replyId      = btn.dataset.replyId;
-    const authorId_r   = btn.dataset.authorId;
-    const replyContent = btn.dataset.replyContent;
-    const wasLiked     = btn.dataset.liked === 'true';
-    const emojiEl      = btn.querySelector('.reply-like-emoji');
-    const countEl      = btn.querySelector('.reply-like-count');
-    const newLiked     = !wasLiked;
-    const currentCount = parseInt(countEl?.textContent || '0');
-    const newCount     = Math.max(0, currentCount + (newLiked ? 1 : -1));
-
-    // Feedback imediato na UI
-    btn.dataset.liked = String(newLiked);
-    if (emojiEl) emojiEl.textContent = newLiked ? '❤️' : '🤍';
-    if (countEl) countEl.textContent = newCount;
-    btn.style.color = newLiked ? '#e0245e' : 'var(--text-secondary)';
-    btn.disabled = true;
-try {
-  if (newLiked) {
-    const { error } = await supabase
-      .from('reply_likes')
-      .insert({ reply_id: replyId, user_id: currentProfile.id });
-
-    // 23505 = já curtiu (unique violation) — ignora silenciosamente
-    if (error && error.code !== '23505') throw error;
-
-    // Só incrementa se não era duplicata
-    if (!error) {
-      await supabase.rpc('increment_reply_likes', { reply_id: replyId });
-    }
-
-    if (authorId_r && authorId_r !== currentProfile.id) {
-      await createNotification({
-        toUserId:     authorId_r,
-        actorId:      currentProfile.id,
-        type:         NOTIF_TYPES.REPLY_LIKE,
-        postId:       btn.dataset.postId,
-        replyId:      replyId,
-        replyContent: replyContent,
-      }).catch(() => {}); // Notificação falha silenciosamente
-    }
-  } else {
-    const { error } = await supabase
-      .from('reply_likes')
-      .delete()
-      .eq('reply_id', replyId)
-      .eq('user_id', currentProfile.id);
-
-    if (error) throw error;
-
-    await supabase.rpc('decrement_reply_likes', { reply_id: replyId });
-  }
-} catch (err) {
-  // Reverte tudo se der erro
-  btn.dataset.liked = String(wasLiked);
-  if (emojiEl) emojiEl.textContent = wasLiked ? '❤️' : '🤍';
-  if (countEl) countEl.textContent = currentCount;
-  btn.style.color = wasLiked ? '#e0245e' : 'var(--text-secondary)';
-  console.error('[reply like]', err);
-  showNotification('Erro ao curtir comentário.');
-} finally {
-  btn.disabled = false;
-}
-  });
-});
-
-    // Botão APAGAR — funciona pra raiz e pra respostas de comentário
-    container.querySelectorAll('.delete-reply-btn').forEach(btn => {
-  btn.addEventListener('click', async (e) => {
-    e.stopPropagation();
-    if (!confirm('Apagar este comentário?')) return;
-
-    const replyId = btn.dataset.replyId;
-    const pid = btn.dataset.postId;
-    const isChild = btn.dataset.isChild === 'true';
-
-    btn.disabled = true;
-
-    try {
-      const { error } = await supabase
-        .from('replies')
-        .delete()
-        .eq('id', replyId);
-
-      if (error) {
-        console.error('[delete reply error]', error);
-        throw error;
-      }
-
-          // Só decrementa contador do post se for comentário raiz
+          // Decrementa só se for raiz
           if (!isChild) {
             await supabase.rpc('decrement_replies', { post_id: pid });
             document.querySelectorAll(`.reply-action[data-post-id="${pid}"] .reply-count`).forEach(el => {
@@ -2075,33 +1831,71 @@ try {
     });
 
   } catch (err) {
-    console.error(err);
+    console.error('[loadDetailReplies]', err);
     container.innerHTML = '<p style="color:var(--danger);text-align:center;padding:16px;">Erro ao carregar respostas.</p>';
   }
 }
 
-// ============================================================
-// REPLIES INLINE
-// ============================================================
 async function loadRepliesForPost(postId, listElement = null) {
-  const repliesList = listElement || document.getElementById(`replies-list-${postId}`);
-  if (!repliesList) return;
-  repliesList.innerHTML = '<p style="padding:12px;text-align:center;color:var(--text-secondary);font-size:13px;">Carregando...</p>';
+
+  console.log('CARREGANDO REPLIES...', postId);
+
+  const repliesList =
+    listElement ||
+    document.getElementById(`replies-list-${postId}`);
+
+  if (!repliesList) {
+    console.log('LISTA NÃO ENCONTRADA');
+    return;
+  }
+
+  repliesList.innerHTML = 'Carregando...';
 
   try {
-    const postAuthorId = document.querySelector(`.post-card[data-post-id="${postId}"]`)?.dataset.authorId ?? null;
-    const replies = await getReplies(postId, currentProfile?.id, postAuthorId); 
 
-    if (replies.length === 0) {
-      repliesList.innerHTML = '<p style="padding:16px;text-align:center;color:var(--text-secondary);font-size:13px;">Nenhum comentário ainda. Seja o primeiro!</p>';
-      return;
-    }
-    // Lógica contida já descrita em renderPosts/createPostHTML...
+    console.log('ANTES DO GET REPLIES');
+
+    const postAuthorId =
+      document.querySelector(`.post-card[data-post-id="${postId}"]`)
+      ?.dataset.authorId ?? null;
+
+    const replies = await getReplies(
+      postId,
+      currentProfile?.id,
+      postAuthorId
+    );
+
+    console.log('REPLIES:', replies);
+
+    // =========================
+    // TESTE RAIZ/FILHOS
+    // =========================
+
+    const raiz = replies.filter(
+      r =>
+        r.parent_reply_id === null ||
+        r.parent_reply_id === undefined ||
+        r.parent_reply_id === ''
+    );
+    console.log('RENDER:', r.id, r.parent_reply_id);
+    const filhos = replies.filter(
+      r =>
+        r.parent_reply_id !== null &&
+        r.parent_reply_id !== undefined &&
+        r.parent_reply_id !== ''
+    );
+
+    console.log('RAIZ:', raiz);
+    console.log('FILHOS:', filhos);
+
+    repliesList.innerHTML = raiz
+      .map(r => `<p>${r.content}</p>`)
+      .join('');
+
   } catch (err) {
-    repliesList.innerHTML = '<p style="padding:12px;text-align:center;color:var(--danger);font-size:13px;">Erro ao carregar comentários.</p>';
+    console.error('ERRO:', err);
   }
 }
-
 function prependPost(post) {
   const container = document.getElementById('postsContainer');
   if (!container) return;
