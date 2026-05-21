@@ -1739,7 +1739,7 @@ async function loadDetailReplies(postId, authorId = '') {
       ` : '';
 
       return `
-        <div class="reply-thread-item" data-reply-id="${r.id}" style="display:flex;gap:10px;padding:${isChild ? '10px 0 10px 48px' : '14px 0 6px'};border-bottom:${isChild ? 'none' : '1px solid var(--border)'};position:relative;">
+        <div class="reply-thread-item" data-reply-id="${r.id}"style="display:flex;gap:10px;padding:${isChild ? '10px 0 10px 48px' : '14px 0 6px'};border-bottom:${isChild ? 'none' : '1px solid var(--border)'};position:relative;cursor:pointer;transition:background 0.15s;">
           ${isChild ? `<div style="position:absolute;left:36px;top:-6px;bottom:0;width:2px;background:var(--border);border-radius:2px;"></div>` : ''}
           <img src="${avatar}" class="detail-reply-avatar" data-handle="${r.author?.handle ?? ''}"
                style="width:${isChild ? '30px' : '38px'};height:${isChild ? '30px' : '38px'};border-radius:50%;object-fit:cover;cursor:pointer;flex-shrink:0;">
@@ -1829,7 +1829,21 @@ async function loadDetailReplies(postId, authorId = '') {
         }
       });
     });
+container.querySelectorAll('.reply-thread-item').forEach(item => {
+  item.addEventListener('click', (e) => {
+    // Ignora cliques em botões e avatares
+    if (
+      e.target.closest('.delete-reply-btn') ||
+      e.target.closest('.detail-reply-avatar') ||
+      e.target.closest('.ver-mais-respostas-btn')
+    ) return;
 
+    const replyId = item.dataset.replyId;
+    if (!replyId) return;
+
+    openReplyThreadModal(replyId, postId, authorId);
+  });
+});
   } catch (err) {
     console.error('[loadDetailReplies]', err);
     container.innerHTML = '<p style="color:var(--danger);text-align:center;padding:16px;">Erro ao carregar respostas.</p>';
@@ -2091,7 +2105,447 @@ async function loadProfileTabContent(tabType) {
     contentEl.innerHTML = '<p style="color:var(--danger);text-align:center;">Erro ao carregar conteúdo.</p>';
   }
 }
- 
+// ============================================================
+// MODAL DE THREAD DE COMENTÁRIO (estilo Twitter)
+// ============================================================
+async function openReplyThreadModal(replyId, postId, postAuthorId = '') {
+  document.getElementById('replyThreadModal')?.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'replyThreadModal';
+  modal.style.cssText = `
+    position:fixed;inset:0;z-index:6000;
+    background:rgba(0,0,0,0.8);
+    display:flex;align-items:center;justify-content:center;
+    padding:20px;backdrop-filter:blur(6px);
+    animation:fadeIn 0.15s ease;
+  `;
+
+  modal.innerHTML = `
+    <div style="
+      background:var(--dark-bg-secondary);
+      border:1px solid var(--border);
+      border-radius:20px;
+      width:100%;max-width:560px;
+      max-height:85vh;
+      display:flex;flex-direction:column;
+      overflow:hidden;
+      box-shadow:0 20px 60px rgba(0,0,0,0.6);
+    ">
+      <!-- Header -->
+      <div style="
+        display:flex;align-items:center;gap:14px;
+        padding:16px 20px;
+        border-bottom:1px solid var(--border);
+        flex-shrink:0;
+        position:sticky;top:0;
+        background:var(--dark-bg-secondary);
+        z-index:2;
+      ">
+        <button id="closeReplyThreadBtn" style="
+          background:none;border:none;color:var(--text-primary);
+          font-size:20px;cursor:pointer;
+          width:34px;height:34px;border-radius:50%;
+          display:flex;align-items:center;justify-content:center;
+          transition:background 0.2s;
+        " onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background='none'">←</button>
+        <h3 style="font-size:17px;font-weight:800;color:var(--text-primary);margin:0;">Thread</h3>
+      </div>
+
+      <!-- Conteúdo scrollável -->
+      <div id="replyThreadContent" style="
+        overflow-y:auto;flex:1;padding:0;
+      ">
+        <div style="padding:30px;text-align:center;color:var(--text-secondary);">
+          <div style="font-size:28px;margin-bottom:8px;">💬</div>
+          Carregando thread...
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  document.body.style.overflow = 'hidden';
+
+  document.getElementById('closeReplyThreadBtn').addEventListener('click', () => {
+    modal.remove();
+    document.body.style.overflow = '';
+  });
+
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      modal.remove();
+      document.body.style.overflow = '';
+    }
+  });
+
+  document.addEventListener('keydown', function escHandler(e) {
+    if (e.key === 'Escape') {
+      modal.remove();
+      document.body.style.overflow = '';
+      document.removeEventListener('keydown', escHandler);
+    }
+  });
+
+  await renderReplyThread(replyId, postId, postAuthorId);
+}
+
+async function renderReplyThread(rootReplyId, postId, postAuthorId = '') {
+  const container = document.getElementById('replyThreadContent');
+  if (!container) return;
+
+  try {
+    // Busca todos os replies do post
+    const { data: allReplies, error } = await supabase
+      .from('replies')
+      .select('*, author:profiles(id, name, handle, avatar_url, is_premium)')
+      .eq('post_id', postId)
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+
+    // Filtra por visibilidade
+    const replies = (allReplies || []).filter(r => {
+      if (!r.is_private) return true;
+      if (!currentProfile) return false;
+      return currentProfile.id === postAuthorId || currentProfile.id === r.author_id;
+    });
+
+    // Pega o reply raiz
+    const rootReply = replies.find(r => r.id === rootReplyId);
+    if (!rootReply) {
+      container.innerHTML = '<p style="text-align:center;padding:30px;color:var(--danger);">Comentário não encontrado.</p>';
+      return;
+    }
+
+    // Monta a cadeia: ancestors do root + root + filhos
+    const buildAncestors = (replyId) => {
+      const chain = [];
+      let current = replies.find(r => r.id === replyId);
+      while (current?.parent_reply_id) {
+        const parent = replies.find(r => r.id === current.parent_reply_id);
+        if (parent) chain.unshift(parent);
+        current = parent;
+      }
+      return chain;
+    };
+
+    const ancestors = buildAncestors(rootReplyId);
+
+    const getDirectChildren = (parentId) =>
+      replies.filter(r => r.parent_reply_id === parentId);
+
+    const renderSingleReply = (reply, isRoot = false, isAncestor = false) => {
+      const avatar = reply.author?.avatar_url
+        || `https://api.dicebear.com/7.x/avataaars/svg?seed=${reply.author?.handle}`;
+      const isMe = currentProfile && currentProfile.id === reply.author?.id;
+      const diffMin = Math.floor((Date.now() - new Date(reply.created_at)) / 60000);
+      const timeStr = diffMin < 1 ? 'agora' : diffMin < 60 ? `${diffMin}min atrás`
+        : diffMin < 1440 ? `${Math.floor(diffMin / 60)}h atrás` : `${Math.floor(diffMin / 1440)}d atrás`;
+
+      return `
+        <div class="thread-reply-item ${isRoot ? 'thread-root' : ''} ${isAncestor ? 'thread-ancestor' : ''}"
+          data-reply-id="${reply.id}"
+          style="
+            padding:16px 20px;
+            border-bottom:1px solid var(--border);
+            position:relative;
+            ${isRoot ? 'background:var(--primary)08;border-left:3px solid var(--primary);' : ''}
+          ">
+
+          <div style="display:flex;gap:12px;">
+            <!-- Avatar + linha vertical -->
+            <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;">
+              <img src="${avatar}"
+                class="thread-avatar-clickable"
+                data-handle="${escapeHtml(reply.author?.handle ?? '')}"
+                style="
+                  width:${isRoot ? '42px' : '36px'};
+                  height:${isRoot ? '42px' : '36px'};
+                  border-radius:50%;object-fit:cover;cursor:pointer;
+                  border:2px solid ${reply.author?.is_premium ? '#ffd700' : 'var(--border)'};
+                  transition:opacity 0.2s;
+                "
+                onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+            </div>
+
+            <!-- Conteúdo -->
+            <div style="flex:1;min-width:0;">
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
+                <span class="thread-avatar-clickable" data-handle="${escapeHtml(reply.author?.handle ?? '')}"
+                  style="font-weight:700;font-size:14px;color:var(--text-primary);cursor:pointer;">
+                  ${escapeHtml(reply.author?.name ?? 'Usuário')}
+                  ${reply.author?.is_premium ? '<span style="color:#ffd700;font-size:11px;">✦</span>' : ''}
+                </span>
+                <span style="color:var(--text-secondary);font-size:13px;">@${escapeHtml(reply.author?.handle ?? '')}</span>
+                <span style="color:var(--text-secondary);font-size:12px;">· ${timeStr}</span>
+                ${reply.is_private ? '<span style="font-size:10px;background:var(--primary)22;color:var(--primary);padding:1px 6px;border-radius:8px;font-weight:700;">🔒</span>' : ''}
+                ${isMe ? `
+                  <button class="thread-delete-btn" data-reply-id="${reply.id}"
+                    style="margin-left:auto;background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:12px;padding:2px 6px;border-radius:6px;transition:color 0.2s;"
+                    onmouseover="this.style.color='var(--danger,#e0245e)'" onmouseout="this.style.color='var(--text-secondary)'">🗑️</button>
+                ` : ''}
+              </div>
+
+              <p style="
+                font-size:${isRoot ? '16px' : '14px'};
+                color:var(--text-primary);line-height:1.55;
+                word-break:break-word;margin:0 0 10px;
+              ">${escapeHtml(reply.content)}</p>
+
+              <!-- Ações -->
+              <div style="display:flex;gap:16px;align-items:center;">
+                <button class="thread-reply-btn" data-reply-id="${reply.id}" data-author-id="${reply.author?.id ?? ''}"
+                  style="
+                    background:none;border:none;cursor:pointer;
+                    color:var(--text-secondary);font-size:13px;
+                    display:flex;align-items:center;gap:5px;
+                    padding:4px 8px;border-radius:8px;
+                    transition:background 0.15s,color 0.15s;
+                  "
+                  onmouseover="this.style.background='var(--primary)18';this.style.color='var(--primary)'"
+                  onmouseout="this.style.background='none';this.style.color='var(--text-secondary)'">
+                  💬 <span style="font-size:12px;">Responder</span>
+                </button>
+
+                ${!isRoot && !isAncestor ? `
+                  <button class="thread-open-btn" data-reply-id="${reply.id}"
+                    style="
+                      background:none;border:none;cursor:pointer;
+                      color:var(--primary);font-size:12px;font-weight:700;
+                      padding:4px 8px;border-radius:8px;
+                      transition:background 0.15s;
+                    "
+                    onmouseover="this.style.background='var(--primary)18'"
+                    onmouseout="this.style.background='none'">
+                    Ver thread →
+                  </button>
+                ` : ''}
+              </div>
+
+              <!-- Composer de resposta (oculto por padrão) -->
+              <div class="thread-reply-composer" data-for="${reply.id}" style="display:none;margin-top:12px;">
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <img src="${currentProfile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=anon`}"
+                    style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+                  <div style="flex:1;">
+                    <textarea class="thread-reply-input" data-parent-id="${reply.id}"
+                      placeholder="Responda a @${escapeHtml(reply.author?.handle ?? '')}..."
+                      rows="2"
+                      style="
+                        width:100%;resize:none;
+                        background:var(--dark-bg);
+                        border:1px solid var(--border);
+                        border-radius:12px;padding:10px 14px;
+                        color:var(--text-primary);font-size:14px;
+                        outline:none;font-family:inherit;
+                        box-sizing:border-box;
+                        transition:border-color 0.2s;
+                      "
+                      onfocus="this.style.borderColor='var(--primary)'"
+                      onblur="this.style.borderColor='var(--border)'"></textarea>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+                      <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text-secondary);cursor:pointer;">
+                        <input type="checkbox" class="thread-private-toggle" style="accent-color:var(--primary);">
+                        🔒 Só o autor vê
+                      </label>
+                      <div style="display:flex;gap:8px;">
+                        <button class="thread-reply-cancel" data-for="${reply.id}"
+                          style="background:none;border:1px solid var(--border);color:var(--text-secondary);border-radius:20px;padding:6px 14px;font-size:13px;cursor:pointer;transition:all 0.2s;"
+                          onmouseover="this.style.borderColor='var(--text-secondary)'"
+                          onmouseout="this.style.borderColor='var(--border)'">Cancelar</button>
+                        <button class="thread-reply-submit" data-parent-id="${reply.id}" data-author-id="${reply.author?.id ?? ''}"
+                          style="background:var(--primary);color:white;border:none;border-radius:20px;padding:6px 16px;font-size:13px;font-weight:700;cursor:pointer;transition:opacity 0.2s;"
+                          onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Responder</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    };
+
+    // Monta o HTML completo
+    let html = '';
+
+    // Ancestors (com linha conectora)
+    ancestors.forEach((ancestor, i) => {
+      html += `
+        <div style="position:relative;">
+          ${renderSingleReply(ancestor, false, true)}
+          <!-- Linha conectora -->
+          <div style="
+            position:absolute;
+            left:32px;bottom:-1px;
+            width:2px;height:20px;
+            background:var(--border);
+            z-index:1;
+          "></div>
+        </div>
+      `;
+    });
+
+    // Root reply (destacado)
+    html += renderSingleReply(rootReply, true, false);
+
+    // Filhos diretos
+    const children = getDirectChildren(rootReplyId);
+    if (children.length > 0) {
+      html += `
+        <div style="padding:10px 20px 6px;font-size:12px;font-weight:700;color:var(--text-secondary);letter-spacing:0.05em;text-transform:uppercase;">
+          ${children.length} resposta${children.length !== 1 ? 's' : ''}
+        </div>
+      `;
+      children.forEach(child => {
+        html += renderSingleReply(child, false, false);
+      });
+    } else {
+      html += `
+        <div style="padding:32px 20px;text-align:center;color:var(--text-secondary);">
+          <div style="font-size:32px;margin-bottom:8px;opacity:0.5;">💬</div>
+          <p style="font-size:14px;margin:0;">Nenhuma resposta ainda.</p>
+          <p style="font-size:13px;margin:6px 0 0;opacity:0.7;">Seja o primeiro a responder!</p>
+        </div>
+      `;
+    }
+
+    container.innerHTML = html;
+
+    // ── Event Listeners do modal ──────────────────────────
+
+    // Avatares clicáveis
+    container.querySelectorAll('.thread-avatar-clickable').forEach(el => {
+      el.addEventListener('click', () => {
+        const handle = el.dataset.handle;
+        if (!handle) return;
+        modal.remove();
+        document.body.style.overflow = '';
+        document.querySelectorAll('.page-container').forEach(p => p.classList.remove('active'));
+        document.getElementById('profile-page').classList.add('active');
+        loadProfileByHandle(handle);
+      });
+    });
+
+    // Botão Responder — abre o composer inline
+    container.querySelectorAll('.thread-reply-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!currentProfile) { showNotification('Faça login para responder! 🔐'); return; }
+        const replyId = btn.dataset.replyId;
+
+        // Fecha todos os outros composers abertos
+        container.querySelectorAll('.thread-reply-composer').forEach(c => {
+          c.style.display = 'none';
+        });
+
+        // Abre o composer deste reply
+        const composer = container.querySelector(`.thread-reply-composer[data-for="${replyId}"]`);
+        if (composer) {
+          composer.style.display = 'block';
+          composer.querySelector('textarea')?.focus();
+        }
+      });
+    });
+
+    // Botão Cancelar do composer
+    container.querySelectorAll('.thread-reply-cancel').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const forId = btn.dataset.for;
+        const composer = container.querySelector(`.thread-reply-composer[data-for="${forId}"]`);
+        if (composer) {
+          composer.style.display = 'none';
+          composer.querySelector('textarea').value = '';
+        }
+      });
+    });
+
+    // Botão Enviar resposta
+    container.querySelectorAll('.thread-reply-submit').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!currentProfile) { showNotification('Faça login para responder! 🔐'); return; }
+
+        const parentId = btn.dataset.parentId;
+        const authorId = btn.dataset.authorId;
+        const composer = container.querySelector(`.thread-reply-composer[data-for="${parentId}"]`);
+        const textarea = composer?.querySelector('textarea');
+        const content = textarea?.value?.trim();
+        if (!content) return;
+
+        const isPrivate = composer?.querySelector('.thread-private-toggle')?.checked ?? false;
+
+        btn.disabled = true;
+        btn.textContent = '...';
+
+        try {
+          await addReply(postId, content, isPrivate, parentId);
+
+          if (authorId && authorId !== currentProfile.id) {
+            await createNotification({
+              toUserId: authorId,
+              actorId: currentProfile.id,
+              type: NOTIF_TYPES.REPLY,
+              postId,
+            });
+          }
+
+          showNotification('Resposta enviada! 💬');
+
+          // Recarrega o thread com o novo reply
+          await renderReplyThread(rootReplyId, postId, postAuthorId);
+
+        } catch (err) {
+          console.error('[thread reply]', err);
+          showNotification('Erro ao enviar resposta.');
+          btn.disabled = false;
+          btn.textContent = 'Responder';
+        }
+      });
+    });
+
+    // Botão "Ver thread →" abre o sub-thread daquele reply
+    container.querySelectorAll('.thread-open-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const replyId = btn.dataset.replyId;
+        renderReplyThread(replyId, postId, postAuthorId);
+      });
+    });
+
+    // Botão deletar reply
+    container.querySelectorAll('.thread-delete-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Apagar este comentário?')) return;
+        const replyId = btn.dataset.replyId;
+        btn.disabled = true;
+        try {
+          const { error } = await supabase.from('replies').delete().eq('id', replyId);
+          if (error) throw error;
+
+          showNotification('Comentário apagado 🗑️');
+
+          // Se deletou o root, fecha o modal
+          if (replyId === rootReplyId) {
+            document.getElementById('replyThreadModal')?.remove();
+            document.body.style.overflow = '';
+            // Recarrega as replies do post
+            await loadDetailReplies(postId, postAuthorId);
+          } else {
+            await renderReplyThread(rootReplyId, postId, postAuthorId);
+          }
+        } catch (err) {
+          console.error(err);
+          showNotification('Erro ao apagar.');
+          btn.disabled = false;
+        }
+      });
+    });
+
+  } catch (err) {
+    console.error('[renderReplyThread]', err);
+    container.innerHTML = '<p style="color:var(--danger);text-align:center;padding:30px;">Erro ao carregar thread.</p>';
+  }
+} 
 async function renderProfileLocked(profile, profileInfo) {
   document.getElementById('ownPrivacyBadge')?.remove();
   document.getElementById('profileActionsWrapper')?.remove(); // Limpa botões antigos
