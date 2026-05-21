@@ -84,7 +84,17 @@
           </div>
         </div>
       </nav>
-<button class="nav-premium-btn" onclick="window.location.href='../premium.html'">
+      <button id="postBtnSidebar" style="
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:calc(100% - 32px);margin:8px 16px 4px;
+  background:var(--primary);color:white;border:none;
+  border-radius:99px;padding:12px 20px;
+  font-size:15px;font-weight:800;cursor:pointer;
+  transition:opacity 0.2s;
+" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+  ✦ Postar
+</button>
+      <button class="nav-premium-btn" onclick="window.location.href='../premium.html'">
         <span>✦</span>
         <span>Premium</span>
       </button>
@@ -138,9 +148,7 @@
             <button class="tab-btn" data-tab="seguindo">Seguindo</button>
           </div>
         </header>
-
-        <!-- Composer de post no feed -->
-
+        
 
         <div class="feed">
           <div class="posts-container" id="postsContainer"></div>
@@ -895,21 +903,6 @@
         // Será sobrescrita pelo home.js quando carregar
       };
 
-    })();
-    (async () => {
-      const mod = await import('/VazaPuc/js/supabase.js');
-      const sb = mod.supabase;
-      const user = await mod.getCurrentUser();
-
-      const { error } = await sb.from('notifications').insert({
-        user_id: user.id,
-        actor_id: '77dfefb3-663a-4e7f-8ba9-772a9d9d7e57',
-        type: 'follow',
-        read: false,
-        created_at: new Date().toISOString()
-      });
-
-      console.log('erro:', error);
     })();
   </script>
 </body>
