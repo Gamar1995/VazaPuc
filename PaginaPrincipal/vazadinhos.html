@@ -4,6 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <script>
+
     const tema = localStorage.getItem('vazaPucTheme');
     if (tema && tema !== 'padrao') {
       document.documentElement.setAttribute('data-theme', tema);
@@ -157,12 +158,27 @@
       </div>
 
       <!-- ── EXPLORAR ── -->
-      <div class="page-container" id="explore-page">
-        <header class="feed-header">
-          <div class="search-box">
-            <input type="text" placeholder="Procurar usuários, posts, hashtags..." class="search-input"
-              id="searchInput">
-            <span class="search-icon">🔍</span>
+<div class="page-container" id="explore-page">
+        <header class="feed-header" style="padding: 16px 20px; position: sticky; top: 0; z-index: 100; background-color: rgba(var(--dark-bg-secondary), 0.85); margin-bottom: 20px;">
+          <div class="search-box-container">
+            <div class="search-box">
+              <span class="search-icon">🔍</span>
+              <input type="text" placeholder="Procurar usuários, posts, hashtags..." class="search-input" id="searchInput">
+            </div>
+            
+            <div class="search-location-wrapper">
+              <button class="search-options-btn" id="searchLocationBtn" title="Filtrar por Campus PUC">
+                ⋮
+              </button>
+              <div class="search-location-menu" id="searchLocationMenu">
+                <div class="search-location-header">Filtrar por Campus</div>
+                <button class="location-item active" data-puc="PUC-PR">📍 PUC-PR (Geral)</button>
+                <button class="location-item" data-puc="PUC-SP">📍 PUC-SP</button>
+                <button class="location-item" data-puc="PUC-Rio">📍 PUC-Rio</button>
+                <button class="location-item" data-puc="PUC-Minas">📍 PUC-Minas</button>
+                <button class="location-item" data-puc="PUC-Campinas">📍 PUC-Campinas</button>
+              </div>
+            </div>
           </div>
         </header>
         <div class="explore-content" id="exploreContent"></div>
@@ -910,6 +926,52 @@
         // Será sobrescrita pelo home.js quando carregar
       };
 
+    })();
+  </script>
+</body>
+
+</html> /* Expõe para o home.js atualizar o badge de fora */
+      window.refreshPendingBadge = function () {
+        // Será sobrescrita pelo home.js quando carregar
+      };
+
+    })();
+  </script>
+
+  <script>
+    (function() {
+      const locBtn = document.getElementById('searchLocationBtn');
+      const locMenu = document.getElementById('searchLocationMenu');
+      const searchInput = document.getElementById('searchInput');
+
+      if (locBtn && locMenu) {
+        // Abre/Fecha o painel ao clicar nos três pontos
+        locBtn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          locMenu.classList.toggle('active');
+        });
+
+        // Fecha se clicar em qualquer outro lugar da tela
+        document.addEventListener('click', function(e) {
+          if (!locBtn.contains(e.target)) locMenu.classList.remove('active');
+        });
+
+        // Gerencia a troca de campus
+        locMenu.querySelectorAll('.location-item').forEach(function(item) {
+          item.addEventListener('click', function() {
+            locMenu.querySelectorAll('.location-item').forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+            
+            const campus = item.getAttribute('data-puc');
+            // Modifica dinamicamente o placeholder para dar o feedback visual
+            if (searchInput) {
+              searchInput.placeholder = `Procurar em ${campus}...`;
+            }
+            
+            locMenu.classList.remove('active');
+          });
+        });
+      }
     })();
   </script>
 </body>

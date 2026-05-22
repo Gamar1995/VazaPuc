@@ -790,7 +790,7 @@
           <div class="theme-opt-nav" data-theme="amarelo-claro" style="background:linear-gradient(135deg,#b8860b 50%,#fcfbf7 50%)" title="Amarelo Claro"></div>
         </div>
       </div>
-      <a class="btn-nav" href="inicial/cadastro.html">Entrar 👤</a>
+      <a class="btn-nav" id="navAuthBtn" href="inicial/login.html">Entrar 👤</a>
       <a class="btn-nav filled" href="PaginaPrincipal/vazadinhos.html">Explorar</a>
     </div>
   </nav>
@@ -1036,10 +1036,36 @@
     document.querySelector(`.theme-opt-nav[data-theme="${temaAtual}"]`)?.classList.add('ativo');
   </script>
 
-  <script type="module">
+<script type="module">
     import { getPosts } from './js/posts.js';
+    import { supabase, getCurrentProfile, signOut } from './js/supabase.js';
 
     const escapeHtml = t => { if (!t) return ''; const d = document.createElement('div'); d.textContent = t; return d.innerHTML; };
+
+    // ✅ NOVA FUNÇÃO: Mantém o estado de login visível na Página Inicial
+    async function verificarSessao() {
+      const authBtn = document.getElementById('navAuthBtn');
+      if (!authBtn) return;
+
+      try {
+        const profile = await getCurrentProfile();
+        if (profile) {
+          // Se o usuário estiver logado, altera o botão "Entrar" para o Handle dele com opção de logout
+          authBtn.textContent = `Sair (@${profile.handle}) 👤`;
+          authBtn.href = '#';
+          authBtn.style.borderColor = 'var(--red2)';
+          authBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            if (confirm('Deseja encerrar sua sessão no VazaPUC?')) {
+              await signOut();
+              window.location.reload();
+            }
+          });
+        }
+      } catch (err) {
+        console.log('[Index Auth] Navegando como visitante anônimo.');
+      }
+    }
 
     async function carregarPosts() {
       const container = document.getElementById('landingPostsContainer');
@@ -1052,7 +1078,6 @@
 
         /* Post em destaque no sobre: mais recente com mais curtidas */
         const destaque = [...posts].sort((a,b) => {
-          /* pondera recência + curtidas */
           const scoreA = (a.likes_count||0) + (new Date(a.created_at)/(1000*3600*24*30));
           const scoreB = (b.likes_count||0) + (new Date(b.created_at)/(1000*3600*24*30));
           return scoreB - scoreA;
@@ -1079,7 +1104,7 @@
                 <span>🔁 ${destaque.reposts_count||0}</span>
               </div>
             </div>`;
-          /* reativa reveal no novo elemento */
+          
           const newReveal = sobreBox.querySelector('.reveal');
           if (newReveal) {
             new IntersectionObserver(entries => {
@@ -1088,7 +1113,7 @@
           }
         }
 
-        /* Grid de posts: todos iguais, sem offset */
+        /* Grid de posts */
         const top = [...posts].sort((a,b) => (b.likes_count||0)-(a.likes_count||0)).slice(0,6);
 
         if (top.length === 0) {
@@ -1119,7 +1144,6 @@
             </div>`;
         }).join('');
 
-        /* Reativa observer nos novos cards */
         document.querySelectorAll('.post-card.reveal').forEach(el => {
           new IntersectionObserver(entries => {
             entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
@@ -1132,7 +1156,11 @@
       }
     }
 
-    document.addEventListener('DOMContentLoaded', carregarPosts);
+    // Inicialização coordenada das funções
+    document.addEventListener('DOMContentLoaded', () => {
+      verificarSessao();
+      carregarPosts();
+    });
   </script>
 </body>
 </html>
