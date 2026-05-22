@@ -1930,3 +1930,101 @@ body {
     color: #ffffff !important;
     box-shadow: 0 2px 6px rgba(212, 175, 55, 0.3) !important;
 }
+/* ============================================================
+   CONTAINER FLOATING + BOTÃO DE ADICIONAR (LIQUID GLASS RETANGULAR)
+============================================================ */
+
+.messages-wrapper {
+    position: relative !important;
+}
+
+/* Caixa externa retangular estilo Liquid Glass que acompanha a largura da lista de conversas */
+.msg-floating-glass-box {
+    position: absolute;
+    bottom: 16px;
+    left: 16px;
+    /* Largura da conversations-list (280px) menos os espaçamentos das bordas (16px de cada lado) */
+    width: calc(280px - 32px);
+    height: 64px;
+    padding: 0 14px;
+    
+    /* Material Liquid Glass translúcido com desfoque de fundo */
+    background: color-mix(in srgb, var(--dark-bg-secondary) 45%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    
+    border: 1px solid rgba(150, 150, 150, 0.15);
+    border-radius: 12px; /* Alinhado ao mesmo padrão de curvatura do botão */
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    z-index: 99;
+    
+    /* Posiciona o botão no canto esquerdo interno do retângulo */
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.msg-floating-glass-box:hover {
+    border-color: rgba(var(--primary-rgb), 0.4);
+    box-shadow: 0 8px 32px rgba(var(--primary-rgb), 0.15);
+}
+
+/* Botão Quadrado Arredondado */
+.msg-add-contact-btn {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: #ffffff;
+    border: none;
+    border-radius: 12px; /* Padrão sutil e elegante */
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.3);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s;
+    overflow: hidden;
+}
+
+/* ✅ ÍCONE DE MAIS COM CSS PURO: Centralização absoluta e imune a falhas de fontes */
+.msg-add-contact-btn::before,
+.msg-add-contact-btn::after {
+    content: '';
+    position: absolute;
+    background: currentColor;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 2px;
+}
+
+/* Linha Horizontal */
+.msg-add-contact-btn::before {
+    width: 14px;
+    height: 2.5px;
+}
+
+/* Linha Vertical */
+.msg-add-contact-btn::after {
+    width: 2.5px;
+    height: 14px;
+}
+
+/* Rotação perfeita de 90° exatamente sobre o centro geométrico */
+.msg-add-contact-btn:hover {
+    transform: rotate(90deg);
+    background: linear-gradient(135deg, var(--secondary), var(--primary));
+}
+
+/* Garante o comportamento idêntico e fluido na versão mobile */
+@media (max-width: 900px) {
+    .msg-floating-glass-box {
+        width: calc(100% - 32px);
+    }
+}
+
+/* Adaptação harmônica para os Temas Claros */
+[data-theme$="-claro"] .msg-floating-glass-box {
+    background: rgba(255, 255, 255, 0.6) !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06) !important;
+}
