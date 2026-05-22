@@ -1709,82 +1709,146 @@ async function loadDetailReplies(postId, authorId = '') {
       return;
     }
 
-    // Separa raiz e filhos
+    // Separa os comentários raiz (nível 1)
     const raiz = repliesFiltradas.filter(r => !r.parent_reply_id);
-    const filhos = repliesFiltradas.filter(r => r.parent_reply_id);
-    const MAX_FILHOS_VISIVEIS = 2;
 
-    // ✅ RENDERIZAR FUNÇÃO
-    const renderReply = (r, isChild = false) => {
+    // ✅ Injeção de uma regra de animação exclusiva para evitar conflito com o CSS global
+    const animationStyle = `
+      <style>
+        @keyframes revealReply {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      </style>
+    `;
+
+    const HTMLContent = raiz.map(r => {
       const avatar = r.author?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${r.author?.handle}`;
       const isMyReply = currentProfile && currentProfile.id === r.author?.id;
-      const childReplies = filhos.filter(f => f.parent_reply_id === r.id);
-      const filhosVisiveis = childReplies.slice(0, MAX_FILHOS_VISIVEIS);
-      const filhosOcultos = childReplies.slice(MAX_FILHOS_VISIVEIS);
 
-      const filhosHTML = filhosVisiveis.map(child => renderReply(child, true)).join('');
+      // Coleta todos os descendentes (nível 2, 3, etc.) de forma linear para evitar recuo infinito para o lado
+      const descendants = [];
+      const gatherDescendants = (parentId) => {
+        const direct = repliesFiltradas.filter(f => f.parent_reply_id === parentId);
+        direct.forEach(child => {
+          descendants.push(child);
+          gatherDescendants(child.id); 
+        });
+      };
+      gatherDescendants(r.id);
 
-      const verMaisBtn = filhosOcultos.length > 0 ? `
-        <button class="ver-mais-respostas-btn" data-parent-id="${r.id}"
-          style="background:none;border:none;cursor:pointer;color:var(--primary);font-size:12px;font-weight:700;padding:4px 8px 4px 48px;display:block;transition:opacity 0.2s;margin-bottom:4px;"
-          onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">
-          ↳ Ver mais ${filhosOcultos.length} resposta${filhosOcultos.length > 1 ? 's' : ''}
-        </button>
-      ` : '';
-
-      const hiddenFilhosHTML = filhosOcultos.length > 0 ? `
-        <div class="respostas-ocultas" data-parent-id="${r.id}" style="display:none;">
-          ${filhosOcultos.map(child => renderReply(child, true)).join('')}
-        </div>
-      ` : '';
-
-      return `
-        <div class="reply-thread-item" data-reply-id="${r.id}"style="display:flex;gap:10px;padding:${isChild ? '10px 0 10px 48px' : '14px 0 6px'};border-bottom:${isChild ? 'none' : '1px solid var(--border)'};position:relative;cursor:pointer;transition:background 0.15s;">
-          ${isChild ? `<div style="position:absolute;left:36px;top:-6px;bottom:0;width:2px;background:var(--border);border-radius:2px;"></div>` : ''}
+      // HTML do comentário primário (1)
+      const primaryHtml = `
+        <div class="reply-main-item" style="display:flex;gap:12px;padding:14px 0 6px;position:relative;">
           <img src="${avatar}" class="detail-reply-avatar" data-handle="${r.author?.handle ?? ''}"
-               style="width:${isChild ? '30px' : '38px'};height:${isChild ? '30px' : '38px'};border-radius:50%;object-fit:cover;cursor:pointer;flex-shrink:0;">
+               style="width:38px;height:38px;border-radius:50%;object-fit:cover;cursor:pointer;flex-shrink:0;z-index:2;">
           <div style="flex:1;min-width:0;">
             <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px;">
               <span class="detail-reply-avatar" data-handle="${r.author?.handle ?? ''}"
-                style="font-weight:700;font-size:${isChild ? '13px' : '14px'};color:var(--text-primary);cursor:pointer;">
+                style="font-weight:700;font-size:14px;color:var(--text-primary);cursor:pointer;">
                 ${escapeHtml(r.author?.name ?? 'Usuário')}
               </span>
               <span style="color:var(--text-secondary);font-size:12px;">@${escapeHtml(r.author?.handle ?? '')}</span>
               <span style="color:var(--text-secondary);font-size:11px;">· ${formatTimeAgo(r.created_at)}</span>
               ${r.is_private ? '<span style="font-size:10px;background:var(--primary)22;color:var(--primary);padding:1px 6px;border-radius:8px;font-weight:700;">🔒</span>' : ''}
               ${isMyReply ? `
-                <button class="delete-reply-btn" data-reply-id="${r.id}" data-post-id="${postId}" data-is-child="${isChild}"
+                <button class="delete-reply-btn" data-reply-id="${r.id}" data-post-id="${postId}" data-is-child="false"
                   style="margin-left:auto;background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:12px;padding:2px 6px;border-radius:6px;transition:color 0.2s;"
                   onmouseover="this.style.color='var(--danger,#e0245e)'" onmouseout="this.style.color='var(--text-secondary)'">🗑️</button>
               ` : ''}
             </div>
-            <p style="font-size:${isChild ? '13px' : '14px'};color:var(--text-primary);line-height:1.5;word-break:break-word;margin:0 0 8px;">
+            <p style="font-size:14px;color:var(--text-primary);line-height:1.5;word-break:break-word;margin:0;">
               ${escapeHtml(r.content)}
             </p>
-            ${filhosHTML}
-            ${verMaisBtn}
-            ${hiddenFilhosHTML}
           </div>
         </div>
       `;
-    };
 
-    // ✅ RENDERIZAR NO CONTAINER
-    container.innerHTML = raiz.map(r => renderReply(r, false)).join('');
+      let descendantsHtml = '';
+      let toggleBtnHtml = '';
 
-    // ✅ EXPANDIR REPLIES OCULTAS
-    container.querySelectorAll('.ver-mais-respostas-btn').forEach(btn => {
+      // Se houver subcomentários (2), renderiza o botão "Mostrar mais" e a lista oculta
+      if (descendants.length > 0) {
+        toggleBtnHtml = `
+          <button class="mostrar-mais-sub-btn" data-root-id="${r.id}"
+            style="background:none;border:none;cursor:pointer;color:var(--primary);font-size:13px;font-weight:700;padding:6px 0 6px 50px;display:flex;align-items:center;gap:4px;transition:opacity 0.2s;margin-top:2px;"
+            onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+            ↳ Mostrar mais (${descendants.length} respostas)
+          </button>
+        `;
+
+        const renderedDescendants = descendants.map(child => {
+          const cAvatar = child.author?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${child.author?.handle}`;
+          const cIsMyReply = currentProfile && currentProfile.id === child.author?.id;
+
+          // CORREÇÃO AQUI: Alterado de 'slideDown' para 'revealReply' para fixar a visibilidade
+          return `
+            <div class="reply-thread-item sub-reply-item" data-reply-id="${child.id}"
+                 style="display:flex;gap:12px;padding:10px 0 10px 50px;position:relative;cursor:pointer;transition:background 0.15s;animation:revealReply 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;">
+              <img src="${cAvatar}" class="detail-reply-avatar" data-handle="${child.author?.handle ?? ''}"
+                   style="width:30px;height:30px;border-radius:50%;object-fit:cover;cursor:pointer;flex-shrink:0;z-index:2;">
+              <div style="flex:1;min-width:0;">
+                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px;">
+                  <span class="detail-reply-avatar" data-handle="${child.author?.handle ?? ''}"
+                    style="font-weight:700;font-size:13px;color:var(--text-primary);cursor:pointer;">
+                    ${escapeHtml(child.author?.name ?? 'Usuário')}
+                  </span>
+                  <span style="color:var(--text-secondary);font-size:12px;">@${escapeHtml(child.author?.handle ?? '')}</span>
+                  <span style="color:var(--text-secondary);font-size:11px;">· ${formatTimeAgo(child.created_at)}</span>
+                  ${child.is_private ? '<span style="font-size:10px;background:var(--primary)22;color:var(--primary);padding:1px 6px;border-radius:8px;font-weight:700;">🔒</span>' : ''}
+                  ${cIsMyReply ? `
+                    <button class="delete-reply-btn" data-reply-id="${child.id}" data-post-id="${postId}" data-is-child="true"
+                      style="margin-left:auto;background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:11px;padding:2px 6px;border-radius:6px;transition:color 0.2s;"
+                      onmouseover="this.style.color='var(--danger,#e0245e)'" onmouseout="this.style.color='var(--text-secondary)'">🗑️</button>
+                  ` : ''}
+                </div>
+                <p style="font-size:13.5px;color:var(--text-primary);line-height:1.5;word-break:break-word;margin:0;">
+                  ${escapeHtml(child.content)}
+                </p>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        descendantsHtml = `
+          <div class="sub-replies-container" id="sub-replies-${r.id}" style="display:none; position:relative;">
+            <div style="position:absolute; left:19px; top:-25px; bottom:25px; width:2px; background:var(--border); opacity:0.6; z-index:1;"></div>
+            ${renderedDescendants}
+          </div>
+        `;
+      }
+
+      return `
+        <div class="full-reply-block" style="border-bottom:1px solid var(--border); padding-bottom:8px; position:relative;">
+          ${primaryHtml}
+          ${toggleBtnHtml}
+          ${descendantsHtml}
+        </div>
+      `;
+    }).join('');
+
+    container.innerHTML = animationStyle + HTMLContent;
+
+    // ✅ ADICIONA EVENT LISTENER PARA O "MOSTRAR MAIS" EXPANDIR COM ANIMAÇÃO CORRETA
+    container.querySelectorAll('.mostrar-mais-sub-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        const parentId = btn.dataset.parentId;
-        const ocultas = container.querySelector(`.respostas-ocultas[data-parent-id="${parentId}"]`);
-        if (ocultas) {
-          ocultas.style.display = 'block';
-          btn.remove();
+        const rootId = btn.dataset.rootId;
+        const subRepliesContainer = container.querySelector(`#sub-replies-${rootId}`);
+        if (subRepliesContainer) {
+          const isHidden = subRepliesContainer.style.display === 'none';
+          if (isHidden) {
+            subRepliesContainer.style.display = 'block';
+            btn.innerHTML = `↑ Ocultar respostas`;
+          } else {
+            subRepliesContainer.style.display = 'none';
+            const count = subRepliesContainer.querySelectorAll('.sub-reply-item').length;
+            btn.innerHTML = `↳ Mostrar mais (${count} respostas)`;
+          }
         }
       });
     });
 
-    // ✅ AVATARES CLICÁVEIS
+    // ✅ LISTENERS DE AVATARES CLICÁVEIS
     container.querySelectorAll('.detail-reply-avatar').forEach(el => {
       el.addEventListener('click', () => {
         const h = el.dataset.handle;
@@ -1796,7 +1860,7 @@ async function loadDetailReplies(postId, authorId = '') {
       });
     });
 
-    // ✅ BOTÃO APAGAR
+    // ✅ LISTENERS DO BOTÃO APAGAR COMENTÁRIO
     container.querySelectorAll('.delete-reply-btn').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
@@ -1812,13 +1876,12 @@ async function loadDetailReplies(postId, authorId = '') {
           const { error } = await supabase.from('replies').delete().eq('id', replyId);
           if (error) throw error;
 
-          // Decrementa só se for raiz
           if (!isChild) {
             await supabase.rpc('decrement_replies', { post_id: pid });
             const detailStrong = document.querySelector('#postDetailContent strong');
-if (detailStrong) {
-  detailStrong.textContent = Math.max(0, parseInt(detailStrong.textContent || '0') - 1);
-}
+            if (detailStrong) {
+              detailStrong.textContent = Math.max(0, parseInt(detailStrong.textContent || '0') - 1);
+            }
             document.querySelectorAll(`.reply-action[data-post-id="${pid}"] .reply-count`).forEach(el => {
               el.textContent = Math.max(0, parseInt(el.textContent || '0') - 1);
             });
@@ -1833,21 +1896,23 @@ if (detailStrong) {
         }
       });
     });
-container.querySelectorAll('.reply-thread-item').forEach(item => {
-  item.addEventListener('click', (e) => {
-    // Ignora cliques em botões e avatares
-    if (
-      e.target.closest('.delete-reply-btn') ||
-      e.target.closest('.detail-reply-avatar') ||
-      e.target.closest('.ver-mais-respostas-btn')
-    ) return;
 
-    const replyId = item.dataset.replyId;
-    if (!replyId) return;
+    // ✅ LISTENERS PARA ABRIR O MODAL DE SUBTHREAD AO CLICAR EM UM COMENTÁRIO FILHO
+    container.querySelectorAll('.reply-thread-item').forEach(item => {
+      item.addEventListener('click', (e) => {
+        if (
+          e.target.closest('.delete-reply-btn') ||
+          e.target.closest('.detail-reply-avatar') ||
+          e.target.closest('.mostrar-mais-sub-btn')
+        ) return;
 
-    openReplyThreadModal(replyId, postId, authorId);
-  });
-});
+        const replyId = item.dataset.replyId;
+        if (!replyId) return;
+
+        openReplyThreadModal(replyId, postId, authorId);
+      });
+    });
+
   } catch (err) {
     console.error('[loadDetailReplies]', err);
     container.innerHTML = '<p style="color:var(--danger);text-align:center;padding:16px;">Erro ao carregar respostas.</p>';
@@ -1895,7 +1960,8 @@ async function loadRepliesForPost(postId, listElement = null) {
         r.parent_reply_id === undefined ||
         r.parent_reply_id === ''
     );
-    console.log('RENDER:', r.id, r.parent_reply_id);
+    //(nao funcional) console.log('RENDER:', r.id, r.parent_reply_id);
+    
     const filhos = replies.filter(
       r =>
         r.parent_reply_id !== null &&
