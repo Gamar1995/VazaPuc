@@ -219,3 +219,4 @@ export function formatTimeAgoNotif(isoString) {
   if (min < 1440) return `${Math.floor(min / 60)}h`;
   return `${Math.floor(min / 1440)}d`;
 }
+
