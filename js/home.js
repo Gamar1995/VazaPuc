@@ -2,6 +2,7 @@
 // js/home.js — Com Sistema de Blocos (#bloco 01 a #bloco 10) e Banner de Perfil
 // ============================================================
 
+import { aplicarIntercepcaoFlash } from './flashes.js';
 import { supabase, getCurrentUser } from './supabase.js';
 import { getCurrentProfile, onAuthChange, signOut } from './supabase.js';
 
@@ -578,6 +579,11 @@ function updateUserUI() {
 
   if (composerAvatar) composerAvatar.src = avatarSrc;
   if (miniAvatar) miniAvatar.src = avatarSrc;
+  if (miniAvatar) {
+  miniAvatar.src = avatarSrc;
+  // Intercepta cliques para o sistema de Flashes
+  aplicarIntercepcaoFlash(miniAvatar, currentProfile.id);
+}
 }
 
 // ============================================================
@@ -1079,16 +1085,14 @@ function attachPostEventListeners(container = document, context = 'feed') {
     }, { signal });
   });
 
-  container.querySelectorAll('.clickable-avatar').forEach(el => {
-    el.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const handle = el.dataset.handle;
-      if (!handle) return;
-      document.querySelectorAll('.page-container').forEach(p => p.classList.remove('active'));
-      document.getElementById('profile-page').classList.add('active');
-      loadProfileByHandle(handle);
-    }, { signal });
-  });
+ container.querySelectorAll('.clickable-avatar').forEach(el => {
+  // el é a imagem do autor do post. Vamos descobrir o ID dele
+  const postCard = el.closest('.post-card');
+  const authorId = postCard?.dataset.authorId;
+  if (authorId && el.tagName === 'IMG') {
+    aplicarIntercepcaoFlash(el, authorId);
+  }
+});
 
   // --- NOVO: LÓGICA DO BOTÃO DE "LER MAIS / ESCONDER" ---
   container.querySelectorAll('.toggle-text-btn').forEach(btn => {
@@ -2840,6 +2844,9 @@ window.openImageViewer = function(imageUrl) {
 // ============================================================
 // CARREGAR PÁGINA DE PERFIL
 // ============================================================
+// ============================================================
+// CARREGAR PÁGINA DE PERFIL — VERSÃO CORRIGIDA E INTEGRADA COM FLASHES
+// ============================================================
 async function loadProfilePage() {
   profileBtnControllers.forEach(ctrl => ctrl.abort());
   profileBtnControllers = [];
@@ -2849,12 +2856,18 @@ async function loadProfilePage() {
   const editBtn = document.getElementById('editProfileBtn');
   const profile = viewingProfile || currentProfile;
 
+  // FIX: Se não houver perfil (Usuário deslogado / Visitante)
   if (!profile) {
     document.getElementById('profileName').textContent = 'Visitante';
     document.getElementById('profileHandle').textContent = '@anonimo';
     document.getElementById('profileBio').textContent = 'Faça login para ter seu próprio perfil!';
+    
     const profileAvatar = document.querySelector('.profile-avatar');
-    if (profileAvatar) profileAvatar.src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=visitante';
+    if (profileAvatar) {
+      profileAvatar.src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=visitante';
+      profileAvatar.onclick = null; // Limpa eventos antigos para visitantes
+    }
+    
     document.querySelectorAll('.stat-value').forEach(el => { el.textContent = '0'; });
     if (editBtn) { editBtn.textContent = 'Fazer Login'; editBtn.style.display = 'block'; }
     document.getElementById('msgProfileBtn')?.remove();
@@ -2887,7 +2900,6 @@ async function loadProfilePage() {
       bannerEl.id = 'profileBannerDisplay';
       const defaultBanner = 'https://images.unsplash.com/photo-1614850523459-c2f4c699c52e?q=80&w=1200&auto=format&fit=crop';
       
-      // GUARDA O URL FINAL DO BANNER PARA USAR NO CLIQUE
       const finalBannerUrl = profile.banner_url || defaultBanner;
       
       bannerEl.style.cssText = `
@@ -2905,7 +2917,6 @@ async function loadProfilePage() {
         cursor: pointer;
       `;
 
-      // ADICIONA O EVENTO DE CLIQUE AO BANNER
       bannerEl.onclick = () => window.openImageViewer(finalBannerUrl);
 
       profileInfoContainer.style.position = 'relative';
@@ -2932,18 +2943,15 @@ async function loadProfilePage() {
   document.getElementById('profileHandle').textContent = `@${profile.handle}`;
   document.getElementById('profileBio').textContent = profile.bio || 'Sem bio.';
 
+  // 🔥 INTERCEPTAÇÃO DO AVATAR PRINCIPAL CORRIGIDA AQUI:
   const profileAvatar = document.querySelector('.profile-avatar');
   if (profileAvatar) {
-    // GUARDA O URL DA FOTO PARA USAR NO CLIQUE
     const finalAvatarUrl = profile.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.handle}`;
     profileAvatar.src = finalAvatarUrl;
-    
-    // ADICIONA O EVENTO DE CLIQUE À FOTO DE PERFIL
     profileAvatar.style.cursor = 'pointer';
-    profileAvatar.onclick = (e) => {
-        e.stopPropagation();
-        window.openImageViewer(finalAvatarUrl);
-    };
+    
+    // Vincula nativamente com o sistema do Flashes, removendo o onclick manual antigo
+    aplicarIntercepcaoFlash(profileAvatar, profile.id);
   }
 
   const statValues = document.querySelectorAll('.stat-value');
@@ -3016,7 +3024,6 @@ async function loadProfilePage() {
 
     document.getElementById('ownPrivacyBadge')?.remove();
 
-    // Registra visita
     recordProfileVisit(profile.id);
 
     const podeVer = await canViewProfile(profile.id);
@@ -3031,7 +3038,6 @@ async function loadProfilePage() {
       profileBtnControllers.push(controller);
       const signal = controller.signal;
 
-      // Agrupador de botões
       const actionsWrapper = document.createElement('div');
       actionsWrapper.id = 'profileActionsWrapper';
       actionsWrapper.style.cssText = 'position: absolute; top: 15px; right: 20px; display: flex; gap: 8px; z-index: 10;';

@@ -1007,3 +1007,37 @@ footer {
     color: #b8860b;
     text-shadow: none;
 } 
+/* Container do avatar adaptado para os Flashes */
+.user-avatar-wrapper {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+/* Classe aplicada quando o usuário possui Flashes ativos */
+.user-avatar-wrapper.has-flashes img {
+  padding: 3px;
+  border: 3px solid transparent;
+  background: linear-gradient(var(--dark-bg), var(--dark-bg)) padding-box,
+              linear-gradient(135deg, var(--primary) 0%, #f4700f 50%, #ff5eab 100%) border-box;
+  border-radius: 50%;
+}
+
+/* Modificador caso o usuário seja o dono: sinalizador para postar */
+.user-avatar-wrapper.is-me::after {
+  content: "+";
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background: var(--primary);
+  color: white;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: bold;
+  border: 2px solid var(--dark-bg);
+}
