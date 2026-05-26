@@ -113,7 +113,6 @@ export async function getActiveFlashesByUser(userId) {
 export async function aplicarIntercepcaoFlash(imgElement, profileId) {
   if (!imgElement || !profileId) return;
 
-  // 🔥 TRAVA DE SEGURANÇA: Impede replicação de listeners e chamadas repetidas ao banco
   if (imgElement.dataset.flashBound === 'true') return;
   imgElement.dataset.flashBound = 'true';
 
@@ -121,21 +120,17 @@ export async function aplicarIntercepcaoFlash(imgElement, profileId) {
     const user = await getCurrentUser();
     const flashes = await getActiveFlashesByUser(profileId);
 
-    // Se tem flashes ativos, adiciona o anel visual estilo Instagram
     if (flashes.length > 0) {
       imgElement.classList.add('has-flashes-ring');
     }
 
-    // Remove qualquer clique inline residual antigo
     imgElement.onclick = null;
 
-    // Define o comportamento estável de clique único
     imgElement.addEventListener('click', async (e) => {
       e.preventDefault();
       e.stopPropagation();
 
       if (user && profileId === user.id) {
-        // Se for o próprio usuário logado
         if (flashes.length > 0) {
           const acao = confirm("Deseja ver seus Flashes ativos? (Clique em Cancelar para postar um novo)");
           if (acao) {
@@ -147,11 +142,9 @@ export async function aplicarIntercepcaoFlash(imgElement, profileId) {
           dispararUploadArquivo();
         }
       } else {
-        // Se for o perfil de outra pessoa
         if (flashes.length > 0) {
           abrirModalFlashes(flashes);
         } else {
-          // Fallback: se não tem flashes, executa o zoom de imagem padrão
           if (window.openImageViewer) window.openImageViewer(imgElement.src);
         }
       }
@@ -186,7 +179,7 @@ function dispararUploadArquivo() {
 function abrirModalFlashes(flashesList) {
   let currentIndex = 0;
   let timer = null;
-  const duration = 5000; // 5 segundos por mídia
+  const duration = 5000;
 
   const modal = document.createElement('div');
   modal.className = 'flash-viewer-modal';
@@ -230,16 +223,13 @@ function abrirModalFlashes(flashesList) {
     const flash = flashesList[currentIndex];
     if (!flash) return fechar();
 
-    // Registra visualização de forma síncrona em segundo plano
     viewFlash(flash.id);
 
-    // Renderiza dados do autor
     const author = flash.author;
     document.getElementById('flashModalAvatar').src = author?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${author?.handle}`;
     document.getElementById('flashModalName').textContent = author?.name || 'Usuário';
     document.getElementById('flashModalHandle').textContent = `@${author?.handle || 'anonimo'}`;
 
-    // Atualiza barras de progresso superiores
     const progressBox = document.getElementById('flashProgressContainer');
     progressBox.innerHTML = flashesList.map((_, idx) => `
       <div class="flash-progress-track">
@@ -247,7 +237,6 @@ function abrirModalFlashes(flashesList) {
       </div>
     `).join('');
 
-    // Injeta Mídia (Imagem ou Vídeo)
     const mediaBox = document.getElementById('flashMediaBox');
     mediaBox.innerHTML = '';
     if (flash.media_type === 'video') {
@@ -264,7 +253,6 @@ function abrirModalFlashes(flashesList) {
       mediaBox.appendChild(img);
     }
 
-    // Injeta stickers puros de Curso e Bloco
     const stickersBox = document.getElementById('flashStickersBox');
     stickersBox.innerHTML = '';
     if (author?.curso) {
@@ -280,7 +268,6 @@ function abrirModalFlashes(flashesList) {
       stickersBox.appendChild(st);
     }
 
-    // Gerencia botões de rodapé e visualizações
     const currentUser = await getCurrentUser();
     const repostBtn = document.getElementById('flashRepostBtn');
     const viewsCounter = document.getElementById('flashViewsCounter');
@@ -304,7 +291,6 @@ function abrirModalFlashes(flashesList) {
       };
     }
 
-    // Dispara animação da barra corrente
     setTimeout(() => {
       const fill = document.getElementById(`fill-${currentIndex}`);
       if (fill) {
@@ -313,7 +299,6 @@ function abrirModalFlashes(flashesList) {
       }
     }, 50);
 
-    // Agenda próxima mídia
     timer = setTimeout(() => {
       currentIndex++;
       if (currentIndex < flashesList.length) {
@@ -325,4 +310,181 @@ function abrirModalFlashes(flashesList) {
   }
 
   renderCurrentFlash();
+}
+
+/**
+ * Abre a interface dinâmica de câmera em tela cheia com modos de captura e galeria
+ */
+export async function abrirInterfaceCameraCaptura() {
+  let stream = null;
+  let mediaRecorder = null;
+  let recordedChunks = [];
+  let currentMode = 'photo';
+  let isRecording = false;
+
+  // Evita abrir modais duplicados na árvore do DOM
+  const existingModal = document.querySelector('.flash-camera-modal');
+  if (existingModal) existingModal.remove();
+
+  const cameraModal = document.createElement('div');
+  cameraModal.className = 'flash-camera-modal';
+  cameraModal.innerHTML = `
+    <div style="display:flex; justify-content:space-between; width:100%; max-width:440px; align-items:center; z-index: 100;">
+      <h3 style="margin:0; font-size:18px; font-weight:800; color: white;">⚡ Novo Flash</h3>
+      <button id="closeFlashCamera" style="background:none; border:none; color:white; font-size:24px; cursor:pointer;">✕</button>
+    </div>
+
+    <div class="camera-viewfinder-container">
+      <div class="camera-recording-badge" id="cameraRecordingBadge" style="display: none; align-items: center; gap: 6px; position: absolute; top: 20px; left: 20px; background: rgba(224, 36, 94, 0.85); padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 700; z-index: 10;">
+        <span style="width:8px; height:8px; background:white; border-radius:50%; display:inline-block;"></span> GRAVANDO
+      </div>
+      <video id="flashCameraPreview" autoplay playsinline muted></video>
+    </div>
+
+    <div class="camera-controls-bottom" style="z-index: 100;">
+      <div class="camera-modes-row">
+        <button class="camera-mode-btn active" data-mode="photo">FOTO</button>
+        <button class="camera-mode-btn" data-mode="video">VÍDEO</button>
+      </div>
+
+      <div class="camera-actions-row">
+        <button id="btnCameraGallery" style="background:rgba(255,255,255,0.1); border:none; color:white; width:44px; height:44px; border-radius:50%; font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center;">🖼️</button>
+        <button class="camera-trigger-btn" id="cameraTriggerBtn"></button>
+        <div style="width:44px;"></div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(cameraModal);
+
+  const videoElement = cameraModal.querySelector('#flashCameraPreview');
+  const triggerBtn = cameraModal.querySelector('#cameraTriggerBtn');
+  const recordingBadge = cameraModal.querySelector('#cameraRecordingBadge');
+
+  // Solicitação direta de permissão de hardware (Áudio + Vídeo)
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" },
+      audio: true
+    });
+    videoElement.srcObject = stream;
+  } catch (err) {
+    alert("Erro de Acesso: Ative as permissões de Câmera/Microfone no seu navegador para postar Flashes: " + err.message);
+    cameraModal.remove();
+    return;
+  }
+
+  const encerrarCamera = () => {
+    if (stream) stream.getTracks().forEach(track => track.stop());
+    cameraModal.remove();
+    const btnParaVoce = document.querySelector('.tab-btn[data-tab="para-voce"]');
+    if (btnParaVoce) btnParaVoce.click();
+  };
+
+  cameraModal.querySelector('#closeFlashCamera').onclick = encerrarCamera;
+
+  cameraModal.querySelectorAll('.camera-mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (isRecording) return;
+      cameraModal.querySelectorAll('.camera-mode-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentMode = btn.dataset.mode;
+      if (currentMode === 'video') {
+        triggerBtn.classList.add('mode-video');
+      } else {
+        triggerBtn.classList.remove('mode-video');
+      }
+    });
+  });
+
+  cameraModal.querySelector('#btnCameraGallery').onclick = () => {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*,video/*';
+    fileInput.onchange = async () => {
+      if (fileInput.files.length > 0) {
+        try {
+          if (stream) stream.getTracks().forEach(track => track.stop());
+          cameraModal.remove();
+          await createFlash(fileInput.files[0]);
+          alert("Flash da galeria enviado com sucesso!");
+          window.location.reload();
+        } catch (err) {
+          alert("Erro ao enviar arquivo: " + err.message);
+        }
+      }
+    };
+    fileInput.click();
+  };
+
+  triggerBtn.onclick = async () => {
+    if (currentMode === 'photo') {
+      const canvas = document.createElement('canvas');
+      canvas.width = videoElement.videoWidth;
+      canvas.height = videoElement.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+      
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+        try {
+          const fotoFile = new File([blob], `flash_${Date.now()}.jpg`, { type: 'image/jpeg' });
+          if (stream) stream.getTracks().forEach(track => track.stop());
+          cameraModal.remove();
+          await createFlash(fotoFile);
+          alert("Flash de foto publicado!");
+          window.location.reload();
+        } catch (err) {
+          alert("Erro ao salvar foto: " + err.message);
+        }
+      }, 'image/jpeg', 0.9);
+
+    } else {
+      if (!isRecording) {
+        recordedChunks = [];
+        
+        // Redundância inteligente de formatos de gravação web
+        let options = { mimeType: 'video/webm;codecs=vp9,opus' };
+        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+          options = { mimeType: 'video/webm;codecs=vp8,opus' };
+        }
+        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+          options = { mimeType: 'video/mp4' };
+        }
+
+        try {
+          mediaRecorder = new MediaRecorder(stream, options);
+        } catch (e) {
+          mediaRecorder = new MediaRecorder(stream);
+        }
+
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data && e.data.size > 0) recordedChunks.push(e.data);
+        };
+
+        mediaRecorder.onstop = async () => {
+          const videoBlob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'video/webm' });
+          try {
+            const videoFile = new File([videoBlob], `flash_${Date.now()}.webm`, { type: videoBlob.type });
+            await createFlash(videoFile);
+            alert("Flash de vídeo publicado!");
+            window.location.reload();
+          } catch (err) {
+            alert("Erro ao salvar vídeo: " + err.message);
+          }
+        };
+
+        mediaRecorder.start();
+        isRecording = true;
+        triggerBtn.classList.add('recording');
+        recordingBadge.style.display = 'flex';
+      } else {
+        mediaRecorder.stop();
+        if (stream) stream.getTracks().forEach(track => track.stop());
+        cameraModal.remove();
+      }
+    }
+  };
 }

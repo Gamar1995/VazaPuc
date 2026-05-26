@@ -1006,7 +1006,7 @@ footer {
 [data-theme$="-claro"] .premium-title-text .destaque-ouro {
     color: #b8860b;
     text-shadow: none;
-} 
+}
 /* Container do avatar adaptado para os Flashes */
 .user-avatar-wrapper {
   position: relative;
@@ -1040,4 +1040,56 @@ footer {
   font-size: 14px;
   font-weight: bold;
   border: 2px solid var(--dark-bg);
+}
+/* CONTAINER INTERFACE DA CÂMERA DOS FLASHES */
+.flash-camera-modal {
+  position: fixed; inset: 0; z-index: 99999;
+  background: #000; display: flex; flex-direction: column;
+  align-items: center; justify-content: space-between;
+  font-family: inherit; color: white; padding: 20px;
+}
+.camera-viewfinder-container {
+  position: relative; width: 100%; max-width: 440px; height: 70vh;
+  border-radius: 20px; overflow: hidden; background: #111;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+#flashCameraPreview {
+  width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); /* Efeito Espelho */
+}
+.camera-recording-badge {
+  position: absolute; top: 20px; left: 20px;
+  background: rgba(224, 36, 94, 0.85); padding: 6px 14px;
+  border-radius: 20px; font-size: 13px; font-weight: 700;
+  display: none; align-items: center; gap: 6px; animation: pulse 1s infinite;
+}
+/* CONTROLES DA CÂMERA */
+.camera-controls-bottom {
+  width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: 20px; align-items: center;
+}
+.camera-modes-row {
+  display: flex; gap: 24px; background: rgba(255,255,255,0.06); padding: 4px 8px; border-radius: 25px;
+}
+.camera-mode-btn {
+  background: none; border: none; color: rgba(255,255,255,0.5); padding: 6px 16px;
+  font-size: 13px; font-weight: 700; cursor: pointer; border-radius: 20px; transition: all 0.2s;
+}
+.camera-mode-btn.active {
+  background: white; color: black;
+}
+.camera-actions-row {
+  display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 0 30px 20px;
+}
+.camera-trigger-btn {
+  width: 72px; height: 72px; border-radius: 50%; border: 5px solid white;
+  background: white; cursor: pointer; transition: all 0.2s; position: relative;
+}
+.camera-trigger-btn:active { transform: scale(0.9); }
+.camera-trigger-btn.mode-video { background: #e0245e; border-color: rgba(255,255,255,0.4); }
+.camera-trigger-btn.recording { animation: recordingPulse 1.2s infinite; border-radius: 12px; background: #e0245e; width: 50px; height: 50px; }
+
+@keyframes recordingPulse {
+  0% { box-shadow: 0 0 0 0 rgba(224, 36, 94, 0.5); }
+  70% { box-shadow: 0 0 0 15px rgba(224, 36, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(224, 36, 94, 0); }
 }

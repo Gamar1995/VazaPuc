@@ -2,7 +2,7 @@
 // js/home.js — Com Sistema de Blocos (#bloco 01 a #bloco 10) e Banner de Perfil
 // ============================================================
 
-import { aplicarIntercepcaoFlash } from './flashes.js';
+import { aplicarIntercepcaoFlash, abrirInterfaceCameraCaptura } from './flashes.js'; // 🔥 CORRIGIDO: Agora importa as duas funções!
 import { supabase, getCurrentUser } from './supabase.js';
 import { getCurrentProfile, onAuthChange, signOut } from './supabase.js';
 
@@ -616,24 +616,38 @@ function setupNavigation() {
 }
 
 // ============================================================
-// ABAS DO FEED
+// ABAS DO FEED — VERSÃO ROBUSTA COM DELEGAÇÃO DINÂMICA
 // ============================================================
 function setupFeedTabs() {
-  const tabBtns = document.querySelectorAll('.tab-btn');
-  if (!tabBtns.length) return;
+  // Captura o contêiner fixo das abas mapeado no seu vazadinhos.html
+  const tabsContainer = document.querySelector('.feed-header .tabs');
+  if (!tabsContainer) return;
 
-  tabBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      tabBtns.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      activeFeedTab = btn.getAttribute('data-tab');
+  // O pai escuta o clique e descobre qual botão foi acionado dinamicamente
+  tabsContainer.addEventListener('click', (e) => {
+    const btn = e.target.closest('.tab-btn');
+    if (!btn) return; // Ignora cliques fora de botões de aba
 
-      if (activeFeedTab === 'seguindo') {
-        loadFollowingFeed();
-      } else {
-        loadFeed();
-      }
-    });
+    // Remove classe ativa de todos os botões irmãos
+    const tabBtns = tabsContainer.querySelectorAll('.tab-btn');
+    tabBtns.forEach(b => b.classList.remove('active'));
+    
+    // Ativa a aba clicada
+    btn.classList.add('active');
+    activeFeedTab = btn.getAttribute('data-tab');
+
+    console.log("[Flashes Navigation] Aba disparada:", activeFeedTab);
+
+    if (activeFeedTab === 'seguindo') {
+      loadFollowingFeed();
+    } 
+    else if (activeFeedTab === 'flashes') {
+      console.log("[Flashes Navigation] Abrindo a interface de câmera de Flashes...");
+      abrirInterfaceCameraCaptura();
+    } 
+    else {
+      loadFeed();
+    }
   });
 }
 
