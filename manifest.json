@@ -1,0 +1,17 @@
+{
+  "short_name": "VazaPUC",
+  "name": "VazaPUC — Os bastidores da universidade",
+  "icons": [
+    {
+      "src": "https://api.dicebear.com/7.x/avataaars/svg?seed=vazapucicon",
+      "type": "image/svg+xml",
+      "sizes": "512x512",
+      "purpose": "any"
+    }
+  ],
+  "start_url": "/index.html",
+  "background_color": "#0d0007",
+  "theme_color": "#a31f4b",
+  "display": "standalone",
+  "orientation": "portrait"
+}

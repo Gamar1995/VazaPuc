@@ -82,7 +82,7 @@ import { getConversations, getMessages, sendMessage, subscribeToMessages, getOrC
 import { getFollowingFeed, getFollowingIds, subscribeToFollowingFeed, followUserAndSync, unfollowUserAndSync, syncProfileCounts } from './seguindo.js';
 
 // ============================================================
-// ESTADO LOCAL
+// ESTADO LOCAL — UNIFICADO E INTEGRADO
 // ============================================================
 let currentProfile = null;
 let likedPostIds = new Set();
@@ -100,6 +100,13 @@ let feedSelectedFiles = [];
 let feedListenersController = new AbortController();
 let profileListenersController = new AbortController();
 let profileBtnControllers = [];
+
+// Configurações exclusivas do Infinite Scroll (Gatilhos de controle)
+let postOffset = 0;
+const POSTS_PER_PAGE = 10; 
+let isLoadingMore = false;
+let hasMorePosts = true;
+let scrollObserver = null;
 
 window.renderPostPage = (postId) => openPostDetailModal(postId);
 
@@ -466,43 +473,41 @@ async function uploadAvatar(file) {
   const user = await getCurrentUser();
   if (!user) throw new Error('Não autenticado');
   if (!file.type.startsWith('image/')) throw new Error('Arquivo inválido');
-  if (file.size > 2 * 1024 * 1024) throw new Error('Imagem muito grande');
 
-  const fileExt = file.name.split('.').pop();
+  // --- INJEÇÃO DA COMPRESSÃO ---
+  showNotification('Otimizando foto de perfil... ⏳');
+const arquivoOtimizado = await otimizarImagem(file, 500, 0.90);
+
+  const fileExt = arquivoOtimizado.name.split('.').pop();
   const filePath = `avatars/${user.id}-${Date.now()}.${fileExt}`;
 
-  const { error } = await supabase.storage.from('avatars').upload(filePath, file);
+  // Envia o arquivoOtimizado em vez do original
+  const { error } = await supabase.storage.from('avatars').upload(filePath, arquivoOtimizado);
   if (error) throw error;
 
   const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
   return data.publicUrl + '?t=' + Date.now();
-}
-
-function validarDimensoesBanner(file) {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.src = URL.createObjectURL(file);
-    img.onload = () => resolve(); // Permite sempre, sem bloquear o utilizador
-    img.onerror = () => resolve(); 
-  });
 }
 
 async function uploadBanner(file) {
   const user = await getCurrentUser();
   if (!user) throw new Error('Não autenticado');
   if (!file.type.startsWith('image/')) throw new Error('Arquivo de banner inválido');
-  if (file.size > 5 * 1024 * 1024) throw new Error('Imagem do banner muito grande (Max 5MB)');
 
-  const fileExt = file.name.split('.').pop();
+  // --- INJEÇÃO DA COMPRESSÃO ---
+  showNotification('Otimizando capa do perfil... ⏳');
+const bannerOtimizado = await otimizarImagem(file, 1500, 0.85);
+
+  const fileExt = bannerOtimizado.name.split('.').pop();
   const filePath = `banners/${user.id}-${Date.now()}.${fileExt}`;
 
-  const { error } = await supabase.storage.from('avatars').upload(filePath, file);
+  // Envia o bannerOtimizado para a storage
+  const { error } = await supabase.storage.from('avatars').upload(filePath, bannerOtimizado);
   if (error) throw error;
 
   const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
   return data.publicUrl + '?t=' + Date.now();
 }
-
 // ============================================================
 // CARREGAR PERFIL POR HANDLE
 // ============================================================
@@ -652,17 +657,30 @@ function setupFeedTabs() {
 }
 
 // ============================================================
-// FEED — "Para você"
+// FEED — "Para você" com Reinício de Paginação
 // ============================================================
 async function loadFeed() {
   const container = document.getElementById('postsContainer');
   if (!container) return;
 
   abortFeedListeners();
+  
+  // Desconecta o observador antigo se ele existir
+  if (scrollObserver) {
+    scrollObserver.disconnect();
+    scrollObserver = null;
+  }
+
+  // Reinicia os estados de paginação
+  postOffset = 0;
+  hasMorePosts = true;
+  isLoadingMore = false;
+
   container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-secondary)">Carregando...</div>';
 
   try {
-    const posts = await getPosts(20);
+    // Passamos o limite inicial (10) e o offset (0)
+    const posts = await getPosts(POSTS_PER_PAGE, postOffset);
 
     if (currentProfile) {
       const ids = posts.map(p => p.id);
@@ -672,6 +690,12 @@ async function loadFeed() {
 
     renderPosts(posts, container, 'feed');
     await loadQuoteCards(container);
+
+    // Se a quantidade de posts recebidos for igual ao limite da página,
+    // significa que provavelmente existem mais posts para carregar no banco de dados.
+    if (posts.length === POSTS_PER_PAGE) {
+      setupInfiniteScrollTrigger(container);
+    }
   } catch (err) {
     console.error('Erro ao carregar feed:', err);
     container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--danger)">Erro ao carregar posts.</div>';
@@ -2107,12 +2131,24 @@ async function handleSubmitPost(content, source = 'feed') {
     let mediaUrls = [];
 
     if (hasModalMedia) {
-      showNotification('Enviando fotos... 📸');
-      mediaUrls = await uploadPostMedia(mediaComposer.getFiles());
+      showNotification('Processando e compactando imagens... 📸');
+      
+      // 🔥 Otimiza todas as imagens do modal em alta resolução (1920px de largura máxima)
+      const arquivosOtimizados = await Promise.all(
+        mediaComposer.getFiles().map(file => otimizarImagem(file, 1920, 0.85))
+      );
+      
+      mediaUrls = await uploadPostMedia(arquivosOtimizados);
       mediaComposer.clearFiles();
     } else if (hasFeedMedia) {
-      showNotification('Enviando fotos... 📸');
-      mediaUrls = await uploadPostMedia(feedSelectedFiles);
+      showNotification('Processando e compactando imagens... 📸');
+      
+      // 🔥 Otimiza todas as imagens do feed em alta resolução (1920px de largura máxima)
+      const arquivosOtimizados = await Promise.all(
+        feedSelectedFiles.map(file => otimizarImagem(file, 1920, 0.85))
+      );
+      
+      mediaUrls = await uploadPostMedia(arquivosOtimizados);
       feedSelectedFiles = [];
       renderFeedImgPreview(previewArea);
     }
@@ -5559,4 +5595,146 @@ async function openFollowListModal(type, profileId) {
     console.error(err);
     content.innerHTML = '<p style="text-align:center;padding:30px;color:var(--danger);">Erro ao carregar a lista.</p>';
   }
+}
+// ============================================================
+// LOGICA AUXILIAR DO INFINITE SCROLL
+// ============================================================
+
+// 1. Cria o elemento sentinela no fim do feed e ativa o IntersectionObserver
+function setupInfiniteScrollTrigger(container) {
+  // Remove um gatilho anterior caso exista para evitar duplicados
+  document.getElementById('infiniteScrollTrigger')?.remove();
+
+  const trigger = document.createElement('div');
+  trigger.id = 'infiniteScrollTrigger';
+  trigger.style.cssText = 'padding: 24px; text-align: center; color: var(--text-secondary); font-size: 14px; font-style: italic; width: 100%;';
+  trigger.textContent = 'A carregar mais babados... 🔥';
+  container.appendChild(trigger);
+
+  if (scrollObserver) scrollObserver.disconnect();
+
+  // O observador deteta quando o elemento "trigger" entra 10% no campo de visão do utilizador
+  scrollObserver = new IntersectionObserver((entries) => {
+    if (entries[0].isIntersecting && !isLoadingMore && hasMorePosts) {
+      loadMorePosts();
+    }
+  }, { threshold: 0.1 });
+
+  scrollObserver.observe(trigger);
+}
+
+// 2. Procura a próxima página de posts no Supabase e adiciona-os ao fundo do feed
+async function loadMorePosts() {
+  if (isLoadingMore || !hasMorePosts) return;
+
+  isLoadingMore = true;
+  const container = document.getElementById('postsContainer');
+  const trigger = document.getElementById('infiniteScrollTrigger');
+
+  try {
+    // Incrementa o offset com base no tamanho da página anterior
+    postOffset += POSTS_PER_PAGE;
+    
+    // Procura a próxima leva de posts
+    const novosPosts = await getPosts(POSTS_PER_PAGE, postOffset);
+
+    // Se vierem menos posts do que o limite, chegámos ao fim do banco de dados
+    if (novosPosts.length < POSTS_PER_PAGE) {
+      hasMorePosts = false;
+      if (trigger) trigger.textContent = 'Estás atualizado! Não há mais segredos por hoje. ✨';
+    }
+
+    if (novosPosts.length > 0) {
+      if (currentProfile) {
+        const ids = novosPosts.map(p => p.id);
+        const novosLikes = await getLikedPostIds(ids);
+        const novosReposts = await getRepostedPostIds(ids);
+        
+        // Faz o append dos IDs nos Sets globais para manter o estado dos ícones de like/repost
+        likedPostIds = new Set([...likedPostIds, ...novosLikes]);
+        repostedPostIds = new Set([...repostedPostIds, ...novosReposts]);
+      }
+
+      // Cria um container temporário para injetar o HTML dos novos posts
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = novosPosts.map(post => createPostHTML(post)).join('');
+
+      // Ativa os listeners apenas para os elementos novos criados dentro do tempDiv,
+      // prevenindo a duplicação de listeners nos posts que já existiam no feed!
+      attachPostEventListeners(tempDiv, 'feed');
+      attachQuoteCardListeners(tempDiv);
+
+      // Injeta os novos elementos no feed original antes do indicador de loading/fim
+      while (tempDiv.firstChild) {
+        container.insertBefore(tempDiv.firstChild, trigger);
+      }
+
+      // Carrega os Quote Cards referentes apenas aos novos posts adicionados
+      await loadQuoteCards(container);
+    }
+  } catch (err) {
+    console.error('Erro ao processar mais posts no scroll:', err);
+    if (trigger) trigger.textContent = 'Erro ao carregar mais posts. ❌';
+  } {
+    isLoadingMore = false;
+  }
+}
+// ============================================================
+// OTIMIZAÇÃO DE MÍDIA — COMPRESSÃO VIA CANVAS API
+// ============================================================
+// ============================================================
+// OTIMIZAÇÃO DE MÍDIA — VERSÃO ULTRA CRISP (ALTA QUALIDADE)
+// ============================================================
+export function otimizarImagem(file, maxWidth = 1920, quality = 0.85) {
+  return new Promise((resolve, reject) => {
+    if (!file.type.startsWith('image/')) {
+      return resolve(file);
+    }
+
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        // Se a imagem for MENOR que o limite máximo (ex: um meme de 600px), 
+        // mantemos o tamanho original para não esticar nem perder qualidade.
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        
+        // 🔥 CORREÇÃO CRÍTICA: Ativa a suavização de imagem em nível máximo do navegador
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Exporta mantendo uma taxa de compressão imperceptível ao olho humano
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            return reject(new Error('Falha ao processar o blob da imagem.'));
+          }
+          
+          const novoArquivo = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+            type: 'image/jpeg',
+            lastModified: Date.now()
+          });
+          
+          resolve(novoArquivo);
+        }, 'image/jpeg', quality);
+      };
+      img.onerror = (err) => reject(err);
+    };
+    reader.onerror = (err) => reject(err);
+  });
 }

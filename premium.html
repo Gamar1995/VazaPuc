@@ -327,6 +327,99 @@
       color: #b8860b;
       text-shadow: none;
     }
+
+    /* ===== MODAL CUSTOMIZADO (ALERTA DE LOGIN) ===== */
+    .custom-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+      padding: 1.5rem;
+    }
+    .custom-modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+    .custom-modal-card {
+      background: var(--ink);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 3rem 2rem;
+      max-width: 440px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+      transform: translateY(20px) scale(0.95);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .custom-modal-overlay.active .custom-modal-card {
+      transform: translateY(0) scale(1);
+    }
+    .custom-modal-card h3 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2.5rem;
+      color: var(--red2);
+      letter-spacing: 0.05em;
+      margin-bottom: 0.75rem;
+    }
+    .custom-modal-card p {
+      font-size: 1rem;
+      color: var(--paper);
+      opacity: 0.85;
+      line-height: 1.6;
+      margin-bottom: 2rem;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+    }
+    .btn-modal-primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.85rem 1.8rem;
+      border-radius: 40px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      text-decoration: none;
+      background: linear-gradient(135deg, var(--gold), #e09000);
+      color: #1a0008;
+      border: none;
+      transition: all 0.25s ease;
+      cursor: pointer;
+    }
+    .btn-modal-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(212,160,23,0.4);
+    }
+    .btn-modal-secondary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.85rem 1.8rem;
+      border-radius: 40px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-decoration: none;
+      background: transparent;
+      border: 1.5px solid var(--border);
+      color: var(--paper);
+      transition: all 0.25s ease;
+      cursor: pointer;
+    }
+    .btn-modal-secondary:hover {
+      background: var(--card-bg);
+      border-color: var(--paper);
+    }
   </style>
 </head>
 <body>
@@ -412,6 +505,17 @@
     </div>
   </section>
 
+  <div id="loginAlertModal" class="custom-modal-overlay">
+    <div class="custom-modal-card">
+      <h3>Acesso Restrito</h3>
+      <p>Precisas de iniciar sessão ou criar uma conta ativa para te juntares à Elite Universitária do VazaPUC!</p>
+      <div class="modal-actions">
+        <button id="modalCloseBtn" class="btn-modal-secondary">Voltar</button>
+        <a href="inicial/login.html" class="btn-modal-primary">Entrar 👤</a>
+      </div>
+    </div>
+  </div>
+
   <footer>
     <div class="footer-logo">VAZAPUC</div>
     <div class="footer-copy">© 2026 Vazadinhos da PUC</div>
@@ -456,6 +560,8 @@
     document.addEventListener('DOMContentLoaded', async () => {
       const authBtn = document.getElementById('navAuthBtn');
       const assinarBtn = document.getElementById('btnAssinarElite');
+      const loginModal = document.getElementById('loginAlertModal');
+      const modalCloseBtn = document.getElementById('modalCloseBtn');
       
       let profile = null;
       try {
@@ -488,9 +594,10 @@
           const { data: { user }, error } = await supabase.auth.getUser();
           
           if (!user || error) {
-            // Caso NÃO esteja logado: avisa e joga para a tela de login
-            alert('Você precisa estar conectado a uma conta para adquirir o plano Premium! Redirecionando para o Login...');
-            window.location.assign('inicial/login.html');
+            // Caso NÃO esteja logado: Exibe o modal customizado com animação fluida
+            if (loginModal) {
+              loginModal.classList.add('active');
+            }
           } else {
             // Caso ESTEJA logado: processa a ativação no local e no banco
             assinarBtn.textContent = 'Processando...';
@@ -519,6 +626,18 @@
           }
         });
       }
+
+      // Lógica para fechar o Modal Customizado
+      const fecharModal = () => {
+        if (loginModal) loginModal.classList.remove('active');
+      };
+
+      modalCloseBtn?.addEventListener('click', fecharModal);
+      
+      // Fecha também ao clicar fora do card (no overlay escuro)
+      loginModal?.addEventListener('click', (e) => {
+        if (e.target === loginModal) fecharModal();
+      });
     });
   </script>
 

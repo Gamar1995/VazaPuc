@@ -1,10 +1,18 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+<!DOCTYPE html>
+<html lang="pt-BR">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>VazaPUC — Os bastidores da universidade</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VazaPUC</title>
 
+  <link rel="manifest" href="manifest.json">
+
+  <link rel="stylesheet" href="css/Pagina_Principal.css">
+  <link rel="stylesheet" href="css/mobile-responsividade.css">
+</head>
+<body>
   <script>
     const tema = localStorage.getItem('vazaPucTheme');
     if (tema && tema !== 'padrao') document.documentElement.setAttribute('data-theme', tema);
@@ -1161,6 +1169,15 @@
       verificarSessao();
       carregarPosts();
     });
+      </script>
+<script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js') // <--- Caminho relativo (sem a barra inicial)
+          .then((reg) => console.log('⚡ VazaPUC PWA ativo:', reg.scope))
+          .catch((err) => console.error('❌ Erro no SW:', err));
+      });
+    }
   </script>
 </body>
 </html>
