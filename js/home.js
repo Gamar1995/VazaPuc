@@ -423,6 +423,7 @@ try {
   setupTemas();
   setupPrivacySettings();
   setupFollowListModal();
+  setupQuoteModal();
 } catch (erroInterface) {
   console.error('Erro ao carregar interface:', erroInterface);
 }
@@ -1518,28 +1519,28 @@ async function openPostDetailModal(postId) {
     const textoDestacado = renderizarTextoComBlocos(postText);
 
 // APAGUE TODO ESTE TRECHO ABAIXO:
-    content.innerHTML = `
+content.innerHTML = `
       <style>
-        /* Estilos locais para corrigir qualquer herança do CSS global e centralizar mídias */
-        .post-detail-header {
+        /* Estilos limpos e elegantes para o Modal de Detalhes (Estilo X/Twitter) */
+        .modal-header-row {
           display: flex;
           align-items: center;
           gap: 12px;
           margin-bottom: 16px;
           width: 100%;
         }
-        .post-detail-user-info {
+        .modal-user-meta {
           display: flex;
           flex-direction: column;
           min-width: 0;
           flex: 1;
         }
-        .post-detail-text-box {
+        .modal-post-text {
           width: 100%;
           margin-bottom: 14px;
           text-align: left;
         }
-        .post-detail-text-box p {
+        .modal-post-text p {
           font-size: 18px !important;
           color: var(--text-primary) !important;
           line-height: 1.55 !important;
@@ -1547,105 +1548,93 @@ async function openPostDetailModal(postId) {
           white-space: pre-wrap !important;
           margin: 0 !important;
         }
-        .post-detail-media-container {
+        .modal-media-wrapper {
           width: 100%;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          margin: 16px 0;
-          overflow: hidden;
-          border-radius: 12px;
+          margin-top: 14px;
+          margin-bottom: 14px;
         }
-        /* Garante que o grid de imagem interno se centralize 100% no espaço */
-        .post-detail-media-container .media-grid,
-        .post-detail-media-container > * {
+        /* Preserva o display: grid original do Midia.js sem quebrar o layout das fotos */
+        .modal-media-wrapper .media-grid {
           width: 100% !important;
           max-width: 100% !important;
-          margin: 0 auto !important;
-          display: block !important;
-        }
-        .post-detail-media-container img {
-          max-height: 480px;
-          object-fit: contain;
-          border-radius: 12px;
           margin: 0 auto !important;
         }
       </style>
 
-      <div class="post-detail-header">
+      <div class="modal-header-row">
         <img src="${authorAvatar}" class="detail-clickable-avatar" data-handle="${handle}"
-             style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; cursor: pointer; flex-shrink: 0; border: 1px solid var(--border);">
-        <div class="post-detail-user-info">
+             style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; cursor: pointer; flex-shrink: 0; border: 1px solid var(--border);">
+        <div class="modal-user-meta">
           <span class="detail-clickable-avatar" data-handle="${handle}"
             style="font-weight: 700; font-size: 16px; color: var(--text-primary); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-flex; align-items: center; gap: 4px;">
             ${escapeHtml(authorName)}
             ${postData.author?.is_premium ? '<span class="premium-badge-tag" title="Premium">✦</span>' : ''}
           </span>
-          <span style="color: var(--text-secondary); font-size: 14px; margin-top: 2px;">@${escapeHtml(handle)}</span>
+          <span style="color: var(--text-secondary); font-size: 14px; margin-top: 2px;">${escapeHtml(authorHandle)}</span>
         </div>
       </div>
 
-      <div class="post-detail-text-box">
+      <div class="modal-post-text">
         <p>${textoDestacado}</p>
         ${blocosBadgesModal}
       </div>
 
       ${mediaHtml ? `
-        <div class="post-detail-media-container">
+        <div class="modal-media-wrapper">
           ${mediaHtml}
         </div>
       ` : ''}
 
       ${quoteCardHtml}
       
-      <p style="color:var(--text-secondary);font-size:13px;margin-top:12px;margin-bottom:16px;text-align:left;width:100%;">${postTime}</p>
+      <p style="color: var(--text-secondary); font-size: 13px; margin-top: 12px; margin-bottom: 16px; text-align: left; width: 100%;">${postTime}</p>
 
-      <div style="display:flex;gap:20px;padding:14px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:16px;width:100%;">
-        <span style="color:var(--text-secondary);font-size:14px;">
-          <strong style="color:var(--text-primary);">${replyCount}</strong> Respostas
+      <div style="display: flex; gap: 20px; padding: 14px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-bottom: 16px; width: 100%;">
+        <span style="color: var(--text-secondary); font-size: 14px;">
+          <strong style="color: var(--text-primary);">${replyCount}</strong> Respostas
         </span>
         <span id="detailLikeCountWrapper" data-post-id="${postId}" style="
-          color:var(--text-secondary);font-size:14px;cursor:pointer;transition:color 0.15s;"
+          color: var(--text-secondary); font-size: 14px; cursor: pointer; transition: color 0.15s;"
           onmouseover="this.style.color='var(--text-primary)'"
           onmouseout="this.style.color='var(--text-secondary)'">
           <strong id="detailLikeCountStat">${likeCount}</strong> Curtidas
         </span>
       </div>
 
-      <div style="display:flex;gap:24px;padding-bottom:16px;border-bottom:1px solid var(--border);margin-bottom:16px;width:100%;">
+      <div style="display: flex; gap: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); margin-bottom: 16px; width: 100%;">
         <button id="detailLikeBtn"
           data-post-id="${postId}"
           data-author-id="${authorId}"
           data-liked="${isLiked}"
           class="like-action ${isLiked ? 'liked' : ''}"
-          style="background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;
-                 color:${isLiked ? 'var(--danger,#e0245e)' : 'var(--text-secondary)'};font-size:15px;font-weight:600;padding:0;">
+          style="background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px;
+                 color: ${isLiked ? 'var(--danger,#e0245e)' : 'var(--text-secondary)'}; font-size: 15px; font-weight: 600; padding: 0;">
           <span id="detailLikeEmoji">${isLiked ? '❤️' : '🤍'}</span>
           <span class="like-count">${likeCount}</span>
         </button>
         <button id="detailReplyToggle"
-          style="background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;
-                 color:var(--text-secondary);font-size:15px;font-weight:600;">
+          style="background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px;
+                 color: var(--text-secondary); font-size: 15px; font-weight: 600;">
           💬 Responder
         </button>
       </div>
 
-      <div id="detailReplyComposer" style="display:none;margin-bottom:16px;width:100%;">
-        <div style="display:flex;gap:12px;">
-          <img src="${userAvatar}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;">
-          <div style="flex:1;">
+      <div id="detailReplyComposer" style="display: none; margin-bottom: 16px; width: 100%;">
+        <div style="display: flex; gap: 12px;">
+          <img src="${userAvatar}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0;">
+          <div style="flex: 1;">
             <textarea id="detailReplyInput" placeholder="Postar sua resposta..." rows="3"
-              style="width:100%;resize:none;background:var(--dark-bg);border:1px solid var(--border);
-                     border-radius:12px;padding:10px 14px;color:var(--text-primary);font-size:14px;
-                     outline:none;font-family:inherit;box-sizing:border-box;"></textarea>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
-              <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);cursor:pointer;">
-                <input type="checkbox" id="detailReplyPrivate" style="accent-color:var(--primary);">
+              style="width: 100%; resize: none; background: var(--dark-bg); border: 1px solid var(--border);
+                     border-radius: 12px; padding: 10px 14px; color: var(--text-primary); font-size: 14px;
+                     outline: none; font-family: inherit; box-sizing: border-box;"></textarea>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+              <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); cursor: pointer;">
+                <input type="checkbox" id="detailReplyPrivate" style="accent-color: var(--primary);">
                 🔒 Só o autor vê
               </label>
               <button id="detailReplySubmit" data-post-id="${postId}" data-author-id="${authorId}"
-                style="background:var(--primary);color:white;border:none;border-radius:20px;
-                       padding:8px 20px;font-size:14px;font-weight:600;cursor:pointer;">
+                style="background: var(--primary); color: white; border: none; border-radius: 20px;
+                       padding: 8px 20px; font-size: 14px; font-weight: 600; cursor: pointer;">
                 Responder
               </button>
             </div>
@@ -1653,8 +1642,8 @@ async function openPostDetailModal(postId) {
         </div>
       </div>
 
-      <div id="detailRepliesList" style="width:100%;">
-        <p style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Carregando respostas...</p>
+      <div id="detailRepliesList" style="width: 100%;">
+        <p style="text-align: center; color: var(--text-secondary); padding: 20px; font-size: 14px;">Carregando respostas...</p>
       </div>
     `;
     // Carrega quote card se existir
@@ -5067,25 +5056,47 @@ function setupEmojis() {
         input.selectionStart = input.selectionEnd = start + item.textContent.length;
         input.focus();
         input.dispatchEvent(new Event('input'));
-        document.getElementById(containerId)?.classList.remove('active');
+        container.classList.remove('active');
+        if (containerId === 'pickerEmojiQuote') container.style.style.display = 'none';
       });
     });
   };
 
   renderEmojis('pickerEmojiFeed', 'postInput');
   renderEmojis('pickerEmojiModal', 'modalPostInput');
+  renderEmojis('pickerEmojiQuote', 'quotePostInput'); // 🔥 Ativa no input de citação
 
   const toggleFeed  = document.getElementById('btnEmojiFeed');
   const pickerFeed  = document.getElementById('pickerEmojiFeed');
   const toggleModal = document.getElementById('btnEmojiModal');
   const pickerModal = document.getElementById('pickerEmojiModal');
+  const toggleQuote = document.getElementById('btnEmojiQuote');
+  const pickerQuote = document.getElementById('pickerEmojiQuote');
 
-  toggleFeed?.addEventListener('click', (e) => { e.stopPropagation(); pickerFeed?.classList.toggle('active'); pickerModal?.classList.remove('active'); });
-  toggleModal?.addEventListener('click', (e) => { e.stopPropagation(); pickerModal?.classList.toggle('active'); pickerFeed?.classList.remove('active'); });
+  toggleFeed?.addEventListener('click', (e) => { e.stopPropagation(); pickerFeed?.classList.toggle('active'); pickerModal?.classList.remove('active'); pickerQuote?.classList.remove('active'); if(pickerQuote) pickerQuote.style.display='none'; });
+  toggleModal?.addEventListener('click', (e) => { e.stopPropagation(); pickerModal?.classList.toggle('active'); pickerFeed?.classList.remove('active'); pickerQuote?.classList.remove('active'); if(pickerQuote) pickerQuote.style.display='none'; });
+  
+  // Toggle do picker do modal de citação
+  toggleQuote?.addEventListener('click', (e) => { 
+    e.stopPropagation(); 
+    pickerQuote?.classList.toggle('active'); 
+    pickerFeed?.classList.remove('active'); 
+    pickerModal?.classList.remove('active'); 
+    if (pickerQuote) {
+      pickerQuote.style.display = pickerQuote.classList.contains('active') ? 'flex' : 'none';
+    }
+  });
 
-  document.addEventListener('click', () => { pickerFeed?.classList.remove('active'); pickerModal?.classList.remove('active'); });
+  document.addEventListener('click', () => { 
+    pickerFeed?.classList.remove('active'); 
+    pickerModal?.classList.remove('active'); 
+    pickerQuote?.classList.remove('active'); 
+    if(pickerQuote) pickerQuote.style.display = 'none';
+  });
+  
   pickerFeed?.addEventListener('click', e => e.stopPropagation());
   pickerModal?.addEventListener('click', e => e.stopPropagation());
+  pickerQuote?.addEventListener('click', e => e.stopPropagation());
 }
 
 // ============================================================
@@ -5818,5 +5829,165 @@ export function otimizarImagem(file, maxWidth = 1920, quality = 0.85) {
       img.onerror = (err) => reject(err);
     };
     reader.onerror = (err) => reject(err);
+  });
+}
+document.addEventListener('click', (e) => {
+  const target = e.target.closest('button, div, span');
+  if (target && (target.textContent?.includes('Citar') || target.classList.contains('fm-quote') || target.classList.contains('rm-quote'))) {
+    const postCard = target.closest('[data-post-id]');
+    const postId = postCard?.dataset.postId || target.dataset.targetPostId || target.dataset.postId;
+    if (postId) {
+      e.preventDefault();
+      e.stopPropagation();
+      document.getElementById('floatingPostMenu')?.remove(); 
+      document.getElementById('repostFloatingMenu')?.remove(); 
+      window.openQuoteModal(postId); 
+    }
+  }
+}, true);
+// ============================================================
+// SISTEMA DE MODAL DE CITAÇÃO COM ARQUIVOS E EMOJIS (CORRIGIDO)
+// ============================================================
+async function setupQuoteModal() {
+  if (document.getElementById('quoteModal')) return;
+
+  // Importa dinamicamente as ferramentas nativas de upload e grid de mídias do VazaPUC
+  const { setupMediaComposer, uploadPostMedia } = await import('./Midia.js');
+
+  const modal = document.createElement('div');
+  modal.id = 'quoteModal';
+  modal.style.cssText = `
+    display:none; position:fixed; inset:0; z-index:4000;
+    background:rgba(0,0,0,0.7); align-items:center; justify-content:center;
+    padding:20px; backdrop-filter:blur(4px);
+  `;
+
+  modal.innerHTML = `
+    <div style="background:var(--dark-bg-secondary); border:1px solid var(--border); border-radius:20px; width:100%; max-width:580px; display:flex; flex-direction:column; padding:20px; position:relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+        <h3 style="font-size:16px; font-weight:800; color:var(--text-primary); margin:0;">Citar Post</h3>
+        <button id="closeQuoteModal" style="background:none; border:none; color:var(--text-secondary); font-size:20px; cursor:pointer; padding:4px 8px; border-radius:6px;">✕</button>
+      </div>
+      
+      <div id="quoteOriginalPostPreview" style="margin-bottom:16px; border:1px solid var(--border); border-radius:12px; padding:12px; background:var(--dark-bg); max-height:120px; overflow-y:auto;">
+        Carregando post original...
+      </div>
+
+      <div style="display:flex; gap:12px; align-items:flex-start;" id="quoteModalBody">
+        <img src="" id="quoteModalAvatar" style="width:40px; height:40px; border-radius:50%; object-fit:cover; flex-shrink:0; border:1px solid var(--border);">
+        <div style="flex:1; min-width:0;">
+          <textarea id="quotePostInput" placeholder="Adicione um comentário à sua citação..." rows="3" style="width:100%; background:transparent; border:none; color:var(--text-primary); font-size:15px; outline:none; resize:none; font-family:inherit; box-sizing:border-box;"></textarea>
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px; border-top:1px solid var(--border); padding-top:12px;">
+        <div style="display:flex; gap:14px; align-items:center; position:relative;">
+          <button class="toolbar-btn" id="btnImgQuote" type="button" title="Adicionar foto" style="background:none; border:none; font-size:18px; cursor:pointer; color:var(--text-secondary); transition:color 0.2s;">🖼️</button>
+          <button class="toolbar-btn" id="btnEmojiQuote" type="button" title="Adicionar emoji" style="background:none; border:none; font-size:18px; cursor:pointer; color:var(--text-secondary); transition:color 0.2s;">😀</button>
+          <div id="pickerEmojiQuote" style="position:absolute; bottom:40px; left:0; z-index:100; max-width:280px; background:var(--dark-bg-secondary); border:1px solid var(--border); border-radius:12px; padding:10px; display:none; flex-wrap:wrap; gap:6px; box-shadow:0 4px 12px rgba(0,0,0,0.3);"></div>
+        </div>
+        
+        <div style="display:flex; gap:10px;">
+          <button id="cancelQuotePostBtn" style="background:none; border:1px solid var(--border); color:var(--text-secondary); padding:6px 16px; border-radius:20px; cursor:pointer; font-weight:600; font-size:13px;">Cancelar</button>
+          <button id="submitQuotePostBtn" style="background:var(--primary); color:white; border:none; padding:6px 20px; border-radius:20px; cursor:pointer; font-weight:700; font-size:13px;">Citar</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  // Acopla o gerenciador de mídias nativo do VazaPUC com os seletores corretos
+  window.quoteMediaComposer = setupMediaComposer({
+    composerContainerId: 'quoteModalBody',
+    onMediaChange: (files) => {
+      const btn = document.getElementById('btnImgQuote');
+      if (btn) btn.style.color = files.length > 0 ? 'var(--primary)' : '';
+    }
+  });
+
+  const closeModal = () => {
+    modal.style.display = 'none';
+    modal.classList.remove('active');
+    document.getElementById('quotePostInput').value = '';
+    window.quoteMediaComposer?.clearFiles();
+  };
+
+  document.getElementById('closeQuoteModal').addEventListener('click', closeModal);
+  document.getElementById('cancelQuotePostBtn').addEventListener('click', closeModal);
+  modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+  document.getElementById('btnImgQuote').addEventListener('click', (e) => {
+    e.stopPropagation();
+    window.quoteMediaComposer?.openFilePicker();
+  });
+
+  document.getElementById('submitQuotePostBtn').addEventListener('click', async () => {
+    const submitBtn = document.getElementById('submitQuotePostBtn');
+    const targetPostId = submitBtn.dataset.targetPostId;
+    const content = document.getElementById('quotePostInput').value.trim();
+
+    const hasMedia = window.quoteMediaComposer?.hasFiles() ?? false;
+    if (!content && !hasMedia) return;
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Citando...';
+
+    try {
+      let mediaUrls = [];
+      if (hasMedia) {
+        if (typeof showNotification === 'function') showNotification('Fazendo upload das imagens... 📸');
+        // Envia os arquivos diretamente usando o fluxo nativo estável do seu Midia.js
+        mediaUrls = await uploadPostMedia(window.quoteMediaComposer.getFiles());
+      }
+
+      // Salva na tabela 'posts' populando o array de mídias e a chave de citação
+      const { data, error } = await supabase
+        .from('posts')
+        .insert({
+          author_id: currentProfile.id,
+          content: content || '',
+          media_urls: mediaUrls,
+          is_quote: true,
+          quoted_post_id: targetPostId
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Chama a função RPC remota do Supabase para incrementar o contador do post original
+      await supabase.rpc('increment_reposts_count', { post_id: targetPostId });
+
+      // Atualiza o contador na tela em tempo real
+      document.querySelectorAll(`.repost-action[data-post-id="${targetPostId}"] .repost-count`).forEach(el => {
+        el.textContent = parseInt(el.textContent || '0') + 1;
+      });
+
+      // Dispara o push de notificação para o autor original do segredo
+      try {
+        const postCard = document.querySelector(`.post-card[data-post-id="${targetPostId}"]`);
+        const originalAuthorId = postCard?.dataset.authorId;
+        if (originalAuthorId && originalAuthorId !== currentProfile.id) {
+          const typeNotif = (typeof NOTIF_TYPES !== 'undefined' && NOTIF_TYPES.REPOST) ? NOTIF_TYPES.REPOST : 'repost';
+          if (typeof createNotification === 'function') {
+            await createNotification({
+              toUserId: originalAuthorId,
+              actorId: currentProfile.id,
+              type: typeNotif,
+              postId: data.id
+            });
+          }
+        }
+      } catch (_) {}
+
+      if (typeof showNotification === 'function') showNotification('Post citado com sucesso! 🔁');
+      closeModal();
+      if (typeof loadFeed === 'function') loadFeed();
+    } catch (err) {
+      console.error(err);
+      if (typeof showNotification === 'function') showNotification('Erro ao citar post.');
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Citar';
+    }
   });
 }

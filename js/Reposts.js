@@ -537,37 +537,42 @@ function showRepostMenu(triggerBtn, postId, authorId, wasReposted, currentProfil
     }
   });
 
-  // CITAR POST
+ // CITAR POST (Modificado para chamar o novo modal avançado com fotos e emojis)
   menu.querySelector('.rm-quote')?.addEventListener('click', async (e) => {
     e.stopPropagation();
     closeMenu();
 
-    try {
-      const originalPost = await getOriginalPost(postId);
-      openQuoteModal(originalPost, async (quoteContent) => {
-        await quotePost(postId, quoteContent);
-        callbacks.showNotification?.('Post citado com sucesso! ✏️');
+    // Se o novo modal avançado estiver pronto no escopo global, abre ele
+    if (window.openQuoteModal) {
+      window.openQuoteModal(postId);
+    } else {
+      // Fallback de segurança caso a função global não tenha carregado
+      try {
+        const originalPost = await getOriginalPost(postId);
+        openQuoteModal(originalPost, async (quoteContent) => {
+          await quotePost(postId, quoteContent);
+          callbacks.showNotification?.('Post citado com sucesso! ✏️');
 
-        // Atualiza contador
-        const allBtns = document.querySelectorAll(`.repost-action[data-post-id="${postId}"]`);
-        allBtns.forEach(b => {
-          const c = b.querySelector('.repost-count');
-          if (c) c.textContent = parseInt(c.textContent || '0') + 1;
-        });
-
-        if (authorId && authorId !== currentProfile.id) {
-          callbacks.createNotification?.({
-            toUserId: authorId,
-            actorId: currentProfile.id,
-            type: 'REPOST',
-            postId,
+          const allBtns = document.querySelectorAll(`.repost-action[data-post-id="${postId}"]`);
+          allBtns.forEach(b => {
+            const c = b.querySelector('.repost-count');
+            if (c) c.textContent = parseInt(c.textContent || '0') + 1;
           });
-        }
 
-        callbacks.prependPost?.();
-      });
-    } catch (err) {
-      callbacks.showNotification?.('Erro ao carregar post. Tente novamente.');
+          if (authorId && authorId !== currentProfile.id) {
+            callbacks.createNotification?.({
+              toUserId: authorId,
+              actorId: currentProfile.id,
+              type: 'REPOST',
+              postId,
+            });
+          }
+
+          callbacks.prependPost?.();
+        });
+      } catch (err) {
+        callbacks.showNotification?.('Erro ao carregar post. Tente novamente.');
+      }
     }
   });
 }
