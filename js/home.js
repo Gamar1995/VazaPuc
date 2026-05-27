@@ -350,9 +350,9 @@ function renderBlocoFeed(posts, bloco) {
           <img src="${avatar}" class="explore-avatar-clickable" data-handle="${post.author?.handle ?? ''}"
             style="width:34px;height:34px;border-radius:50%;object-fit:cover;cursor:pointer;flex-shrink:0;" loading="lazy">
           <div style="min-width:0;flex:1;">
-            <div style="font-weight:700;font-size:13px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-              ${escapeHtml(post.author?.name ?? 'Usuário')}
-            </div>
+            <div class="explore-avatar-clickable" data-handle="${post.author?.handle ?? ''}" style="font-weight:700;font-size:13px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;">
+                         ${escapeHtml(post.author?.name ?? 'Usuário')}
+            ]            </div>
             <div style="color:var(--text-secondary);font-size:12px;">@${escapeHtml(post.author?.handle ?? '')}</div>
           </div>
         </div>
@@ -1099,12 +1099,23 @@ function attachPostEventListeners(container = document, context = 'feed') {
     }, { signal });
   });
 
- container.querySelectorAll('.clickable-avatar').forEach(el => {
-  // el é a imagem do autor do post. Vamos descobrir o ID dele
+   container.querySelectorAll('.clickable-avatar').forEach(el => {
   const postCard = el.closest('.post-card');
   const authorId = postCard?.dataset.authorId;
+
   if (authorId && el.tagName === 'IMG') {
     aplicarIntercepcaoFlash(el, authorId);
+  }
+
+  if (el.tagName === 'SPAN' && el.classList.contains('post-author')) {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const handle = el.dataset.handle;
+      if (!handle) return;
+      document.querySelectorAll('.page-container').forEach(p => p.classList.remove('active'));
+      document.getElementById('profile-page').classList.add('active');
+      loadProfileByHandle(handle);
+    }, { signal });
   }
 });
 
