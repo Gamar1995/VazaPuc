@@ -445,19 +445,19 @@ window.refreshPendingBadge = refreshPendingBadge;
 // ============================================================
 // SETUP DE MÍDIA NO MODAL DE POST
 // ============================================================
-function setupMediaInModal() {
-  const modalBody = document.querySelector('#postModal .modal-body');
-  if (!modalBody) return;
-  if (!modalBody.id) modalBody.id = 'modalComposerBody';
+  function setupMediaInModal() {
+    const modalBody = document.querySelector('#postModal .modal-body');
+    if (!modalBody) return;
+    if (!modalBody.id) modalBody.id = 'modalComposerBody';
 
-  mediaComposer = setupMediaComposer({
-    composerContainerId: 'modalComposerBody',
-    onMediaChange: (files) => {
-      const btn = document.querySelector('#postModal .toolbar-btn[data-type="media"]');
-      if (btn) btn.style.color = files.length > 0 ? 'var(--primary)' : '';
-    },
-  });
-}
+    mediaComposer = setupMediaComposer({
+      composerContainerId: 'modalComposerBody',
+      onMediaChange: (files) => {
+        const btn = document.querySelector('#postModal .toolbar-btn[data-type="media"]');
+        if (btn) btn.style.color = files.length > 0 ? 'var(--primary)' : '';
+      },
+    });
+  }
 
 // ============================================================
 // UPLOAD DE AVATAR E BANNER
@@ -524,24 +524,39 @@ function setupUserMini() {
   const userMini = document.querySelector('.user-mini');
   const loginPopup = document.getElementById('userLoginPopup');
   const btnPopupLogin = document.getElementById('btnPopupLogin');
+  const logoutModal = document.getElementById('logoutModal');
+  const cancelLogoutBtn = document.getElementById('cancelLogoutBtn');
+  const confirmLogoutBtn = document.getElementById('confirmLogoutBtn');
 
-  userMini?.addEventListener('click', async (e) => {
+  userMini?.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
 
     if (!currentProfile) {
       loginPopup?.classList.toggle('active');
     } else {
-      const querSair = confirm('Deseja sair da sua conta no VazaPUC?');
-      if (querSair) {
-        try {
-          await signOut();
-          window.location.assign('../index.html');
-        } catch (err) {
-          showNotification('Erro ao tentar sair da conta.');
-        }
+      // Preenche o nome no modal
+      const logoutUserName = document.getElementById('logoutUserName');
+      if (logoutUserName) {
+        logoutUserName.textContent = currentProfile.name || currentProfile.handle || '';
       }
+      // Abre o modal customizado em vez do confirm()
+      if (logoutModal) logoutModal.style.display = 'block';
     }
+  });
+
+  confirmLogoutBtn?.addEventListener('click', async () => {
+    if (logoutModal) logoutModal.style.display = 'none';
+    try {
+      await signOut();
+      window.location.assign('../index.html');
+    } catch (err) {
+      showNotification('Erro ao tentar sair da conta.');
+    }
+  });
+
+  cancelLogoutBtn?.addEventListener('click', () => {
+    if (logoutModal) logoutModal.style.display = 'none';
   });
 
   btnPopupLogin?.addEventListener('click', (e) => {
@@ -549,13 +564,21 @@ function setupUserMini() {
     window.location.assign('../inicial/login.html');
   });
 
-  document.addEventListener('click', () => {
+  document.addEventListener('click', (e) => {
     loginPopup?.classList.remove('active');
+    // Fecha o logoutModal ao clicar fora
+    if (
+      logoutModal &&
+      logoutModal.style.display === 'block' &&
+      !logoutModal.contains(e.target) &&
+      !userMini?.contains(e.target)
+    ) {
+      logoutModal.style.display = 'none';
+    }
   });
 
   loginPopup?.addEventListener('click', (e) => e.stopPropagation());
 }
-
 // ============================================================
 // ATUALIZA UI COM DADOS DO USUÁRIO
 // ============================================================
