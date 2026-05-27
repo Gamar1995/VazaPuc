@@ -169,21 +169,49 @@
       </div>
 
       <div class="sidebar-footer" style="position: relative;">
-        <div class="user-login-popup" id="userLoginPopup">
-          <p>Faça login para interagir, curtir fofocas e ter o seu próprio perfil na PUC!</p>
-          <button id="btnPopupLogin" class="btn-primary" style="width: 100%;">Entrar na Conta</button>
-        </div>
 
-        <div class="user-mini">
-          <div class="user-avatar">
-            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=currentuser" alt="Você">
-          </div>
-          <div class="user-info">
-            <p class="user-name">Seu Usuário</p>
-            <p class="user-handle">@seu_handle</p>
-          </div>
-        </div>
-      </div>
+  <!-- Popup de login (não logado) -->
+  <div class="user-login-popup" id="userLoginPopup">
+    <p>Faça login para interagir, curtir fofocas e ter o seu próprio perfil na PUC!</p>
+    <button id="btnPopupLogin" class="btn-primary" style="width: 100%;">Entrar na Conta</button>
+  </div>
+
+  <!-- Popup de logout (logado) — flutua acima do user-mini -->
+  <div id="logoutModal" style="
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 12px);
+    left: 0; right: 0;
+    background: var(--dark-bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 -8px 32px rgba(0,0,0,0.4);
+    z-index: 200;
+    animation: slideUp 0.2s ease;
+  ">
+    <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.5;">
+      Deseja sair do perfil 
+      <strong id="logoutUserName" style="color: var(--text-primary);"></strong>?
+    </p>
+    <div style="display: flex; gap: 10px;">
+      <button id="cancelLogoutBtn" class="btn-secondary" style="flex: 1;">Cancelar</button>
+      <button id="confirmLogoutBtn" class="btn-primary" style="flex: 1; background: linear-gradient(135deg, #e74c3c, #c0392b);">Sair</button>
+    </div>
+  </div>
+
+  <!-- user-mini (não muda nada) -->
+  <div class="user-mini">
+    <div class="user-avatar">
+      <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=currentuser" alt="Você">
+    </div>
+    <div class="user-info">
+      <p class="user-name">Seu Usuário</p>
+      <p class="user-handle">@seu_handle</p>
+    </div>
+  </div>
+
+</div>
     </aside>
 
     <!-- ══════════════════════════════════════════════
@@ -241,10 +269,6 @@
           <h2>Mensagens</h2>
         </header>
         <div class="messages-wrapper">
-          
-          <div class="msg-floating-glass-box">
-            <button class="msg-add-contact-btn" id="openAddContactBtn" title="Adicionar contato"></button>
-          </div>
 
           <div class="conversations-list" id="conversationsList"></div>
           <div class="chat-area" id="chatArea">
@@ -725,7 +749,7 @@
         toast.classList.add('show');
         setTimeout(function () { toast.classList.remove('show'); }, 1800);
       }
-
+      
       /* ── Renderiza sidebar de blocos ────────────────────────── */
       function renderBlocosSidebar(contagem) {
         var lista = document.getElementById('blocoListaSidebar');
@@ -1025,6 +1049,54 @@
       }
     })();
   </script>
+  <script>
+  (function () {
+    const userMini = document.querySelector('.user-mini');
+    const logoutModal = document.getElementById('logoutModal');
+    const cancelLogoutBtn = document.getElementById('cancelLogoutBtn');
+    const confirmLogoutBtn = document.getElementById('confirmLogoutBtn');
+
+    userMini?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      // Só abre se estiver logado (currentProfile vem do home.js)
+      if (!window.currentProfile) return;
+
+      const logoutUserName = document.getElementById('logoutUserName');
+      if (logoutUserName) {
+        logoutUserName.textContent = window.currentProfile.name || window.currentProfile.handle || '';
+      }
+
+      logoutModal.style.display =
+        logoutModal.style.display === 'none' || logoutModal.style.display === ''
+          ? 'block'
+          : 'none';
+    });
+
+    cancelLogoutBtn?.addEventListener('click', () => {
+      logoutModal.style.display = 'none';
+    });
+
+    confirmLogoutBtn?.addEventListener('click', async () => {
+      logoutModal.style.display = 'none';
+      // chama o logout do home.js se existir, senão faz direto
+      if (typeof window.fazerLogout === 'function') {
+        window.fazerLogout();
+      }
+    });
+
+    // Fecha ao clicar fora
+    document.addEventListener('click', (e) => {
+      if (
+        logoutModal &&
+        logoutModal.style.display === 'block' &&
+        !logoutModal.contains(e.target) &&
+        !userMini.contains(e.target)
+      ) {
+        logoutModal.style.display = 'none';
+      }
+    });
+  })();
+</script>
 </body>
 
 </html>
