@@ -1517,30 +1517,90 @@ async function openPostDetailModal(postId) {
 
     const textoDestacado = renderizarTextoComBlocos(postText);
 
+// APAGUE TODO ESTE TRECHO ABAIXO:
     content.innerHTML = `
-      <div style="display:flex;gap:14px;margin-bottom:20px;">
+      <style>
+        /* Estilos locais para corrigir qualquer herança do CSS global e centralizar mídias */
+        .post-detail-header {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 16px;
+          width: 100%;
+        }
+        .post-detail-user-info {
+          display: flex;
+          flex-direction: column;
+          min-width: 0;
+          flex: 1;
+        }
+        .post-detail-text-box {
+          width: 100%;
+          margin-bottom: 14px;
+          text-align: left;
+        }
+        .post-detail-text-box p {
+          font-size: 18px !important;
+          color: var(--text-primary) !important;
+          line-height: 1.55 !important;
+          word-break: break-word !important;
+          white-space: pre-wrap !important;
+          margin: 0 !important;
+        }
+        .post-detail-media-container {
+          width: 100%;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          margin: 16px 0;
+          overflow: hidden;
+          border-radius: 12px;
+        }
+        /* Garante que o grid de imagem interno se centralize 100% no espaço */
+        .post-detail-media-container .media-grid,
+        .post-detail-media-container > * {
+          width: 100% !important;
+          max-width: 100% !important;
+          margin: 0 auto !important;
+          display: block !important;
+        }
+        .post-detail-media-container img {
+          max-height: 480px;
+          object-fit: contain;
+          border-radius: 12px;
+          margin: 0 auto !important;
+        }
+      </style>
+
+      <div class="post-detail-header">
         <img src="${authorAvatar}" class="detail-clickable-avatar" data-handle="${handle}"
-             style="width:48px;height:48px;border-radius:50%;object-fit:cover;cursor:pointer;flex-shrink:0;">
-        <div style="flex:1;min-width:0;">
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-            <span class="detail-clickable-avatar" data-handle="${handle}"
-              style="font-weight:700;font-size:15px;color:var(--text-primary);cursor:pointer;">
-              ${escapeHtml(authorName)}
-              ${postData.author?.is_premium ? '<span class="premium-badge-tag" title="Premium">✦</span>' : ''}
-            </span>
-            <span style="color:var(--text-secondary);font-size:14px;">${escapeHtml(authorHandle)}</span>
-          </div>
-          <p style="font-size:18px;color:var(--text-primary);line-height:1.6;margin-top:12px;word-break:break-word;white-space:pre-wrap;">
-            ${textoDestacado}
-          </p>
-          ${blocosBadgesModal}
-          ${mediaHtml}
-          ${quoteCardHtml}
-          <p style="color:var(--text-secondary);font-size:13px;margin-top:12px;">${postTime}</p>
+             style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; cursor: pointer; flex-shrink: 0; border: 1px solid var(--border);">
+        <div class="post-detail-user-info">
+          <span class="detail-clickable-avatar" data-handle="${handle}"
+            style="font-weight: 700; font-size: 16px; color: var(--text-primary); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-flex; align-items: center; gap: 4px;">
+            ${escapeHtml(authorName)}
+            ${postData.author?.is_premium ? '<span class="premium-badge-tag" title="Premium">✦</span>' : ''}
+          </span>
+          <span style="color: var(--text-secondary); font-size: 14px; margin-top: 2px;">@${escapeHtml(handle)}</span>
         </div>
       </div>
 
-      <div style="display:flex;gap:20px;padding:14px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:16px;">
+      <div class="post-detail-text-box">
+        <p>${textoDestacado}</p>
+        ${blocosBadgesModal}
+      </div>
+
+      ${mediaHtml ? `
+        <div class="post-detail-media-container">
+          ${mediaHtml}
+        </div>
+      ` : ''}
+
+      ${quoteCardHtml}
+      
+      <p style="color:var(--text-secondary);font-size:13px;margin-top:12px;margin-bottom:16px;text-align:left;width:100%;">${postTime}</p>
+
+      <div style="display:flex;gap:20px;padding:14px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:16px;width:100%;">
         <span style="color:var(--text-secondary);font-size:14px;">
           <strong style="color:var(--text-primary);">${replyCount}</strong> Respostas
         </span>
@@ -1552,7 +1612,7 @@ async function openPostDetailModal(postId) {
         </span>
       </div>
 
-      <div style="display:flex;gap:24px;padding-bottom:16px;border-bottom:1px solid var(--border);margin-bottom:16px;">
+      <div style="display:flex;gap:24px;padding-bottom:16px;border-bottom:1px solid var(--border);margin-bottom:16px;width:100%;">
         <button id="detailLikeBtn"
           data-post-id="${postId}"
           data-author-id="${authorId}"
@@ -1570,7 +1630,7 @@ async function openPostDetailModal(postId) {
         </button>
       </div>
 
-      <div id="detailReplyComposer" style="display:none;margin-bottom:16px;">
+      <div id="detailReplyComposer" style="display:none;margin-bottom:16px;width:100%;">
         <div style="display:flex;gap:12px;">
           <img src="${userAvatar}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;">
           <div style="flex:1;">
@@ -1593,11 +1653,10 @@ async function openPostDetailModal(postId) {
         </div>
       </div>
 
-      <div id="detailRepliesList">
+      <div id="detailRepliesList" style="width:100%;">
         <p style="text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">Carregando respostas...</p>
       </div>
     `;
-
     // Carrega quote card se existir
     if (postData.is_quote && postData.quoted_post_id) {
       const tempContainer = document.createElement('div');
