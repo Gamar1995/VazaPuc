@@ -480,7 +480,6 @@ async function loadLightboxComments(postId) {
   const authorEl = document.getElementById('lbPostAuthor');
   const listEl = document.getElementById('lbCommentsList');
 
-  // REMOVE HEADER ANTIGO
   if (authorEl) {
     authorEl.parentElement.remove();
   }
@@ -489,257 +488,579 @@ async function loadLightboxComments(postId) {
 
   try {
     const { supabase } = await import('./supabase.js');
+    const { getCurrentUser } = await import('./supabase.js');
+    const currentUser = await getCurrentUser();
 
-    // Busca post + autor
+    // ── Busca perfil do usuário logado ──
+    let currentProfile = null;
+    if (currentUser) {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('id, name, handle, avatar_url')
+        .eq('id', currentUser.id)
+        .single();
+      currentProfile = profileData;
+    }
+
+    // ── Busca post + autor ──
     const { data: post } = await supabase
       .from('posts')
-      .select(`
-        content,
-        created_at,
-        author:profiles(name, handle, avatar_url)
-      `)
+      .select(`content, created_at, author_id, author:profiles(id, name, handle, avatar_url)`)
       .eq('id', postId)
       .single();
 
-    // Busca comentários
-    const { data: replies } = await supabase
-      .from('replies')
-      .select(`
-        content,
-        created_at,
-        is_private,
-        author:profiles(name, handle, avatar_url)
-      `)
-      .eq('post_id', postId)
-      .eq('is_private', false)
-      .order('created_at', { ascending: true })
-      .limit(50);
-
-    const postAvatar =
-      post?.author?.avatar_url ||
-      `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author?.handle}`;
-
-    const getTime = (date) => {
-      const diffMin = Math.floor(
-        (Date.now() - new Date(date)) / 60000
-      );
-
-      if (diffMin < 1) return 'agora';
-      if (diffMin < 60) return `${diffMin}min`;
-      if (diffMin < 1440) return `${Math.floor(diffMin / 60)}h`;
-
-      return `${Math.floor(diffMin / 1440)}d`;
-    };
-
-    let html = '';
-
-    // POST ORIGINAL COMO PRIMEIRO "COMENTÁRIO"
-    html += `
-      <div style="
-        display:flex;
-        gap:12px;
-        padding:18px 16px;
-        border-bottom:1px solid var(--border);
-      ">
-
-        <img src="${postAvatar}" style="
-          width:48px;
-          height:48px;
-          border-radius:50%;
-          object-fit:cover;
-          flex-shrink:0;
-        ">
-
-        <div style="
-          flex:1;
-          min-width:0;
-        ">
-
-          <div style="
-            display:flex;
-            align-items:center;
-            gap:6px;
-            flex-wrap:wrap;
-          ">
-
-            <span style="
-              font-weight:700;
-              font-size:24px;
-              color:var(--text-primary);
-            ">
-              ${escapeHtmlLocal(post.author?.name ?? 'Usuário')}
-            </span>
-
-            <span style="
-              font-size:20px;
-              color:var(--text-secondary);
-            ">
-              @${escapeHtmlLocal(post.author?.handle ?? '')}
-            </span>
-
-            <span style="
-              font-size:16px;
-              color:var(--text-secondary);
-            ">
-              • ${getTime(post.created_at)}
-            </span>
-
-          </div>
-
-          ${
-            post?.content
-              ? `
-                <p style="
-                  margin:6px 0 0;
-                  font-size:18px;
-                  line-height:1.6;
-                  color:var(--text-primary);
-                  word-break:break-word;
-                ">
-                  ${escapeHtmlLocal(post.content)}
-                </p>
-              `
-              : `
-                <p style="
-                  margin:6px 0 0;
-                  font-size:13px;
-                  color:var(--text-secondary);
-                  font-style:italic;
-                ">
-                  Sem descrição.
-                </p>
-              `
-          }
-
-        </div>
-
-      </div>
-    `;
-
-    // SEM COMENTÁRIOS
-    if (!replies || replies.length === 0) {
-      html += `
-        <div style="
-          text-align:center;
-          padding:45px 20px;
-        ">
-          <div style="
-            font-size:38px;
-            margin-bottom:12px;
-            opacity:0.4;
-          ">
-            💬
-          </div>
-
-          <p style="
-            font-size:14px;
-            color:var(--text-secondary);
-            margin:0;
-          ">
-            Nenhum comentário ainda.
-          </p>
-        </div>
-      `;
-
-      listEl.innerHTML = html;
+    if (!post) {
+      listEl.innerHTML = '<p style="text-align:center;padding:20px;color:var(--danger)">Post não encontrado.</p>';
       return;
     }
 
-    // COMENTÁRIOS
-    html += replies.map(r => {
+    const postAuthorId = post.author_id ?? post.author?.id ?? '';
 
-      const avatar =
-        r.author?.avatar_url ||
-        `https://api.dicebear.com/7.x/avataaars/svg?seed=${r.author?.handle}`;
+    // ── Busca TODOS os comentários ──
+    const { data: allReplies } = await supabase
+      .from('replies')
+      .select(`*, author:profiles(id, name, handle, avatar_url, is_premium)`)
+      .eq('post_id', postId)
+      .order('created_at', { ascending: true });
 
-      return `
-        <div style="
-          display:flex;
-          gap:12px;
-          padding:14px 16px;
-        ">
+    // ── Carrega likes de replies do usuário atual ──
+    if (!window._lbReplyLikes) window._lbReplyLikes = new Set();
+    if (currentProfile && allReplies?.length) {
+      const { data: likedReplies } = await supabase
+        .from('reply_likes')
+        .select('reply_id')
+        .eq('user_id', currentProfile.id)
+        .in('reply_id', allReplies.map(r => r.id));
+      window._lbReplyLikes = new Set((likedReplies || []).map(l => l.reply_id));
+    }
 
-          <img src="${avatar}" style="
-            width:34px;
-            height:34px;
-            border-radius:50%;
-            object-fit:cover;
-            flex-shrink:0;
-            margin-top:2px;
-          " loading="lazy">
+    // ── Filtra por visibilidade ──
+    const replies = (allReplies || []).filter(r => {
+      if (!r.is_private) return true;
+      if (!currentProfile) return false;
+      return currentProfile.id === postAuthorId || currentProfile.id === r.author?.id;
+    });
 
-          <div style="
-            flex:1;
-            min-width:0;
-          ">
+    // ── Helpers ──
+    const getTime = (date) => {
+      const diffMin = Math.floor((Date.now() - new Date(date)) / 60000);
+      if (diffMin < 1) return 'agora';
+      if (diffMin < 60) return `${diffMin}min`;
+      if (diffMin < 1440) return `${Math.floor(diffMin / 60)}h`;
+      return `${Math.floor(diffMin / 1440)}d`;
+    };
 
-            <div style="
-              display:flex;
-              align-items:center;
-              gap:6px;
-              flex-wrap:wrap;
-            ">
+    const escLb = (text) => {
+      if (!text) return '';
+      const d = document.createElement('div');
+      d.textContent = text;
+      return d.innerHTML;
+    };
 
-              <span style="
-                font-weight:700;
-                font-size:13px;
-                color:var(--text-primary);
-              ">
-                ${escapeHtmlLocal(r.author?.name ?? 'Usuário')}
-              </span>
+    const postAvatar = post.author?.avatar_url
+      || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author?.handle}`;
 
-              <span style="
-                font-size:11px;
-                color:var(--text-secondary);
-              ">
-                @${escapeHtmlLocal(r.author?.handle ?? '')}
-              </span>
-
-              <span style="
-                font-size:11px;
-                color:var(--text-secondary);
-              ">
-                • ${getTime(r.created_at)}
-              </span>
-
-            </div>
-
-            <p style="
-              margin:4px 0 0;
-              font-size:13px;
-              line-height:1.6;
-              color:var(--text-primary);
-              word-break:break-word;
-            ">
-              ${escapeHtmlLocal(r.content)}
-            </p>
-
+    // ── HTML do post original no topo ──
+    let html = `
+      <div style="
+        display:flex;gap:12px;padding:18px 16px;
+        border-bottom:1px solid var(--border);
+      ">
+        <img src="${postAvatar}" style="
+          width:44px;height:44px;border-radius:50%;
+          object-fit:cover;flex-shrink:0;cursor:pointer;
+        " class="lb-avatar-click" data-handle="${escLb(post.author?.handle ?? '')}">
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+            <span class="lb-avatar-click" data-handle="${escLb(post.author?.handle ?? '')}" style="
+              font-weight:700;font-size:14px;color:var(--text-primary);cursor:pointer;
+            ">${escLb(post.author?.name ?? 'Usuário')}</span>
+            <span style="font-size:12px;color:var(--text-secondary);">@${escLb(post.author?.handle ?? '')}</span>
+            <span style="font-size:11px;color:var(--text-secondary);">· ${getTime(post.created_at)}</span>
           </div>
+          ${post.content
+            ? `<p style="margin:6px 0 0;font-size:14px;line-height:1.55;color:var(--text-primary);word-break:break-word;">${escLb(post.content)}</p>`
+            : `<p style="margin:6px 0 0;font-size:12px;color:var(--text-secondary);font-style:italic;">Sem descrição.</p>`
+          }
+        </div>
+      </div>
+    `;
 
+    // ── Composer de novo comentário ──
+    const userAvatar = currentProfile?.avatar_url
+      || `https://api.dicebear.com/7.x/avataaars/svg?seed=anon`;
+
+    html += `
+      <div id="lbMainComposer" style="
+        display:flex;gap:10px;padding:12px 16px;
+        border-bottom:1px solid var(--border);
+        background:var(--dark-bg-secondary);
+      ">
+        <img src="${userAvatar}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+        <div style="flex:1;">
+          <textarea id="lbMainReplyInput" placeholder="${currentProfile ? 'Adicionar comentário...' : 'Faça login para comentar'}"
+            ${!currentProfile ? 'disabled' : ''}
+            rows="1" style="
+              width:100%;resize:none;background:var(--dark-bg);
+              border:1px solid var(--border);border-radius:12px;
+              padding:8px 12px;color:var(--text-primary);font-size:13px;
+              outline:none;font-family:inherit;box-sizing:border-box;
+              transition:border-color 0.2s;
+            "
+            onfocus="this.style.borderColor='var(--primary)'"
+            onblur="this.style.borderColor='var(--border)'"></textarea>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
+            <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-secondary);cursor:pointer;">
+              <input type="checkbox" id="lbMainPrivate" style="accent-color:var(--primary);"> 🔒 Só o autor vê
+            </label>
+            <button id="lbMainSubmit" style="
+              background:var(--primary);color:white;border:none;border-radius:16px;
+              padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;
+              opacity:${currentProfile ? '1' : '0.5'};
+            " ${!currentProfile ? 'disabled' : ''}>Comentar</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // ── Separa raiz e filhos ──
+    const raiz = replies.filter(r => !r.parent_reply_id);
+
+    if (raiz.length === 0) {
+      html += `
+        <div style="text-align:center;padding:40px 20px;">
+          <div style="font-size:34px;margin-bottom:10px;opacity:0.4;">💬</div>
+          <p style="font-size:13px;color:var(--text-secondary);margin:0;">Nenhum comentário ainda.</p>
         </div>
       `;
-    }).join('');
+    } else {
+      // ── Render de cada comentário raiz + seus filhos ──
+      const renderReplyItem = (r, isChild = false) => {
+        const avatar = r.author?.avatar_url
+          || `https://api.dicebear.com/7.x/avataaars/svg?seed=${r.author?.handle}`;
+        const isMe = currentProfile && currentProfile.id === r.author?.id;
+        const isLikedR = window._lbReplyLikes?.has(r.id) ?? false;
+        const likeCount = r.likes_count ?? 0;
+
+        return `
+          <div class="lb-reply-item" data-reply-id="${r.id}" style="
+            display:flex;gap:10px;
+            padding:${isChild ? '8px 16px 8px 48px' : '12px 16px'};
+            border-bottom:1px solid var(--border);
+            position:relative;
+          ">
+            <img src="${avatar}" class="lb-avatar-click" data-handle="${escLb(r.author?.handle ?? '')}"
+              style="
+                width:${isChild ? '28px' : '34px'};height:${isChild ? '28px' : '34px'};
+                border-radius:50%;object-fit:cover;flex-shrink:0;cursor:pointer;
+              " loading="lazy">
+            <div style="flex:1;min-width:0;">
+              <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:3px;">
+                <span class="lb-avatar-click" data-handle="${escLb(r.author?.handle ?? '')}" style="
+                  font-weight:700;font-size:${isChild ? '12px' : '13px'};
+                  color:var(--text-primary);cursor:pointer;
+                ">${escLb(r.author?.name ?? 'Usuário')}</span>
+                <span style="font-size:11px;color:var(--text-secondary);">@${escLb(r.author?.handle ?? '')}</span>
+                <span style="font-size:10px;color:var(--text-secondary);">· ${getTime(r.created_at)}</span>
+                ${r.is_private ? '<span style="font-size:9px;background:var(--primary)22;color:var(--primary);padding:1px 5px;border-radius:6px;font-weight:700;">🔒</span>' : ''}
+                ${isMe ? `
+                  <button class="lb-delete-reply" data-reply-id="${r.id}" data-is-root="${!r.parent_reply_id}"
+                    style="margin-left:auto;background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:11px;padding:1px 5px;border-radius:5px;transition:color 0.2s;"
+                    onmouseover="this.style.color='var(--danger,#e0245e)'" onmouseout="this.style.color='var(--text-secondary)'">🗑️</button>
+                ` : ''}
+              </div>
+              <p style="
+                font-size:${isChild ? '12.5px' : '13px'};color:var(--text-primary);
+                line-height:1.5;word-break:break-word;margin:0 0 8px;
+              ">${escLb(r.content)}</p>
+              <div style="display:flex;gap:2px;align-items:center;">
+                <!-- Like -->
+                <button class="lb-like-reply" data-reply-id="${r.id}" data-author-id="${r.author?.id ?? ''}" data-liked="${isLikedR}" style="
+                  background:none;border:none;cursor:pointer;
+                  color:${isLikedR ? 'var(--danger,#e0245e)' : 'var(--text-secondary)'};
+                  font-size:12px;display:flex;align-items:center;gap:3px;
+                  padding:3px 7px;border-radius:8px;transition:background 0.15s,color 0.15s;
+                "
+                onmouseover="if(this.dataset.liked!=='true'){this.style.background='rgba(224,36,94,0.12)';this.style.color='var(--danger,#e0245e)';}"
+                onmouseout="if(this.dataset.liked!=='true'){this.style.background='none';this.style.color='var(--text-secondary)';}">
+                  <span class="lb-like-emoji">${isLikedR ? '❤️' : '🤍'}</span>
+                  <span class="lb-like-count" style="font-size:11px;">${likeCount > 0 ? likeCount : ''}</span>
+                </button>
+                <!-- Responder -->
+                <button class="lb-reply-btn" data-reply-id="${r.id}" data-author-handle="${escLb(r.author?.handle ?? '')}" data-author-id="${r.author?.id ?? ''}" style="
+                  background:none;border:none;cursor:pointer;
+                  color:var(--text-secondary);font-size:12px;
+                  display:flex;align-items:center;gap:4px;
+                  padding:3px 7px;border-radius:8px;transition:background 0.15s,color 0.15s;
+                "
+                onmouseover="this.style.background='var(--primary)18';this.style.color='var(--primary)'"
+                onmouseout="this.style.background='none';this.style.color='var(--text-secondary)'">
+                  💬 <span style="font-size:11px;">Responder</span>
+                </button>
+              </div>
+              <!-- Composer inline para responder este reply (oculto) -->
+              <div class="lb-inline-composer" data-for="${r.id}" style="display:none;margin-top:10px;">
+                <div style="display:flex;gap:8px;">
+                  <img src="${userAvatar}" style="width:26px;height:26px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+                  <div style="flex:1;">
+                    <textarea class="lb-inline-input" data-parent-id="${r.id}"
+                      placeholder="Responder @${escLb(r.author?.handle ?? '')}..."
+                      rows="2" style="
+                        width:100%;resize:none;background:var(--dark-bg);
+                        border:1px solid var(--border);border-radius:10px;
+                        padding:7px 10px;color:var(--text-primary);font-size:12px;
+                        outline:none;font-family:inherit;box-sizing:border-box;
+                        transition:border-color 0.2s;
+                      "
+                      onfocus="this.style.borderColor='var(--primary)'"
+                      onblur="this.style.borderColor='var(--border)'"></textarea>
+                    <div style="display:flex;justify-content:flex-end;gap:6px;margin-top:5px;">
+                      <button class="lb-inline-cancel" data-for="${r.id}" style="
+                        background:none;border:1px solid var(--border);color:var(--text-secondary);
+                        border-radius:14px;padding:4px 10px;font-size:11px;cursor:pointer;
+                      ">Cancelar</button>
+                      <button class="lb-inline-submit" data-parent-id="${r.id}" data-author-id="${r.author?.id ?? ''}" style="
+                        background:var(--primary);color:white;border:none;
+                        border-radius:14px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer;
+                      ">Responder</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      };
+
+      // ── Monta HTML: raiz + "mostrar mais" + filhos ──
+      raiz.forEach(r => {
+        html += `<div class="lb-reply-block" data-root-id="${r.id}">`;
+        html += renderReplyItem(r, false);
+
+        const filhos = replies.filter(f => f.parent_reply_id === r.id);
+        // busca recursiva de descendentes
+        const allDescendants = [];
+        const gather = (parentId) => {
+          replies.filter(f => f.parent_reply_id === parentId).forEach(c => {
+            allDescendants.push(c);
+            gather(c.id);
+          });
+        };
+        gather(r.id);
+
+        if (allDescendants.length > 0) {
+          html += `
+            <button class="lb-toggle-children" data-root-id="${r.id}" style="
+              background:none;border:none;cursor:pointer;color:var(--primary);
+              font-size:12px;font-weight:700;padding:5px 16px 5px 48px;
+              display:flex;align-items:center;gap:4px;
+            ">↳ Ver ${allDescendants.length} resposta${allDescendants.length !== 1 ? 's' : ''}</button>
+            <div class="lb-children-container" id="lb-children-${r.id}" style="display:none;">
+          `;
+          allDescendants.forEach(child => {
+            html += renderReplyItem(child, true);
+          });
+          html += `</div>`;
+        }
+
+        html += `</div>`;
+      });
+    }
 
     listEl.innerHTML = html;
-    listEl.scrollTop = 0;
+
+    // ═══════════════════════════════════════════
+    // ATTACH EVENT LISTENERS
+    // ═══════════════════════════════════════════
+
+    // ── Navegar para perfil ao clicar avatar/nome ──
+    listEl.querySelectorAll('.lb-avatar-click').forEach(el => {
+      el.addEventListener('click', () => {
+        const handle = el.dataset.handle;
+        if (!handle) return;
+        document.getElementById('mediaLightbox')?.remove();
+        document.body.style.overflow = '';
+        // Tenta usar a função global do home.js
+        if (window.loadProfileByHandle) {
+          window.loadProfileByHandle(handle);
+        } else {
+          // fallback: navega para a página de perfil
+          document.querySelectorAll('.page-container').forEach(p => p.classList.remove('active'));
+          document.getElementById('profile-page')?.classList.add('active');
+          document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+          document.querySelector('.nav-item[data-page="profile"]')?.classList.add('active');
+        }
+      });
+    });
+
+    // ── Toggle mostrar/ocultar filhos ──
+    listEl.querySelectorAll('.lb-toggle-children').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const rootId = btn.dataset.rootId;
+        const container = document.getElementById(`lb-children-${rootId}`);
+        if (!container) return;
+        const isHidden = container.style.display === 'none';
+        container.style.display = isHidden ? 'block' : 'none';
+        const count = container.querySelectorAll('.lb-reply-item').length;
+        btn.innerHTML = isHidden
+          ? `↑ Ocultar respostas`
+          : `↳ Ver ${count} resposta${count !== 1 ? 's' : ''}`;
+      });
+    });
+
+    // ── Botão responder: abre composer inline ──
+    listEl.querySelectorAll('.lb-reply-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!currentProfile) {
+          showLbNotif('Faça login para comentar! 🔐');
+          return;
+        }
+        const replyId = btn.dataset.replyId;
+        // Fecha todos os outros composers abertos
+        listEl.querySelectorAll('.lb-inline-composer').forEach(c => {
+          c.style.display = 'none';
+        });
+        const composer = listEl.querySelector(`.lb-inline-composer[data-for="${replyId}"]`);
+        if (composer) {
+          composer.style.display = 'block';
+          composer.querySelector('textarea')?.focus();
+        }
+      });
+    });
+
+    // ── Cancelar resposta inline ──
+    listEl.querySelectorAll('.lb-inline-cancel').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const forId = btn.dataset.for;
+        const composer = listEl.querySelector(`.lb-inline-composer[data-for="${forId}"]`);
+        if (composer) {
+          composer.style.display = 'none';
+          if (composer.querySelector('textarea')) composer.querySelector('textarea').value = '';
+        }
+      });
+    });
+
+    // ── Enviar resposta inline ──
+    listEl.querySelectorAll('.lb-inline-submit').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!currentProfile) { showLbNotif('Faça login para comentar! 🔐'); return; }
+        const parentId = btn.dataset.parentId;
+        const authorId = btn.dataset.authorId;
+        const composer = listEl.querySelector(`.lb-inline-composer[data-for="${parentId}"]`);
+        const textarea = composer?.querySelector('textarea');
+        const content = textarea?.value?.trim();
+        if (!content) return;
+
+        btn.disabled = true;
+        btn.textContent = '...';
+
+        try {
+          const { addReply } = await import('./posts.js');
+          await addReply(postId, content, false, parentId);
+
+          // Notifica autor se diferente do atual
+          if (authorId && authorId !== currentProfile.id) {
+            try {
+              const { createNotification, NOTIF_TYPES } = await import('./notifications.js');
+              await createNotification({
+                toUserId: authorId,
+                actorId: currentProfile.id,
+                type: NOTIF_TYPES.REPLY,
+                postId,
+              });
+            } catch (_) {}
+          }
+
+          showLbNotif('Resposta enviada! 💬');
+          // Recarrega os comentários
+          await loadLightboxComments(postId);
+        } catch (err) {
+          console.error('[lb inline reply]', err);
+          showLbNotif('Erro ao enviar resposta.');
+          btn.disabled = false;
+          btn.textContent = 'Responder';
+        }
+      });
+    });
+
+    // ── Enviar comentário principal ──
+    const mainSubmit = document.getElementById('lbMainSubmit');
+    const mainInput = document.getElementById('lbMainReplyInput');
+    const mainPrivate = document.getElementById('lbMainPrivate');
+
+    mainSubmit?.addEventListener('click', async () => {
+      if (!currentProfile) { showLbNotif('Faça login para comentar! 🔐'); return; }
+      const content = mainInput?.value?.trim();
+      if (!content) return;
+
+      mainSubmit.disabled = true;
+      mainSubmit.textContent = '...';
+
+      try {
+        const { addReply } = await import('./posts.js');
+        const isPrivate = mainPrivate?.checked ?? false;
+        await addReply(postId, content, isPrivate, null);
+
+        // Notifica autor do post
+        if (postAuthorId && postAuthorId !== currentProfile.id) {
+          try {
+            const { createNotification, NOTIF_TYPES } = await import('./notifications.js');
+            await createNotification({
+              toUserId: postAuthorId,
+              actorId: currentProfile.id,
+              type: NOTIF_TYPES.REPLY,
+              postId,
+            });
+          } catch (_) {}
+        }
+
+        showLbNotif('Comentário enviado! 💬');
+        await loadLightboxComments(postId);
+      } catch (err) {
+        console.error('[lb main reply]', err);
+        showLbNotif('Erro ao comentar.');
+        mainSubmit.disabled = false;
+        mainSubmit.textContent = 'Comentar';
+      }
+    });
+
+    // Enter no textarea principal
+    mainInput?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        mainSubmit?.click();
+      }
+    });
+
+    // ── Curtir comentário ──
+    listEl.querySelectorAll('.lb-like-reply').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (!currentProfile) { showLbNotif('Faça login para curtir! 🔐'); return; }
+
+        const replyId = btn.dataset.replyId;
+        const authorId = btn.dataset.authorId;
+        const wasLiked = btn.dataset.liked === 'true';
+        const emojiEl = btn.querySelector('.lb-like-emoji');
+        const countEl = btn.querySelector('.lb-like-count');
+        const currentCount = parseInt(countEl?.textContent || '0') || 0;
+        const newLiked = !wasLiked;
+        const newCount = Math.max(0, currentCount + (newLiked ? 1 : -1));
+
+        // UI imediata
+        btn.dataset.liked = String(newLiked);
+        if (emojiEl) emojiEl.textContent = newLiked ? '❤️' : '🤍';
+        if (countEl) countEl.textContent = newCount > 0 ? newCount : '';
+        btn.style.color = newLiked ? 'var(--danger,#e0245e)' : 'var(--text-secondary)';
+        btn.style.pointerEvents = 'none';
+
+        if (newLiked) window._lbReplyLikes.add(replyId);
+        else window._lbReplyLikes.delete(replyId);
+
+        try {
+          if (newLiked) {
+            const { error } = await supabase
+              .from('reply_likes')
+              .insert({ reply_id: replyId, user_id: currentProfile.id });
+            if (error && error.code !== '23505') throw error;
+            await supabase.rpc('increment_reply_likes', { reply_id: replyId });
+
+            if (authorId && authorId !== currentProfile.id) {
+              try {
+                const { createNotification, NOTIF_TYPES } = await import('./notifications.js');
+                await createNotification({
+                  toUserId: authorId,
+                  actorId: currentProfile.id,
+                  type: NOTIF_TYPES.REPLY_LIKE ?? 'reply_like',
+                  postId,
+                  replyId,
+                });
+              } catch (_) {}
+            }
+          } else {
+            const { error } = await supabase
+              .from('reply_likes')
+              .delete()
+              .eq('reply_id', replyId)
+              .eq('user_id', currentProfile.id);
+            if (error) throw error;
+            await supabase.rpc('decrement_reply_likes', { reply_id: replyId });
+          }
+        } catch (err) {
+          // Reverte
+          btn.dataset.liked = String(wasLiked);
+          if (emojiEl) emojiEl.textContent = wasLiked ? '❤️' : '🤍';
+          if (countEl) countEl.textContent = currentCount > 0 ? currentCount : '';
+          btn.style.color = wasLiked ? 'var(--danger,#e0245e)' : 'var(--text-secondary)';
+          if (wasLiked) window._lbReplyLikes.add(replyId);
+          else window._lbReplyLikes.delete(replyId);
+          console.error('[lb reply like]', err);
+        } finally {
+          btn.style.pointerEvents = '';
+        }
+      });
+    });
+
+    // ── Deletar comentário ──
+    listEl.querySelectorAll('.lb-delete-reply').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (!confirm('Apagar este comentário?')) return;
+
+        const replyId = btn.dataset.replyId;
+        const isRoot = btn.dataset.isRoot === 'true';
+        btn.disabled = true;
+
+        try {
+          const { error } = await supabase.from('replies').delete().eq('id', replyId);
+          if (error) throw error;
+
+          if (isRoot) {
+            await supabase.rpc('decrement_replies', { post_id: postId });
+            // Atualiza contadores no feed se existir
+            document.querySelectorAll(`.reply-action[data-post-id="${postId}"] .reply-count`).forEach(el => {
+              el.textContent = Math.max(0, parseInt(el.textContent || '0') - 1);
+            });
+          }
+
+          showLbNotif('Comentário apagado 🗑️');
+          await loadLightboxComments(postId);
+        } catch (err) {
+          console.error('[lb delete reply]', err);
+          showLbNotif('Erro ao apagar.');
+          btn.disabled = false;
+        }
+      });
+    });
 
   } catch (err) {
     console.error('[lbComments]', err);
-
     if (listEl) {
-      listEl.innerHTML = `
-        <p style="
-          text-align:center;
-          padding:20px;
-          color:var(--danger, #e0245e);
-        ">
-          Erro ao carregar.
-        </p>
-      `;
+      listEl.innerHTML = `<p style="text-align:center;padding:20px;color:var(--danger);">Erro ao carregar.</p>`;
     }
   }
 }
 
+// ── Mini notificação dentro do lightbox ──
+function showLbNotif(msg) {
+  document.querySelector('.lb-notif')?.remove();
+  const n = document.createElement('div');
+  n.className = 'lb-notif';
+  n.style.cssText = `
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+    background:var(--primary);color:white;padding:9px 18px;
+    border-radius:20px;font-size:13px;font-weight:600;
+    z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.3);
+    animation:slideDown 0.25s ease;white-space:nowrap;
+  `;
+  n.textContent = msg;
+  document.body.appendChild(n);
+  setTimeout(() => {
+    n.style.opacity = '0';
+    n.style.transition = 'opacity 0.3s';
+    setTimeout(() => n.remove(), 300);
+  }, 2800);
+}
 function escapeHtmlLocal(text) {
   if (!text) return '';
   const div = document.createElement('div');
