@@ -75,7 +75,8 @@ import {
   acceptFollowRequest, rejectFollowRequest,
   getPendingFollowRequests, getPendingRequestsCount,
   getFollowRequestStatus, canViewProfile,
-  getFollowing, getFollowers
+  getFollowing, getFollowers,
+  deactivateAccount, reactivateAccount,
 } from './profile.js';
 
 import { getConversations, getMessages, sendMessage, subscribeToMessages, getOrCreateConversation } from './messages.js';
@@ -5991,3 +5992,218 @@ async function setupQuoteModal() {
     }
   });
 }
+window.mudarTelaConfig = function(idTela) {
+    document.querySelectorAll('.config-view').forEach(v => v.classList.remove('active'));
+ 
+    const telaAlvo = document.getElementById(idTela);
+    if (telaAlvo) telaAlvo.classList.add('active');
+ 
+    const btnVoltar = document.getElementById('btnVoltarConfig');
+    const titulo = document.getElementById('configTitulo');
+ 
+    if (idTela === 'config-lista') {
+        btnVoltar.style.display = 'none';
+        titulo.innerText = 'Informações gerais';
+    } else {
+        btnVoltar.style.display = 'block';
+        if (idTela === 'config-info') {
+            titulo.innerText = 'Informações da conta';
+            carregarMeusDadosConfig();
+        } else if (idTela === 'config-senha') {
+            titulo.innerText = 'Alterar senha';
+        } else if (idTela === 'config-desativar') {
+            titulo.innerText = 'Desativar conta';
+        }
+    }
+};
+ 
+window.carregarMeusDadosConfig = async function() {
+    try {
+        const emailInput = document.getElementById('configEmail');
+        const handleInput = document.getElementById('configHandle');
+ 
+        if (emailInput) emailInput.value = 'A procurar e-mail...';
+        if (handleInput) handleInput.value = 'A procurar utilizador...';
+ 
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (userError) throw userError;
+ 
+        if (user) {
+            if (emailInput) emailInput.value = user.email || 'E-mail não encontrado';
+ 
+            const { data: profile, error: profileError } = await supabase
+                .from('profiles')
+                .select('handle')
+                .eq('id', user.id)
+                .single();
+ 
+            if (profileError) throw profileError;
+            if (handleInput) handleInput.value = '@' + (profile?.handle || 'anonimo');
+        }
+    } catch (err) {
+        console.error("Erro ao carregar dados das configurações:", err);
+        const emailInput = document.getElementById('configEmail');
+        const handleInput = document.getElementById('configHandle');
+        if (emailInput) emailInput.value = 'Erro ao carregar';
+        if (handleInput) handleInput.value = 'Erro ao carregar';
+    }
+};
+ 
+window.atualizarSenhaSupabase = async function() {
+    const nova = document.getElementById('configNewPassword').value;
+    const confirma = document.getElementById('configConfirmPassword').value;
+ 
+    if (!nova || nova.length < 6) return alert("A senha tem de ter pelo menos 6 caracteres.");
+    if (nova !== confirma) return alert("As senhas não coincidem. Tente novamente.");
+ 
+    try {
+        const { error } = await supabase.auth.updateUser({ password: nova });
+        if (error) {
+            alert("Erro ao atualizar: " + error.message);
+        } else {
+            alert("Senha atualizada com sucesso! ✅");
+            document.getElementById('configNewPassword').value = '';
+            document.getElementById('configConfirmPassword').value = '';
+            mudarTelaConfig('config-lista');
+        }
+    } catch (err) {
+        console.error(err);
+        alert("Erro de ligação ao alterar a senha.");
+    }
+};
+ 
+// ============================================================
+// DESATIVAR CONTA — abre modal de confirmação
+// ============================================================
+window.abrirModalDesativarConta = function() {
+    // Remove modal antigo se existir
+    document.getElementById('deactivateAccountModal')?.remove();
+ 
+    const modal = document.createElement('div');
+    modal.id = 'deactivateAccountModal';
+    modal.style.cssText = `
+        position: fixed; inset: 0; z-index: 9999;
+        background: rgba(0,0,0,0.85);
+        display: flex; align-items: center; justify-content: center;
+        padding: 20px; backdrop-filter: blur(8px);
+    `;
+ 
+    modal.innerHTML = `
+        <div style="
+            background: var(--dark-bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            width: 100%; max-width: 420px;
+            padding: 36px 32px;
+            position: relative;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        ">
+            <button id="closeDeactivateModal" style="
+                position: absolute; top: 16px; right: 16px;
+                background: none; border: none;
+                color: var(--text-secondary); font-size: 20px;
+                cursor: pointer; padding: 4px 8px; border-radius: 6px;
+            ">✕</button>
+ 
+            <div style="font-size: 52px; margin-bottom: 12px;">😴</div>
+ 
+            <h2 style="
+                font-size: 22px; font-weight: 800;
+                color: var(--text-primary); margin: 0 0 12px;
+            ">Desativar sua conta?</h2>
+ 
+            <p style="
+                color: var(--text-secondary); font-size: 14px;
+                line-height: 1.7; margin: 0 0 10px;
+            ">
+                Seu perfil ficará invisível para todos — aparecerá como
+                <strong style="color: var(--text-primary);">Usuário não encontrado</strong>.
+            </p>
+ 
+            <p style="
+                color: var(--text-secondary); font-size: 14px;
+                line-height: 1.7; margin: 0 0 28px;
+            ">
+                Para reativar, é só
+                <strong style="color: var(--primary);">fazer login novamente</strong>
+                com seu e-mail e senha. Seus posts e seguidores continuam salvos.
+            </p>
+ 
+            <div style="
+                background: var(--dark-bg);
+                border: 1px solid var(--border);
+                border-radius: 14px;
+                padding: 14px 16px;
+                margin-bottom: 24px;
+                text-align: left;
+            ">
+                ${[
+                    '👻 Seu perfil fica oculto para todos',
+                    '💾 Posts, seguidores e dados são preservados',
+                    '🔓 Reativar é só fazer login novamente',
+                    '❌ Seus posts NÃO aparecem no feed',
+                ].map(item => `
+                    <div style="
+                        display: flex; align-items: center; gap: 10px;
+                        padding: 8px 0; border-bottom: 1px solid var(--border);
+                        font-size: 13px; color: var(--text-primary);
+                    ">${item}</div>
+                `).join('')}
+            </div>
+ 
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button id="confirmDeactivateBtn" style="
+                    width: 100%; padding: 14px;
+                    border-radius: 20px; font-size: 15px; font-weight: 800;
+                    cursor: pointer; border: none;
+                    background: #e0245e; color: white;
+                    box-shadow: 0 4px 20px rgba(224,36,94,0.3);
+                    transition: opacity 0.2s;
+                " onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+                    Sim, desativar minha conta
+                </button>
+ 
+                <button id="cancelDeactivateBtn" style="
+                    width: 100%; padding: 12px;
+                    border-radius: 20px; font-size: 14px; font-weight: 600;
+                    cursor: pointer;
+                    background: none; border: 1px solid var(--border);
+                    color: var(--text-secondary);
+                    transition: border-color 0.2s;
+                " onmouseover="this.style.borderColor='var(--text-secondary)'" onmouseout="this.style.borderColor='var(--border)'">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    `;
+ 
+    document.body.appendChild(modal);
+ 
+    document.getElementById('closeDeactivateModal').addEventListener('click', () => modal.remove());
+    document.getElementById('cancelDeactivateBtn').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+ 
+    document.getElementById('confirmDeactivateBtn').addEventListener('click', async () => {
+        const btn = document.getElementById('confirmDeactivateBtn');
+        btn.disabled = true;
+        btn.textContent = 'Desativando...';
+ 
+        try {
+            await deactivateAccount();
+            await signOut();
+ 
+            modal.remove();
+ 
+            // Redireciona para a página inicial após desativar
+            window.location.assign('../index.html');
+ 
+        } catch (err) {
+            console.error('[deactivateAccount]', err);
+            btn.disabled = false;
+            btn.textContent = 'Sim, desativar minha conta';
+            showNotification('Erro ao desativar conta. Tente novamente.');
+        }
+    });
+};
+ 

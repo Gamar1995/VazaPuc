@@ -4,7 +4,6 @@
 <head>
   <meta charset="UTF-8">
   <script>
-
     const tema = localStorage.getItem('vazaPucTheme');
     if (tema && tema !== 'padrao') {
       document.documentElement.setAttribute('data-theme', tema);
@@ -15,64 +14,351 @@
   <title>Vaza PUC</title>
   <link rel="stylesheet" href="css_PaginaInicial/style.css">
   <link rel="stylesheet" href="../css/mobile-responsividade.css">
-  <link rel="stylesheet" href="css_PaginaInicial/style.css">
-  <link rel="stylesheet" href="../css/mobile-responsividade.css">
-  
+
   <style>
-    .flash-camera-modal {
-      position: fixed; inset: 0; z-index: 99999;
-      background: #000; display: flex; flex-direction: column;
-      align-items: center; justify-content: space-between;
-      color: white; padding: 20px;
+    /* ─── FLASH CAMERA (existente) ──────────────────── */
+    .flash-camera-modal { position:fixed;inset:0;z-index:99999;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:space-between;color:white;padding:20px; }
+    .camera-viewfinder-container { position:relative;width:100%;max-width:440px;height:70vh;border-radius:20px;overflow:hidden;background:#111;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.1); }
+    #flashCameraPreview { width:100%;height:100%;object-fit:cover;transform:scaleX(-1); }
+    .camera-recording-badge { position:absolute;top:20px;left:20px;background:rgba(224,36,94,0.85);padding:6px 14px;border-radius:20px;font-size:13px;font-weight:700;display:none;align-items:center;gap:6px; }
+    .camera-controls-bottom { width:100%;max-width:440px;display:flex;flex-direction:column;gap:20px;align-items:center; }
+    .camera-modes-row { display:flex;gap:24px;background:rgba(255,255,255,0.06);padding:4px 8px;border-radius:25px; }
+    .camera-mode-btn { background:none;border:none;color:rgba(255,255,255,0.5);padding:6px 16px;font-size:13px;font-weight:700;cursor:pointer;border-radius:20px;transition:all 0.2s; }
+    .camera-mode-btn.active { background:white;color:black; }
+    .camera-actions-row { display:flex;align-items:center;justify-content:space-between;width:100%;padding:0 30px 20px; }
+    .camera-trigger-btn { width:72px;height:72px;border-radius:50%;border:5px solid white;background:white;cursor:pointer;transition:all 0.2s;position:relative; }
+    .camera-trigger-btn:active { transform:scale(0.9); }
+    .camera-trigger-btn.mode-video { background:#e0245e;border-color:rgba(255,255,255,0.4); }
+    .camera-trigger-btn.recording { border-radius:12px;background:#e0245e;width:50px;height:50px; }
+
+    /* ─── SETTINGS REFORMULADO ─────────────────────── */
+
+    /* Container geral da página de config */
+    .settings-page-wrap {
+      display: flex;
+      min-height: calc(100vh - 60px);
     }
-    .camera-viewfinder-container {
-      position: relative; width: 100%; max-width: 440px; height: 70vh;
-      border-radius: 20px; overflow: hidden; background: #111;
+
+    /* Sidebar esquerda de config */
+    .settings-nav {
+      width: 260px;
+      flex-shrink: 0;
+      border-right: 1px solid var(--border);
+      padding: 24px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .settings-nav-label {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--text-secondary);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 10px 12px 6px;
+    }
+
+    .settings-nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      padding: 11px 14px;
+      border-radius: 12px;
+      border: none;
+      background: none;
+      color: var(--text-primary);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      text-align: left;
+      transition: background 0.15s, color 0.15s;
+    }
+    .settings-nav-btn:hover {
+      background: var(--card-bg, rgba(255,255,255,0.04));
+    }
+    .settings-nav-btn.active {
+      background: var(--primary, #a31f4b);
+      color: white;
+      font-weight: 700;
+    }
+    .settings-nav-btn .snb-icon {
+      font-size: 18px;
+      width: 24px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .settings-nav-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 8px 0;
+    }
+
+    /* Conteúdo direito */
+    .settings-panel {
+      flex: 1;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    .settings-view {
+      display: none;
+    }
+    .settings-view.active {
+      display: block;
+    }
+
+    /* Header de cada view */
+    .settings-view-header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--dark-bg, #0d0d0d);
+      border-bottom: 1px solid var(--border);
+      padding: 18px 28px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .settings-view-header h3 {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--text-primary);
+      margin: 0;
+    }
+
+    /* Card de item nas configurações */
+    .config-card {
+      margin: 20px 28px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      background: var(--card-bg, rgba(255,255,255,0.03));
+    }
+
+    .config-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .config-row:last-child { border-bottom: none; }
+    .config-row:hover { background: rgba(255,255,255,0.03); }
+    .config-row.no-hover { cursor: default; }
+    .config-row.no-hover:hover { background: none; }
+
+    .config-row-left { display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0; }
+    .config-row-icon {
+      width: 40px; height: 40px;
+      border-radius: 12px;
       display: flex; align-items: center; justify-content: center;
-      border: 1px solid rgba(255,255,255,0.1);
+      font-size: 18px;
+      flex-shrink: 0;
     }
-    #flashCameraPreview {
-      width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1);
+    .config-row-text { flex: 1; min-width: 0; }
+    .config-row-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin: 0 0 2px;
     }
-    .camera-recording-badge {
-      position: absolute; top: 20px; left: 20px;
-      background: rgba(224, 36, 94, 0.85); padding: 6px 14px;
-      border-radius: 20px; font-size: 13px; font-weight: 700;
-      display: none; align-items: center; gap: 6px;
+    .config-row-desc {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 260px;
     }
-    .camera-controls-bottom {
-      width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: 20px; align-items: center;
+    .config-row-arrow {
+      color: var(--text-secondary);
+      font-size: 18px;
+      flex-shrink: 0;
     }
-    .camera-modes-row {
-      display: flex; gap: 24px; background: rgba(255,255,255,0.06); padding: 4px 8px; border-radius: 25px;
+
+    /* Sub-views dentro de "Conta" */
+    .config-subview {
+      display: none;
+      padding: 0 0 40px;
     }
-    .camera-mode-btn {
-      background: none; border: none; color: rgba(255,255,255,0.5); padding: 6px 16px;
-      font-size: 13px; font-weight: 700; cursor: pointer; border-radius: 20px; transition: all 0.2s;
+    .config-subview.active {
+      display: block;
     }
-    .camera-mode-btn.active {
-      background: white; color: black;
+
+    /* Inputs dentro das sub-views */
+    .config-field {
+      margin: 0 28px 14px;
     }
-    .camera-actions-row {
-      display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 0 30px 20px;
+    .config-field:first-child { margin-top: 24px; }
+    .config-field label {
+      display: block;
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--primary, #a31f4b);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
     }
-    .camera-trigger-btn {
-      width: 72px; height: 72px; border-radius: 50%; border: 5px solid white;
-      background: white; cursor: pointer; transition: all 0.2s; position: relative;
+    .config-field input {
+      width: 100%;
+      box-sizing: border-box;
+      background: var(--dark-bg, #0d0d0d);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      color: var(--text-primary);
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
     }
-    .camera-trigger-btn:active { transform: scale(0.9); }
-    .camera-trigger-btn.mode-video { background: #e0245e; border-color: rgba(255,255,255,0.4); }
-    .camera-trigger-btn.recording { border-radius: 12px; background: #e0245e; width: 50px; height: 50px; }
+    .config-field input:focus { border-color: var(--primary, #a31f4b); }
+    .config-field input:disabled {
+      color: var(--text-secondary);
+      cursor: not-allowed;
+      background: rgba(255,255,255,0.02);
+    }
+
+    .config-action-btn {
+      display: block;
+      width: calc(100% - 56px);
+      margin: 20px 28px 0;
+      padding: 13px;
+      border-radius: 99px;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.2s, transform 0.15s;
+      text-align: center;
+    }
+    .config-action-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+    .config-action-btn.primary {
+      background: var(--primary, #a31f4b);
+      color: white;
+    }
+    .config-action-btn.danger {
+      background: #e0245e;
+      color: white;
+    }
+    .config-action-btn.ghost {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+    }
+
+    .config-helper {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin: 8px 28px 0;
+      line-height: 1.6;
+    }
+
+    /* Info card (banner de aviso) */
+    .config-info-banner {
+      margin: 20px 28px;
+      padding: 16px 18px;
+      border-radius: 14px;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+    .config-info-banner.warning {
+      background: rgba(224,36,94,0.08);
+      border: 1px solid rgba(224,36,94,0.2);
+    }
+    .config-info-banner.info {
+      background: rgba(29,155,240,0.08);
+      border: 1px solid rgba(29,155,240,0.2);
+    }
+    .config-info-banner .cib-icon { font-size: 22px; flex-shrink: 0; margin-top: 2px; }
+    .config-info-banner .cib-body p { margin: 0 0 4px; font-size: 13px; color: var(--text-primary); font-weight: 700; }
+    .config-info-banner .cib-body span { font-size: 12px; color: var(--text-secondary); line-height: 1.6; }
+
+    /* Lista de itens de info (ícone + texto) */
+    .config-list-card {
+      margin: 16px 28px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    .config-list-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 13px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+      color: var(--text-primary);
+    }
+    .config-list-item:last-child { border-bottom: none; }
+
+    /* Toggle switch bonito */
+    .toggle-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .toggle-wrap:last-child { border-bottom: none; }
+    .toggle-wrap-text p { font-weight: 700; font-size: 15px; color: var(--text-primary); margin: 0 0 4px; }
+    .toggle-wrap-text span { font-size: 12px; color: var(--text-secondary); line-height: 1.5; max-width: 340px; display: block; }
+    .toggle-switch { position: relative; display: flex; align-items: center; cursor: pointer; flex-shrink: 0; }
+    .toggle-switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+    .toggle-track {
+      display: inline-block;
+      width: 46px; height: 26px;
+      background: var(--border);
+      border-radius: 13px;
+      transition: background 0.25s;
+      position: relative;
+    }
+    .toggle-thumb {
+      position: absolute; top: 3px; left: 3px;
+      width: 20px; height: 20px;
+      background: white; border-radius: 50%;
+      transition: transform 0.25s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.35);
+    }
+
+    /* Pending requests panel */
+    #pendingRequestsPanel {
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* Danger zone */
+    .danger-zone-card {
+      margin: 20px 28px;
+      border: 1px solid rgba(224,36,94,0.25);
+      border-radius: 16px;
+      overflow: hidden;
+      background: rgba(224,36,94,0.04);
+    }
+    .danger-zone-title {
+      padding: 12px 18px;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #e0245e;
+      border-bottom: 1px solid rgba(224,36,94,0.15);
+    }
   </style>
-</head>
 </head>
 
 <body>
   <div class="app-container">
 
-    <!-- ══════════════════════════════════════════════
-         SIDEBAR ESQUERDA
-    ══════════════════════════════════════════════ -->
+    <!-- ══ SIDEBAR ESQUERDA ══ -->
     <aside class="sidebar">
       <div class="sidebar-header">
         <div class="logo">
@@ -83,72 +369,47 @@
 
       <nav class="nav-menu">
         <a href="#home" class="nav-item active" data-page="home">
-          <span class="nav-icon">⌂</span>
-          <span class="nav-label">Início</span>
+          <span class="nav-icon">⌂</span><span class="nav-label">Início</span>
         </a>
         <a href="#explore" class="nav-item" data-page="explore">
-          <span class="nav-icon">◉</span>
-          <span class="nav-label">Explorar</span>
+          <span class="nav-icon">◉</span><span class="nav-label">Explorar</span>
         </a>
         <a href="#messages" class="nav-item" data-page="messages">
-          <span class="nav-icon">✉</span>
-          <span class="nav-label">Mensagens</span>
+          <span class="nav-icon">✉</span><span class="nav-label">Mensagens</span>
         </a>
         <a href="#profile" class="nav-item" data-page="profile">
-          <span class="nav-icon">◎</span>
-          <span class="nav-label">Perfil</span>
+          <span class="nav-icon">◎</span><span class="nav-label">Perfil</span>
         </a>
-
         <a href="#notifications" class="notif-bell-wrapper" id="notifBellBtn">
           <span class="notif-bell-icon">🔔</span>
           <span class="nav-label">Notificações</span>
           <span class="notif-badge" id="notifBadge">0</span>
         </a>
-
         <a href="#settings" class="nav-item" data-page="settings">
-          <span class="nav-icon">⚙️</span>
-          <span class="nav-label">Configurações</span>
+          <span class="nav-icon">⚙️</span><span class="nav-label">Configurações</span>
         </a>
-
         <div class="nav-item-theme" id="themeNavBtn">
-          <span class="nav-icon">🎨</span>
-          <span class="nav-label">Tema</span>
-
+          <span class="nav-icon">🎨</span><span class="nav-label">Tema</span>
           <div class="theme-nav-panel" id="themeNavPanel">
             <div class="theme-nav-indicator" id="themeNavIndicator"></div>
-            <div class="theme-opt" data-theme="padrao" style="background:#a31f4b;" title="Vinho"></div>
-            <div class="theme-opt" data-theme="azul" style="background:#1f5aa3;" title="Azul"></div>
-            <div class="theme-opt" data-theme="cinza" style="background:#888888;" title="Cinza"></div>
-            <div class="theme-opt" data-theme="amarelo" style="background:#b8860b;" title="Amarelo"></div>
+            <div class="theme-opt" data-theme="padrao"        style="background:#a31f4b;"                                                              title="Vinho"></div>
+            <div class="theme-opt" data-theme="azul"          style="background:#1f5aa3;"                                                              title="Azul"></div>
+            <div class="theme-opt" data-theme="cinza"         style="background:#888888;"                                                              title="Cinza"></div>
+            <div class="theme-opt" data-theme="amarelo"       style="background:#b8860b;"                                                              title="Amarelo"></div>
             <div class="theme-nav-divider"></div>
-            <div class="theme-opt" data-theme="padrao-claro"
-              style="background:linear-gradient(135deg,#a31f4b 50%,#f4f6f8 50%);border:1px solid #dce0e4!important;"
-              title="Vinho Claro"></div>
-            <div class="theme-opt" data-theme="azul-claro"
-              style="background:linear-gradient(135deg,#1f5aa3 50%,#f0f4f8 50%);border:1px solid #d7e2ea!important;"
-              title="Azul Claro"></div>
-            <div class="theme-opt" data-theme="cinza-claro"
-              style="background:linear-gradient(135deg,#555555 50%,#f5f5f5 50%);border:1px solid #e0e0e0!important;"
-              title="Cinza Claro"></div>
-            <div class="theme-opt" data-theme="amarelo-claro"
-              style="background:linear-gradient(135deg,#b8860b 50%,#fcfbf7 50%);border:1px solid #e8e4d3!important;"
-              title="Amarelo Claro"></div>
+            <div class="theme-opt" data-theme="padrao-claro"  style="background:linear-gradient(135deg,#a31f4b 50%,#f4f6f8 50%);border:1px solid #dce0e4!important;"  title="Vinho Claro"></div>
+            <div class="theme-opt" data-theme="azul-claro"    style="background:linear-gradient(135deg,#1f5aa3 50%,#f0f4f8 50%);border:1px solid #d7e2ea!important;"  title="Azul Claro"></div>
+            <div class="theme-opt" data-theme="cinza-claro"   style="background:linear-gradient(135deg,#555555 50%,#f5f5f5 50%);border:1px solid #e0e0e0!important;"  title="Cinza Claro"></div>
+            <div class="theme-opt" data-theme="amarelo-claro" style="background:linear-gradient(135deg,#b8860b 50%,#fcfbf7 50%);border:1px solid #e8e4d3!important;"  title="Amarelo Claro"></div>
           </div>
         </div>
       </nav>
-      <button id="postBtnSidebar" style="
-  display:flex;align-items:center;justify-content:center;gap:8px;
-  width:calc(100% - 32px);margin:8px 16px 4px;
-  background:var(--primary);color:white;border:none;
-  border-radius:99px;padding:12px 20px;
-  font-size:15px;font-weight:800;cursor:pointer;
-  transition:opacity 0.2s;
-" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
-  ✦ Postar
-</button>
+
+      <button id="postBtnSidebar" style="display:flex;align-items:center;justify-content:center;gap:8px;width:calc(100% - 32px);margin:8px 16px 4px;background:var(--primary);color:white;border:none;border-radius:99px;padding:12px 20px;font-size:15px;font-weight:800;cursor:pointer;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+        ✦ Postar
+      </button>
       <button class="nav-premium-btn" onclick="window.location.href='../premium.html'">
-        <span>✦</span>
-        <span>Premium</span>
+        <span>✦</span><span>Premium</span>
       </button>
 
       <!-- Painel de Notificações -->
@@ -160,67 +421,44 @@
             <button class="notif-mark-all-btn" id="notifMarkAllBtn">Marcar todas como lidas</button>
           </div>
           <div class="notif-list" id="notifList">
-            <div class="notif-empty">
-              <span class="notif-empty-icon">🔔</span>
-              Carregando...
-            </div>
+            <div class="notif-empty"><span class="notif-empty-icon">🔔</span>Carregando...</div>
           </div>
         </div>
       </div>
 
-      <div class="sidebar-footer" style="position: relative;">
+      <div class="sidebar-footer" style="position:relative;">
+        <div class="user-login-popup" id="userLoginPopup">
+          <p>Faça login para interagir, curtir fofocas e ter o seu próprio perfil na PUC!</p>
+          <button id="btnPopupLogin" class="btn-primary" style="width:100%;">Entrar na Conta</button>
+        </div>
 
-  <!-- Popup de login (não logado) -->
-  <div class="user-login-popup" id="userLoginPopup">
-    <p>Faça login para interagir, curtir fofocas e ter o seu próprio perfil na PUC!</p>
-    <button id="btnPopupLogin" class="btn-primary" style="width: 100%;">Entrar na Conta</button>
-  </div>
+        <div id="logoutModal" style="display:none;position:absolute;bottom:calc(100% + 12px);left:0;right:0;background:var(--dark-bg-secondary);border:1px solid var(--border);border-radius:20px;padding:20px;box-shadow:0 -8px 32px rgba(0,0,0,0.4);z-index:200;animation:slideUp 0.2s ease;">
+          <p style="font-size:14px;color:var(--text-secondary);margin-bottom:16px;line-height:1.5;">
+            Deseja sair do perfil <strong id="logoutUserName" style="color:var(--text-primary);"></strong>?
+          </p>
+          <div style="display:flex;gap:10px;">
+            <button id="cancelLogoutBtn" class="btn-secondary" style="flex:1;">Cancelar</button>
+            <button id="confirmLogoutBtn" class="btn-primary" style="flex:1;background:linear-gradient(135deg,#e74c3c,#c0392b);">Sair</button>
+          </div>
+        </div>
 
-  <!-- Popup de logout (logado) — flutua acima do user-mini -->
-  <div id="logoutModal" style="
-    display: none;
-    position: absolute;
-    bottom: calc(100% + 12px);
-    left: 0; right: 0;
-    background: var(--dark-bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 20px;
-    box-shadow: 0 -8px 32px rgba(0,0,0,0.4);
-    z-index: 200;
-    animation: slideUp 0.2s ease;
-  ">
-    <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.5;">
-      Deseja sair do perfil 
-      <strong id="logoutUserName" style="color: var(--text-primary);"></strong>?
-    </p>
-    <div style="display: flex; gap: 10px;">
-      <button id="cancelLogoutBtn" class="btn-secondary" style="flex: 1;">Cancelar</button>
-      <button id="confirmLogoutBtn" class="btn-primary" style="flex: 1; background: linear-gradient(135deg, #e74c3c, #c0392b);">Sair</button>
-    </div>
-  </div>
-
-  <!-- user-mini (não muda nada) -->
-  <div class="user-mini">
-    <div class="user-avatar">
-      <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=currentuser" alt="Você">
-    </div>
-    <div class="user-info">
-      <p class="user-name">Seu Usuário</p>
-      <p class="user-handle">@seu_handle</p>
-    </div>
-  </div>
-
-</div>
+        <div class="user-mini">
+          <div class="user-avatar">
+            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=currentuser" alt="Você">
+          </div>
+          <div class="user-info">
+            <p class="user-name">Seu Usuário</p>
+            <p class="user-handle">@seu_handle</p>
+          </div>
+        </div>
+      </div>
     </aside>
 
-    <!-- ══════════════════════════════════════════════
-         CONTEÚDO PRINCIPAL
-    ══════════════════════════════════════════════ -->
+    <!-- ══ CONTEÚDO PRINCIPAL ══ -->
     <main class="main-content">
 
-      <!-- ── FEED HOME ── -->
-<div class="page-container active" id="home-page">
+      <!-- FEED HOME -->
+      <div class="page-container active" id="home-page">
         <header class="feed-header">
           <h2>Seu Feed</h2>
           <div class="tabs">
@@ -229,26 +467,21 @@
             <button class="tab-btn" data-tab="flashes">⚡ Flashes</button>
           </div>
         </header>
-        
-
         <div class="feed">
           <div class="posts-container" id="postsContainer"></div>
         </div>
       </div>
 
-      <!-- ── EXPLORAR ── -->
-<div class="page-container" id="explore-page">
-        <header class="feed-header" style="padding: 16px 20px; position: sticky; top: 0; z-index: 100; background-color: rgba(var(--dark-bg-secondary), 0.85); margin-bottom: 20px;">
+      <!-- EXPLORAR -->
+      <div class="page-container" id="explore-page">
+        <header class="feed-header" style="padding:16px 20px;position:sticky;top:0;z-index:100;background-color:rgba(var(--dark-bg-secondary),0.85);margin-bottom:20px;">
           <div class="search-box-container">
             <div class="search-box">
               <span class="search-icon">🔍</span>
               <input type="text" placeholder="Procurar usuários, posts, hashtags..." class="search-input" id="searchInput">
             </div>
-            
             <div class="search-location-wrapper">
-              <button class="search-options-btn" id="searchLocationBtn" title="Filtrar por Campus PUC">
-                ⋮
-              </button>
+              <button class="search-options-btn" id="searchLocationBtn" title="Filtrar por Campus PUC">⋮</button>
               <div class="search-location-menu" id="searchLocationMenu">
                 <div class="search-location-header">Filtrar por Campus</div>
                 <button class="location-item active" data-puc="PUC-PR">📍 PUC-PR (Geral)</button>
@@ -263,31 +496,25 @@
         <div class="explore-content" id="exploreContent"></div>
       </div>
 
-      <!-- ── MENSAGENS ── -->
-<div class="page-container" id="messages-page">
-        <header class="feed-header">
-          <h2>Mensagens</h2>
-        </header>
+      <!-- MENSAGENS -->
+      <div class="page-container" id="messages-page">
+        <header class="feed-header"><h2>Mensagens</h2></header>
         <div class="messages-wrapper">
-
           <div class="conversations-list" id="conversationsList"></div>
           <div class="chat-area" id="chatArea">
-            <div class="empty-chat">
-              <p>Selecione uma conversa para começar</p>
-            </div>
+            <div class="empty-chat"><p>Selecione uma conversa para começar</p></div>
           </div>
         </div>
       </div>
 
-      <!-- ── PERFIL ── -->
+      <!-- PERFIL -->
       <div class="page-container" id="profile-page">
         <div class="profile-container">
           <div class="profile-header">
             <div class="profile-cover" id="profileCoverBg"></div>
             <div class="profile-info">
               <div class="profile-action-row">
-                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=currentuser" alt="Avatar"
-                  class="profile-avatar">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=currentuser" alt="Avatar" class="profile-avatar">
                 <button class="edit-profile-btn" id="editProfileBtn">Editar Perfil</button>
               </div>
               <div class="profile-details">
@@ -295,12 +522,10 @@
                 <p id="profileHandle">@seu_handle</p>
                 <p id="profileBio">Bio do seu perfil aqui...</p>
                 <div class="profile-stats">
-                  <div class="stat" id="btnShowFollowing" style="cursor:pointer;transition:opacity 0.2s;"
-                    onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">
+                  <div class="stat" id="btnShowFollowing" style="cursor:pointer;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">
                     <span class="stat-value">0</span><span class="stat-label">Seguindo</span>
                   </div>
-                  <div class="stat" id="btnShowFollowers" style="cursor:pointer;transition:opacity 0.2s;"
-                    onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">
+                  <div class="stat" id="btnShowFollowers" style="cursor:pointer;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">
                     <span class="stat-value">0</span><span class="stat-label">Seguidores</span>
                   </div>
                 </div>
@@ -314,278 +539,262 @@
             </div>
           </div>
         </div>
-      </div> <!-- ✅ fecha profile-page AQUI -->
+      </div>
 
-      <!-- ── CONFIGURAÇÕES ── -->
+      <!-- ══════════════════════════════════════════
+           CONFIGURAÇÕES — REFORMULADO
+      ══════════════════════════════════════════ -->
       <div class="page-container" id="settings-page">
-        <header class="feed-header">
-          <h2>Configurações</h2>
-        </header>
+        <header class="feed-header"><h2>Configurações</h2></header>
 
-        <div class="settings-container" style="display: flex; min-height: calc(100vh - 60px);">
+        <div class="settings-page-wrap">
 
-          <div class="settings-sidebar"
-            style="width: 250px; border-right: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; gap: 10px;">
-            <button class="settings-tab-btn active" data-settings-tab="conta"
-              style="background: none; border: none; text-align: left; padding: 12px; color: var(--text-primary); cursor: pointer; border-radius: 8px; font-size: 15px; font-weight: bold;">👤
-              Sua Conta</button>
-            <button class="settings-tab-btn" data-settings-tab="privacidade"
-              style="background: none; border: none; text-align: left; padding: 12px; color: var(--text-secondary); cursor: pointer; border-radius: 8px; font-size: 15px;">🔒
-              Privacidade</button>
-            <button class="settings-tab-btn" data-settings-tab="notificacoes"
-              style="background: none; border: none; text-align: left; padding: 12px; color: var(--text-secondary); cursor: pointer; border-radius: 8px; font-size: 15px;">🔔
-              Notificações</button>
-          </div>
+          <!-- ── Nav lateral ── -->
+          <nav class="settings-nav">
+            <div class="settings-nav-label">Conta</div>
 
-          <div class="settings-content" style="flex: 1; position: relative;">
+            <button class="settings-nav-btn active" data-sview="sv-info-conta">
+              <span class="snb-icon">👤</span> Informações da conta
+            </button>
+            <button class="settings-nav-btn" data-sview="sv-senha">
+              <span class="snb-icon">🔑</span> Alterar senha
+            </button>
 
-            <div class="settings-section active" id="settings-conta">
+            <div class="settings-nav-divider"></div>
+            <div class="settings-nav-label">Segurança</div>
 
-              <div class="feed-header"
-                style="border-bottom: 1px solid var(--border); padding: 15px 20px; display: flex; align-items: center; gap: 15px; position: sticky; top: 0; background: var(--dark-bg); z-index: 10;">
-                <button id="btnVoltarConfig" class="icon-btn"
-                  style="display: none; background: none; border: none; cursor: pointer; color: var(--text-primary);"
-                  onclick="mudarTelaConfig('config-lista')">
-                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                    <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
-                  </svg>
-                </button>
-                <h3 id="configTitulo"
-                  style="font-size: 1.1rem; font-weight: 800; margin: 0; color: var(--text-primary);">Informações
-                  gerais</h3>
+            <button class="settings-nav-btn" data-sview="sv-privacidade">
+              <span class="snb-icon">🔒</span> Privacidade
+            </button>
+
+            <div class="settings-nav-divider"></div>
+            <div class="settings-nav-label">Mais</div>
+
+            <button class="settings-nav-btn" data-sview="sv-notificacoes">
+              <span class="snb-icon">🔔</span> Notificações
+            </button>
+            <button class="settings-nav-btn" data-sview="sv-desativar">
+              <span class="snb-icon">😴</span> Desativar conta
+            </button>
+            <button class="settings-nav-btn" data-sview="sv-excluir" style="color:#e0245e;">
+              <span class="snb-icon">🗑️</span> Excluir conta
+            </button>
+          </nav>
+
+          <!-- ── Painel de conteúdo ── -->
+          <div class="settings-panel">
+
+            <!-- ════ VIEW: Informações da conta ════ -->
+            <div class="settings-view active" id="sv-info-conta">
+              <div class="settings-view-header">
+                <h3>👤 Informações da conta</h3>
               </div>
 
-              <div class="config-view active" id="config-lista">
-                <div class="config-option" onclick="mudarTelaConfig('config-info')"
-                  style="padding: 15px 20px; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
-                  <div class="config-info" style="display: flex; flex-direction: column; gap: 4px;">
-                    <span class="config-title" style="font-weight: bold; color: var(--text-primary);">Informações
-                      da conta</span>
-                    <span class="config-desc" style="font-size: 0.85rem; color: var(--text-secondary);">Veja seu
-                      nome de usuário e e-mail.</span>
+              <div class="config-info-banner info">
+                <span class="cib-icon">ℹ️</span>
+                <div class="cib-body">
+                  <p>Seus dados cadastrais</p>
+                  <span>Essas informações são usadas para identificar sua conta no VazaPUC. O e-mail não pode ser alterado por aqui.</span>
+                </div>
+              </div>
+
+              <div class="config-card">
+                <div class="config-row no-hover">
+                  <div class="config-row-left">
+                    <div class="config-row-icon" style="background:rgba(29,155,240,0.12);">📧</div>
+                    <div class="config-row-text">
+                      <p class="config-row-title">E-mail da conta</p>
+                      <p class="config-row-desc" id="infoEmailDisplay">Carregando...</p>
+                    </div>
                   </div>
-                  <span class="config-chevron" style="color: var(--text-secondary); font-size: 1.2rem;">›</span>
                 </div>
-
-                <div class="config-option" onclick="mudarTelaConfig('config-senha')"
-                  style="padding: 15px 20px; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
-                  <div class="config-info" style="display: flex; flex-direction: column; gap: 4px;">
-                    <span class="config-title" style="font-weight: bold; color: var(--text-primary);">Alterar sua
-                      senha</span>
-                    <span class="config-desc" style="font-size: 0.85rem; color: var(--text-secondary);">Altere sua
-                      senha de acesso a qualquer momento.</span>
+                <div class="config-row no-hover">
+                  <div class="config-row-left">
+                    <div class="config-row-icon" style="background:rgba(163,31,75,0.12);">🏷️</div>
+                    <div class="config-row-text">
+                      <p class="config-row-title">Nome de usuário</p>
+                      <p class="config-row-desc" id="infoHandleDisplay">Carregando...</p>
+                    </div>
                   </div>
-                  <span class="config-chevron" style="color: var(--text-secondary); font-size: 1.2rem;">›</span>
                 </div>
-
-                <div class="config-option"
-                  style="padding: 15px 20px; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
-                  <div class="config-info" style="display: flex; flex-direction: column; gap: 4px;">
-                    <span class="config-title" style="font-weight: bold; color: #f4212e;">Desativar sua
-                      conta</span>
-                    <span class="config-desc" style="font-size: 0.85rem; color: var(--text-secondary);">Veja como
-                      você pode encerrar sua conta.</span>
+                <div class="config-row no-hover">
+                  <div class="config-row-left">
+                    <div class="config-row-icon" style="background:rgba(23,191,99,0.12);">📅</div>
+                    <div class="config-row-text">
+                      <p class="config-row-title">Membro desde</p>
+                      <p class="config-row-desc" id="infoCreatedDisplay">Carregando...</p>
+                    </div>
                   </div>
-                  <span class="config-chevron" style="color: var(--text-secondary); font-size: 1.2rem;">›</span>
                 </div>
               </div>
 
-              <div class="config-view" id="config-info" style="display: none; padding: 20px;">
-                <p class="config-help-text"
-                  style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 20px;">Estes são os
-                  detalhes da sua conta no VazaPUC.</p>
-                <div class="form-group-config" style="margin-bottom: 15px;">
-                  <label
-                    style="display: block; font-size: 0.75rem; color: var(--primary); margin-bottom: 5px; text-transform: uppercase; font-weight: bold;">Nome
-                    de Usuário</label>
-                  <input type="text" id="configHandle" class="auth-input" disabled
-                    style="background: var(--dark-bg-tertiary); border: 1px solid var(--border); padding: 12px; width: 100%; border-radius: 8px; color: var(--text-secondary); cursor: not-allowed;">
-                </div>
-                <div class="form-group-config" style="margin-bottom: 15px;">
-                  <label
-                    style="display: block; font-size: 0.75rem; color: var(--primary); margin-bottom: 5px; text-transform: uppercase; font-weight: bold;">E-mail</label>
-                  <input type="text" id="configEmail" class="auth-input" disabled
-                    style="background: var(--dark-bg-tertiary); border: 1px solid var(--border); padding: 12px; width: 100%; border-radius: 8px; color: var(--text-secondary); cursor: not-allowed;">
-                </div>
-              </div>
-
-              <div class="config-view" id="config-senha" style="display: none; padding: 20px;">
-                <p class="config-help-text"
-                  style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 20px;">Você pode
-                  atualizar sua senha aqui. Use pelo menos 6 caracteres.</p>
-                <div class="form-group-config" style="margin-bottom: 15px;">
-                  <label
-                    style="display: block; font-size: 0.75rem; color: var(--primary); margin-bottom: 5px; text-transform: uppercase; font-weight: bold;">Nova
-                    Senha</label>
-                  <input type="password" id="configNewPassword" class="auth-input" placeholder="Digite a nova senha"
-                    style="background: var(--dark-bg); border: 1px solid var(--border); padding: 12px; width: 100%; border-radius: 8px; color: var(--text-primary); outline: none;">
-                </div>
-                <div class="form-group-config" style="margin-bottom: 25px;">
-                  <label
-                    style="display: block; font-size: 0.75rem; color: var(--primary); margin-bottom: 5px; text-transform: uppercase; font-weight: bold;">Confirmar
-                    Senha</label>
-                  <input type="password" id="configConfirmPassword" class="auth-input" placeholder="Repita a nova senha"
-                    style="background: var(--dark-bg); border: 1px solid var(--border); padding: 12px; width: 100%; border-radius: 8px; color: var(--text-primary); outline: none;">
-                </div>
-                <button class="btn btn-primary"
-                  style="width: 100%; padding: 12px; border-radius: 99px; font-weight: bold; cursor: pointer; border: none; background: var(--primary); color: white;"
-                  onclick="atualizarSenhaSupabase()">Salvar Nova Senha</button>
-              </div>
+              <p class="config-helper">Para alterar seu e-mail, entre em contato com o suporte do VazaPUC.</p>
             </div>
-            <div class="settings-section" id="settings-privacidade">
 
-              <!-- Cabeçalho -->
-              <div class="feed-header" style="
-    border-bottom:1px solid var(--border);
-    padding:15px 20px;
-    position:sticky;top:0;
-    background:var(--dark-bg);z-index:10;
-  ">
-                <h3 style="font-size:1.1rem;font-weight:800;margin:0;color:var(--text-primary);">
-                  Privacidade e Segurança
-                </h3>
+            <!-- ════ VIEW: Alterar senha ════ -->
+            <div class="settings-view" id="sv-senha">
+              <div class="settings-view-header">
+                <h3>🔑 Alterar senha</h3>
               </div>
 
-              <div style="padding:0;">
+              <div class="config-info-banner info">
+                <span class="cib-icon">💡</span>
+                <div class="cib-body">
+                  <p>Use uma senha forte</p>
+                  <span>Mínimo de 6 caracteres. Misture letras, números e símbolos para maior segurança.</span>
+                </div>
+              </div>
 
-                <!-- ── Toggle: Conta privada ─────────────────────────── -->
-                <div style="
-      padding:18px 20px;
-      border-bottom:1px solid var(--border);
-      display:flex;justify-content:space-between;align-items:center;gap:16px;
-    ">
-                  <div>
-                    <p style="font-weight:700;font-size:15px;color:var(--text-primary);margin:0 0 4px;">
-                      🔒 Conta privada
-                    </p>
-                    <p style="font-size:13px;color:var(--text-secondary);margin:0;line-height:1.5;max-width:380px;">
-                      Quando ativado, apenas pessoas que você aprovar poderão ver seus posts e seguir você.
-                      Solicitações de seguimento aparecem para você aprovar manualmente.
-                    </p>
+              <div class="config-field">
+                <label>Nova senha</label>
+                <input type="password" id="configNewPassword" placeholder="Digite a nova senha">
+              </div>
+              <div class="config-field">
+                <label>Confirmar nova senha</label>
+                <input type="password" id="configConfirmPassword" placeholder="Repita a nova senha">
+              </div>
+
+              <button class="config-action-btn primary" onclick="atualizarSenhaSupabase()">
+                Salvar nova senha
+              </button>
+            </div>
+
+            <!-- ════ VIEW: Privacidade ════ -->
+            <div class="settings-view" id="sv-privacidade">
+              <div class="settings-view-header">
+                <h3>🔒 Privacidade e Segurança</h3>
+              </div>
+
+              <div class="config-card" style="margin-top:24px;">
+                <div class="toggle-wrap">
+                  <div class="toggle-wrap-text">
+                    <p>🔒 Conta privada</p>
+                    <span>Quando ativado, apenas pessoas que você aprovar poderão ver seus posts e seguir você.</span>
                   </div>
-
-                  <!-- Toggle switch -->
-                  <label style="
-        position:relative;display:flex;align-items:center;
-        cursor:pointer;flex-shrink:0;
-      ">
-                    <input type="checkbox" id="privacyToggle" style="position:absolute;opacity:0;width:0;height:0;">
-                    <span id="privacyTrack" style="
-          display:inline-block;
-          width:46px;height:26px;
-          background:var(--border);
-          border-radius:13px;
-          transition:background 0.25s;
-          position:relative;
-        ">
-                      <span id="privacyThumb" style="
-            position:absolute;top:3px;left:3px;
-            width:20px;height:20px;
-            background:white;
-            border-radius:50%;
-            transition:transform 0.25s;
-            box-shadow:0 1px 3px rgba(0,0,0,0.35);
-          "></span>
+                  <label class="toggle-switch">
+                    <input type="checkbox" id="privacyToggle">
+                    <span class="toggle-track" id="privacyTrack">
+                      <span class="toggle-thumb" id="privacyThumb"></span>
                     </span>
                   </label>
                 </div>
+              </div>
 
-                <!-- ── Solicitações pendentes ─────────────────────────── -->
-                <div style="
-      padding:16px 20px;
-      border-bottom:1px solid var(--border);
-      display:flex;justify-content:space-between;align-items:center;
-      cursor:pointer;
-    " id="pendingRequestsRow" onclick="togglePendingPanel()">
-                  <div>
-                    <p style="font-weight:700;font-size:15px;color:var(--text-primary);margin:0 0 3px;">
-                      👥 Solicitações de seguimento
-                    </p>
-                    <p style="font-size:13px;color:var(--text-secondary);margin:0;">
-                      Aceite ou recuse quem quer seguir você.
-                    </p>
+              <!-- Solicitações pendentes -->
+              <div class="config-card" style="margin-top:16px;">
+                <div class="config-row" id="pendingRequestsRow" onclick="togglePendingPanel()">
+                  <div class="config-row-left">
+                    <div class="config-row-icon" style="background:rgba(163,31,75,0.12);">👥</div>
+                    <div class="config-row-text">
+                      <p class="config-row-title">Solicitações de seguimento</p>
+                      <p class="config-row-desc">Aceite ou recuse quem quer seguir você</p>
+                    </div>
                   </div>
                   <div style="display:flex;align-items:center;gap:10px;">
-                    <span id="pendingRequestsBadge" style="
-          display:none;
-          background:var(--primary);color:white;
-          font-size:11px;font-weight:800;
-          padding:2px 8px;border-radius:10px;
-          min-width:20px;text-align:center;
-        "></span>
-                    <span id="pendingChevron"
-                      style="color:var(--text-secondary);font-size:18px;transition:transform 0.2s;">›</span>
+                    <span id="pendingRequestsBadge" style="display:none;background:var(--primary);color:white;font-size:11px;font-weight:800;padding:2px 8px;border-radius:10px;min-width:20px;text-align:center;"></span>
+                    <span id="pendingChevron" style="color:var(--text-secondary);font-size:18px;transition:transform 0.2s;">›</span>
                   </div>
                 </div>
+              </div>
+              <div id="pendingRequestsPanel" style="display:none;margin:0 28px;border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-top:8px;"></div>
 
-                <!-- Painel expansível de solicitações -->
-                <div id="pendingRequestsPanel" style="
-      display:none;
-      border-bottom:1px solid var(--border);
-    "></div>
-
-                <!-- ── Posts privados (info) ──────────────────────────── -->
-                <div style="
-      padding:16px 20px;
-      border-bottom:1px solid var(--border);
-    ">
-                  <p style="font-weight:700;font-size:15px;color:var(--text-primary);margin:0 0 4px;">
-                    📌 Como funciona a conta privada
-                  </p>
-                  <ul style="
-        font-size:13px;color:var(--text-secondary);
-        margin:8px 0 0;padding-left:20px;
-        line-height:1.8;
-      ">
-                    <li>Visitantes verão apenas seu nome, handle e foto.</li>
-                    <li>Posts, curtidas e seguidores ficam ocultos.</li>
-                    <li>Seguidores atuais continuam podendo ver seus posts.</li>
-                    <li>Novos seguidores precisam de sua aprovação.</li>
-                    <li>Você pode aceitar ou rejeitar cada solicitação individualmente.</li>
-                  </ul>
+              <!-- Como funciona -->
+              <div class="config-info-banner info" style="margin-top:16px;">
+                <span class="cib-icon">📌</span>
+                <div class="cib-body">
+                  <p>Como funciona a conta privada</p>
+                  <span>
+                    Visitantes verão apenas seu nome e foto.<br>
+                    Posts e seguidores ficam ocultos.<br>
+                    Novos seguidores precisam da sua aprovação.
+                  </span>
                 </div>
-
               </div>
             </div>
 
-            <div class="settings-section" id="settings-notificacoes" style="display: none; padding: 20px;">
-              <h3>Notificações Push</h3>
-              <p style="color:var(--text-secondary); margin-bottom:20px; font-size: 0.9rem;">Escolha o que você
-                quer receber no seu feed e e-mail.</p>
-              <div class="settings-placeholder-box"
-                style="padding: 30px; border: 1px dashed var(--border); border-radius: 12px; text-align: center; color: var(--text-secondary);">
-                <p>Em breve: Alertas de menções, curtidas e novos seguidores.</p>
+            <!-- ════ VIEW: Notificações ════ -->
+            <div class="settings-view" id="sv-notificacoes">
+              <div class="settings-view-header">
+                <h3>🔔 Notificações</h3>
+              </div>
+              <div class="config-info-banner info" style="margin-top:24px;">
+                <span class="cib-icon">🚧</span>
+                <div class="cib-body">
+                  <p>Em breve</p>
+                  <span>Alertas de menções, curtidas e novos seguidores chegarão em breve.</span>
+                </div>
               </div>
             </div>
 
-          </div>
-        </div>
-      </div>
+            <!-- ════ VIEW: Desativar conta ════ -->
+            <div class="settings-view" id="sv-desativar">
+              <div class="settings-view-header">
+                <h3>😴 Desativar conta</h3>
+              </div>
+
+              <div class="config-info-banner warning" style="margin-top:24px;">
+                <span class="cib-icon">😴</span>
+                <div class="cib-body">
+                  <p>Desativação temporária</p>
+                  <span>Seu perfil ficará invisível para todos. Para reativar, é só fazer login novamente.</span>
+                </div>
+              </div>
+
+              <div class="config-list-card">
+                <div class="config-list-item"><span>👻</span> Perfil oculto para todos os usuários</div>
+                <div class="config-list-item"><span>💾</span> Posts, seguidores e dados preservados</div>
+                <div class="config-list-item"><span>🔓</span> Para reativar: só fazer login novamente</div>
+                <div class="config-list-item"><span>❌</span> Seus posts não aparecem no feed enquanto desativado</div>
+              </div>
+
+              <button class="config-action-btn danger" onclick="abrirModalDesativarConta()">
+                😴 Desativar minha conta
+              </button>
+            </div>
+
+            <!-- ════ VIEW: Excluir conta ════ -->
+            <div class="settings-view" id="sv-excluir">
+              <div class="settings-view-header">
+                <h3 style="color:#e0245e;">🗑️ Excluir conta</h3>
+              </div>
+
+              <div class="config-info-banner warning" style="margin-top:24px;">
+                <span class="cib-icon">⚠️</span>
+                <div class="cib-body">
+                  <p>Ação irreversível</p>
+                  <span>Ao excluir sua conta, todos os seus dados serão apagados permanentemente e não poderão ser recuperados.</span>
+                </div>
+              </div>
+
+              <div class="danger-zone-card">
+                <div class="danger-zone-title">O que será apagado para sempre</div>
+                <div class="config-list-item" style="border-bottom:1px solid rgba(224,36,94,0.12);"><span>📝</span> Todos os seus posts e respostas</div>
+                <div class="config-list-item" style="border-bottom:1px solid rgba(224,36,94,0.12);"><span>❤️</span> Todas as suas curtidas</div>
+                <div class="config-list-item" style="border-bottom:1px solid rgba(224,36,94,0.12);"><span>👥</span> Seus seguidores e seguindo</div>
+                <div class="config-list-item" style="border-bottom:1px solid rgba(224,36,94,0.12);"><span>💬</span> Todas as suas mensagens</div>
+                <div class="config-list-item"><span>🖼️</span> Foto de perfil e banner</div>
+              </div>
+
+              <button class="config-action-btn danger" onclick="abrirModalExcluirConta()">
+                🗑️ Excluir minha conta permanentemente
+              </button>
+              <p class="config-helper" style="color:#e0245e;margin-top:10px;">Esta ação não pode ser desfeita.</p>
+            </div>
+
+          </div><!-- /settings-panel -->
+        </div><!-- /settings-page-wrap -->
+      </div><!-- /settings-page -->
+
     </main>
 
-    <!-- ══════════════════════════════════════════════
-         SIDEBAR DIREITA — Widget de Blocos real
-    ══════════════════════════════════════════════ -->
+    <!-- ══ SIDEBAR DIREITA ══ -->
     <aside class="right-sidebar" id="rightSidebar">
-
-      <!--
-        Widget de Blocos #01–#10
-        Os dados (contagem) são injetados pelo home.js via
-        window.atualizarBlocosSidebar(contagem), mas já
-        renderizamos a estrutura estática aqui para que o layout
-        nunca apareça vazio antes do JS carregar.
-      -->
       <div id="blocosWidget">
         <h3>🏷️ Filtrar por Bloco</h3>
         <div class="bloco-list" id="blocoListaSidebar">
-          <!-- Renderizado pelo JS; fallback estático abaixo caso JS demore -->
-          <div style="color:var(--text-secondary,#888);font-size:12px;text-align:center;padding:8px 0;">
-            Carregando blocos...
-          </div>
+          <div style="color:var(--text-secondary,#888);font-size:12px;text-align:center;padding:8px 0;">Carregando blocos...</div>
         </div>
       </div>
-
-      <!-- Aviso oficial -->
       <div class="official-notices-widget">
         <h3>📌 Avisos Oficiais</h3>
         <div class="notices-list">
@@ -601,9 +810,7 @@
     </aside>
   </div>
 
-  <!-- ══════════════════════════════════════════════
-       MODAIS
-  ══════════════════════════════════════════════ -->
+  <!-- ══ MODAIS ══ -->
 
   <!-- Modal: Novo Post -->
   <div class="modal" id="postModal">
@@ -613,32 +820,18 @@
         <button class="modal-close" id="closePostModal">✕</button>
       </div>
       <div class="modal-body" id="modalComposerBody">
-        <textarea id="modalPostInput" placeholder="O que está em sua mente? Use #bloco 01 a #bloco 10!"
-          rows="8"></textarea>
-
-        <!-- Dica de blocos no modal -->
-        <div id="blocoModalHint"
-          style="display:none;padding:8px 12px;background:var(--dark-bg,#12121a);border:1px solid var(--border,#2a2a3e);border-radius:10px;margin:8px 0;gap:6px;flex-wrap:wrap;align-items:center;">
-          <span style="font-size:11px;color:var(--text-secondary,#888);margin-right:2px;white-space:nowrap;">🏷️
-            Blocos:</span>
+        <textarea id="modalPostInput" placeholder="O que está em sua mente? Use #bloco 01 a #bloco 10!" rows="8"></textarea>
+        <div id="blocoModalHint" style="display:none;padding:8px 12px;background:var(--dark-bg,#12121a);border:1px solid var(--border,#2a2a3e);border-radius:10px;margin:8px 0;gap:6px;flex-wrap:wrap;align-items:center;">
+          <span style="font-size:11px;color:var(--text-secondary,#888);margin-right:2px;white-space:nowrap;">🏷️ Blocos:</span>
         </div>
-
         <div id="modalImgPreview" style="display:none;flex-wrap:wrap;gap:8px;margin:10px 0;"></div>
-
         <div class="composer-toolbar-subbox">
           <button type="button" class="toolbar-btn" id="btnEmojiModal" title="Adicionar Emoji">😊</button>
-
-          <label for="modalFileInput" class="toolbar-btn" title="Adicionar Foto" style="cursor:pointer;">
-            📷
-
-          </label>
-
+          <label for="modalFileInput" class="toolbar-btn" title="Adicionar Foto" style="cursor:pointer;">📷</label>
           <input type="file" id="modalFileInput" accept="image/*" multiple style="display:none">
         </div>
-
         <div id="pickerEmojiModal" class="emoji-picker-container"></div>
       </div>
-
       <div class="modal-footer">
         <button class="btn-secondary" id="cancelPostBtn">Cancelar</button>
         <button class="btn-primary" id="submitPostBtn">Postar</button>
@@ -671,14 +864,11 @@
         <button class="modal-close" id="closeEditModal">✕</button>
       </div>
       <div class="modal-body">
-
         <div class="form-group">
           <label for="bannerInput">Banner do Perfil (Mínimo 1200x400px)</label>
           <input type="file" id="bannerInput" accept="image/*" />
-          <p style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">Recomendado: 1500x500px (Proporção
-            3:1)</p>
+          <p style="font-size:11px;color:var(--text-secondary);margin-top:4px;">Recomendado: 1500x500px (Proporção 3:1)</p>
         </div>
-
         <div class="form-group">
           <label>Foto de perfil</label>
           <input type="file" id="avatarInput" accept="image/*">
@@ -703,400 +893,514 @@
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════════════
-       TOAST DE NAVEGAÇÃO DE BLOCO
-       (aparece quando o usuário clica em uma hashtag no feed)
-  ══════════════════════════════════════════════ -->
   <div class="bloco-nav-toast" id="blocoNavToast"></div>
 
-  <!-- ══════════════════════════════════════════════
-       SCRIPTS
-  ══════════════════════════════════════════════ -->
+  <!-- ══ SCRIPTS ══ -->
   <script type="module" src="../js/home.js"></script>
   <script type="module" src="../js/settings-patch.js"></script>
 
-  <!--
-    Patch de integração: conecta o sistema de blocos do home.js
-    à sidebar direita e expõe helpers globais que o home.js usa.
-
-    Este bloco não usa módulos ES para ficar disponível
-    sincronamente após o módulo home.js inicializar.
-  -->
   <script>
-    (function () {
-
-      /* ── Definição local dos blocos (espelho do home.js) ────── */
-      var BLOCOS = [
-        { id: 'bloco-01', label: '#bloco 01', emoji: '🟥', cor: '#e0245e' },
-        { id: 'bloco-02', label: '#bloco 02', emoji: '🟧', cor: '#f4700f' },
-        { id: 'bloco-03', label: '#bloco 03', emoji: '🟨', cor: '#f5b700' },
-        { id: 'bloco-04', label: '#bloco 04', emoji: '🟩', cor: '#17bf63' },
-        { id: 'bloco-05', label: '#bloco 05', emoji: '🟦', cor: '#1d9bf0' },
-        { id: 'bloco-06', label: '#bloco 06', emoji: '🟪', cor: '#7856ff' },
-        { id: 'bloco-07', label: '#bloco 07', emoji: '🩷', cor: '#ff5eab' },
-        { id: 'bloco-08', label: '#bloco 08', emoji: '🤎', cor: '#a0522d' },
-        { id: 'bloco-09', label: '#bloco 09', emoji: '🩶', cor: '#8899aa' },
-        { id: 'bloco-10', label: '#bloco 10', emoji: '🖤', cor: '#dddddd' },
-      ];
-
-      /* ── Toast de navegação ─────────────────────────────────── */
-      function showBlocoNavToast(bloco) {
-        var toast = document.getElementById('blocoNavToast');
-        if (!toast) return;
-        toast.textContent = bloco.emoji + ' Indo para ' + bloco.label + '…';
-        toast.style.borderColor = bloco.cor;
-        toast.style.color = bloco.cor;
-        toast.classList.add('show');
-        setTimeout(function () { toast.classList.remove('show'); }, 1800);
-      }
-      
-      /* ── Renderiza sidebar de blocos ────────────────────────── */
-      function renderBlocosSidebar(contagem) {
-        var lista = document.getElementById('blocoListaSidebar');
-        if (!lista) return;
-
-        lista.innerHTML = BLOCOS.map(function (b) {
-          var qty = (contagem && contagem[b.id]) || 0;
-          return [
-            '<button class="bloco-sidebar-btn" data-bloco-id="', b.id, '"',
-            ' style="color:', b.cor, ';border-color:', b.cor, '18;background:', b.cor, '0d;"',
-            ' title="', qty, ' post', qty !== 1 ? 's' : '', '">',
-            b.emoji, ' ', b.label,
-            '<span class="bloco-sidebar-count" style="background:', b.cor, '22;color:', b.cor, ';">',
-            qty,
-            '</span>',
-            '</button>'
-          ].join('');
-        }).join('');
-
-        /* Listeners nos botões da sidebar */
-        lista.querySelectorAll('.bloco-sidebar-btn').forEach(function (btn) {
-          btn.addEventListener('click', function () {
-            var blocoId = btn.dataset.blocoId;
-            var bloco = BLOCOS.find(function (b) { return b.id === blocoId; });
-            if (!bloco) return;
-
-            showBlocoNavToast(bloco);
-
-            /* Usa a função global exposta pelo home.js */
-            if (typeof window.navegarParaBloco === 'function') {
-              window.navegarParaBloco(blocoId);
-            } else {
-              /* Fallback: navega manualmente para o explorar */
-              document.querySelectorAll('.nav-item').forEach(function (n) {
-                n.classList.remove('active');
-              });
-              var exploreNav = document.querySelector('.nav-item[data-page="explore"]');
-              if (exploreNav) exploreNav.classList.add('active');
-
-              document.querySelectorAll('.page-container').forEach(function (p) {
-                p.classList.remove('active');
-              });
-              var explorePage = document.getElementById('explore-page');
-              if (explorePage) explorePage.classList.add('active');
-            }
-
-            /* Realça o botão ativo */
-            lista.querySelectorAll('.bloco-sidebar-btn').forEach(function (b) {
-              b.classList.remove('ativo');
-              b.style.background = getBlocoById(b.dataset.blocoId).cor + '0d';
-            });
-            btn.classList.add('ativo');
-            btn.style.background = bloco.cor + '22';
-          });
-        });
-      }
-
-      function getBlocoById(id) {
-        return BLOCOS.find(function (b) { return b.id === id; }) || BLOCOS[0];
-      }
-
-      /* ── Expõe helper para home.js atualizar a sidebar ──────── */
-      window.atualizarBlocosSidebar = function (contagem) {
-        renderBlocosSidebar(contagem);
-      };
-
-      /* Renderiza imediatamente sem contagem (esqueleto) */
-      renderBlocosSidebar({});
-
-      /* ── Autocomplete de blocos no composer ─────────────────── */
-      function setupBlocoAutocomplete(textareaId, hintId) {
-        var ta = document.getElementById(textareaId);
-        var hint = document.getElementById(hintId);
-        if (!ta || !hint) return;
-
-        /* Injeta os chips de blocos no hint, se ainda não tiver */
-        if (!hint.querySelector('.bloco-autocomplete-chip')) {
-          BLOCOS.forEach(function (b) {
-            var chip = document.createElement('button');
-            chip.type = 'button';
-            chip.className = 'bloco-autocomplete-chip';
-            chip.dataset.blocoTag = b.label;
-            chip.style.cssText = [
-              'background:', b.cor, '18;',
-              'color:', b.cor, ';',
-              'border-color:', b.cor, '44;',
-            ].join('');
-            chip.innerHTML = b.emoji + ' ' + b.label;
-            chip.addEventListener('click', function () {
-              insertBlocoTag(ta, b.label);
-              hint.style.display = 'none';
-            });
-            hint.appendChild(chip);
-          });
-        }
-
-        ta.addEventListener('input', function () {
-          var val = ta.value;
-          var cursor = ta.selectionStart;
-          /* Mostra dica se o usuário acabou de digitar # */
-          var beforeCursor = val.slice(0, cursor);
-          var hashMatch = beforeCursor.match(/#([Bb]loco)?\s*(\d*)$/);
-          if (hashMatch) {
-            hint.style.display = 'flex';
-          } else {
-            hint.style.display = 'none';
-          }
-        });
-
-        ta.addEventListener('keydown', function (e) {
-          if (e.key === 'Escape') hint.style.display = 'none';
-        });
-
-        document.addEventListener('click', function (e) {
-          if (!ta.contains(e.target) && !hint.contains(e.target)) {
-            hint.style.display = 'none';
-          }
-        });
-      }
-
-      function insertBlocoTag(textarea, tag) {
-        var start = textarea.selectionStart;
-        var end = textarea.selectionEnd;
-        var val = textarea.value;
-
-        /* Remove fragmento de # que o usuário já digitou */
-        var before = val.slice(0, start);
-        var after = val.slice(end);
-        var cleaned = before.replace(/#([Bb]loco)?\s*\d*$/, '');
-
-        textarea.value = cleaned + tag + ' ' + after;
-        var pos = cleaned.length + tag.length + 1;
-        textarea.selectionStart = textarea.selectionEnd = pos;
-        textarea.focus();
-        textarea.dispatchEvent(new Event('input'));
-      }
-
-      /* Inicializa autocomplete nos dois composers */
-      setupBlocoAutocomplete('postInput', 'blocoComposerHint');
-      setupBlocoAutocomplete('modalPostInput', 'blocoModalHint');
-
-      /* Garante que o hint do modal também aparece como flex */
-      var modalHint = document.getElementById('blocoModalHint');
-      if (modalHint) {
-        /* o display é controlado pelo evento input — só ajusta o default */
-        modalHint.style.flexWrap = 'wrap';
-        modalHint.style.gap = '6px';
-        modalHint.style.alignItems = 'center';
-      }
-
-      /* ══════════════════════════════════════════════
-         Tema — troca via sidebar
-      ══════════════════════════════════════════════ */
-      var navBtn = document.getElementById('themeNavBtn');
-      var panel = document.getElementById('themeNavPanel');
-      if (navBtn && panel) {
-        var opts = panel.querySelectorAll('.theme-opt');
-
-        navBtn.addEventListener('click', function (e) {
-          e.stopPropagation();
-          panel.classList.toggle('active');
-        });
-
-        document.addEventListener('click', function (e) {
-          if (!navBtn.contains(e.target)) panel.classList.remove('active');
-        });
-
-        opts.forEach(function (opt) {
-          opt.addEventListener('click', function (e) {
-            e.stopPropagation();
-            var theme = opt.getAttribute('data-theme');
-            if (theme === 'padrao') {
-              document.documentElement.removeAttribute('data-theme');
-            } else {
-              document.documentElement.setAttribute('data-theme', theme);
-            }
-            localStorage.setItem('vazaPucTheme', theme);
-            opts.forEach(function (o) { o.classList.remove('ativo'); });
-            opt.classList.add('ativo');
-            setTimeout(function () { panel.classList.remove('active'); }, 600);
-          });
-        });
-
-        var saved = localStorage.getItem('vazaPucTheme') || 'padrao';
-        var activeOpt = panel.querySelector('.theme-opt[data-theme="' + saved + '"]');
-        if (activeOpt) activeOpt.classList.add('ativo');
-      }
-
-    })();
-
-    (function () {
-
-      /* ── Sincroniza o toggle com o estado atual do perfil ────── */
-      function syncPrivacyToggle() {
-        const toggle = document.getElementById('privacyToggle');
-        const track = document.getElementById('privacyTrack');
-        const thumb = document.getElementById('privacyThumb');
-        if (!toggle) return;
-
-        // currentProfile é a variável global do home.js
-        const isPrivate = window.currentProfile?.is_private ?? false;
-        toggle.checked = isPrivate;
-        updateToggleVisual(isPrivate, track, thumb);
-      }
-
-      function updateToggleVisual(checked, track, thumb) {
-        if (!track || !thumb) return;
-        track.style.background = checked ? 'var(--primary)' : 'var(--border)';
-        thumb.style.transform = checked ? 'translateX(20px)' : 'translateX(0)';
-      }
-
-      /* Atualiza visual quando o toggle muda */
-      document.addEventListener('change', function (e) {
-        if (e.target.id !== 'privacyToggle') return;
-        const track = document.getElementById('privacyTrack');
-        const thumb = document.getElementById('privacyThumb');
-        updateToggleVisual(e.target.checked, track, thumb);
-      });
-
-      /* Sincroniza cada vez que a aba de privacidade é aberta */
-      document.addEventListener('click', function (e) {
-        const btn = e.target.closest('.settings-tab-btn[data-settings-tab="privacidade"]');
-        if (!btn) return;
-        setTimeout(syncPrivacyToggle, 50); // aguarda o home.js mudar a seção
-        if (typeof window.refreshPendingBadge === 'function') {
-          window.refreshPendingBadge();
-        }
-      });
-
-      /* ── Painel de solicitações ─────────────────────────────── */
-      var panelOpen = false;
-
-      window.togglePendingPanel = function () {
-        const panel = document.getElementById('pendingRequestsPanel');
-        const chevron = document.getElementById('pendingChevron');
-        if (!panel) return;
-
-        panelOpen = !panelOpen;
-        panel.style.display = panelOpen ? 'block' : 'none';
-        chevron.style.transform = panelOpen ? 'rotate(90deg)' : 'rotate(0deg)';
-
-        if (panelOpen && typeof window.loadPendingRequestsPanel === 'function') {
-          window.loadPendingRequestsPanel();
-        }
-      };
-
-      /* Expõe para o home.js atualizar o badge de fora */
-      window.refreshPendingBadge = function () {
-        // Será sobrescrita pelo home.js quando carregar
-      };
-
-    })();
-  </script>
-</body>
-
-</html> /* Expõe para o home.js atualizar o badge de fora */
-      window.refreshPendingBadge = function () {
-        // Será sobrescrita pelo home.js quando carregar
-      };
-
-    })();
-  </script>
-
-  <script>
-    (function() {
-      const locBtn = document.getElementById('searchLocationBtn');
-      const locMenu = document.getElementById('searchLocationMenu');
-      const searchInput = document.getElementById('searchInput');
-
-      if (locBtn && locMenu) {
-        // Abre/Fecha o painel ao clicar nos três pontos
-        locBtn.addEventListener('click', function(e) {
-          e.stopPropagation();
-          locMenu.classList.toggle('active');
-        });
-
-        // Fecha se clicar em qualquer outro lugar da tela
-        document.addEventListener('click', function(e) {
-          if (!locBtn.contains(e.target)) locMenu.classList.remove('active');
-        });
-
-        // Gerencia a troca de campus
-        locMenu.querySelectorAll('.location-item').forEach(function(item) {
-          item.addEventListener('click', function() {
-            locMenu.querySelectorAll('.location-item').forEach(i => i.classList.remove('active'));
-            item.classList.add('active');
-            
-            const campus = item.getAttribute('data-puc');
-            // Modifica dinamicamente o placeholder para dar o feedback visual
-            if (searchInput) {
-              searchInput.placeholder = `Procurar em ${campus}...`;
-            }
-            
-            locMenu.classList.remove('active');
-          });
-        });
-      }
-    })();
-  </script>
-  <script>
+  /* ════════════════════════════════════════════════════
+     CONFIGURAÇÕES — navegação entre views
+  ════════════════════════════════════════════════════ */
   (function () {
-    const userMini = document.querySelector('.user-mini');
-    const logoutModal = document.getElementById('logoutModal');
-    const cancelLogoutBtn = document.getElementById('cancelLogoutBtn');
-    const confirmLogoutBtn = document.getElementById('confirmLogoutBtn');
+    var navBtns  = document.querySelectorAll('.settings-nav-btn');
+    var views    = document.querySelectorAll('.settings-view');
 
-    userMini?.addEventListener('click', (e) => {
+    navBtns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var target = btn.getAttribute('data-sview');
+
+        navBtns.forEach(function (b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+
+        views.forEach(function (v) { v.classList.remove('active'); });
+        var targetEl = document.getElementById(target);
+        if (targetEl) targetEl.classList.add('active');
+
+        // Carrega dados quando abre "Informações da conta"
+        if (target === 'sv-info-conta') carregarInfoConta();
+
+        // Sincroniza toggle quando abre privacidade
+        if (target === 'sv-privacidade') {
+          setTimeout(syncPrivacyToggle, 50);
+          if (typeof window.refreshPendingBadge === 'function') window.refreshPendingBadge();
+        }
+      });
+    });
+
+    // Também funciona via data-settings-tab antigo (compatibilidade com home.js)
+    window.mudarTelaConfig = function (idTela) {
+      var map = {
+        'config-lista':    'sv-info-conta',
+        'config-info':     'sv-info-conta',
+        'config-senha':    'sv-senha',
+        'config-desativar':'sv-desativar',
+      };
+      var sview = map[idTela] || idTela;
+      var fakeBtn = document.querySelector('.settings-nav-btn[data-sview="' + sview + '"]');
+      if (fakeBtn) fakeBtn.click();
+    };
+  })();
+
+  /* ════════════════════════════════════════════════════
+     INFORMAÇÕES DA CONTA — carrega email e handle
+  ════════════════════════════════════════════════════ */
+  async function carregarInfoConta() {
+    var emailEl   = document.getElementById('infoEmailDisplay');
+    var handleEl  = document.getElementById('infoHandleDisplay');
+    var createdEl = document.getElementById('infoCreatedDisplay');
+
+    if (!emailEl) return;
+
+    // Tenta usar o supabase do módulo ES (exposto pelo home.js)
+    try {
+      // O home.js expõe window._supabase ou podemos importar aqui
+      var sb = window._supabase || (typeof supabase !== 'undefined' ? supabase : null);
+
+      if (!sb) {
+        // Fallback: usa dados do currentProfile já carregado
+        var cp = window.currentProfile;
+        if (cp) {
+          if (emailEl)  emailEl.textContent  = '(faça login para ver)';
+          if (handleEl) handleEl.textContent = '@' + (cp.handle || '—');
+          if (createdEl && cp.created_at) {
+            createdEl.textContent = new Date(cp.created_at).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+          }
+        } else {
+          if (emailEl)  emailEl.textContent  = 'Faça login para ver';
+          if (handleEl) handleEl.textContent = '—';
+        }
+        return;
+      }
+
+      var userRes = await sb.auth.getUser();
+      var user = userRes?.data?.user;
+
+      if (!user) {
+        if (emailEl)  emailEl.textContent  = 'Faça login para ver';
+        if (handleEl) handleEl.textContent = '—';
+        return;
+      }
+
+      if (emailEl) emailEl.textContent = user.email || '—';
+
+      var profRes = await sb.from('profiles').select('handle, created_at').eq('id', user.id).single();
+      var prof = profRes?.data;
+
+      if (prof) {
+        if (handleEl)  handleEl.textContent  = '@' + (prof.handle || '—');
+        if (createdEl && prof.created_at) {
+          createdEl.textContent = new Date(prof.created_at).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+        }
+      }
+
+    } catch (err) {
+      console.warn('[carregarInfoConta]', err);
+      if (emailEl)  emailEl.textContent  = 'Erro ao carregar';
+      if (handleEl) handleEl.textContent = 'Erro ao carregar';
+    }
+  }
+
+  // Expõe para compatibilidade com home.js
+  window.carregarMeusDadosConfig = carregarInfoConta;
+
+  /* ════════════════════════════════════════════════════
+     ALTERAR SENHA
+  ════════════════════════════════════════════════════ */
+  window.atualizarSenhaSupabase = async function () {
+    var nova     = document.getElementById('configNewPassword').value;
+    var confirma = document.getElementById('configConfirmPassword').value;
+
+    if (!nova || nova.length < 6) { alert('A senha precisa ter pelo menos 6 caracteres.'); return; }
+    if (nova !== confirma)        { alert('As senhas não coincidem. Tente novamente.');    return; }
+
+    try {
+      var sb = window._supabase || (typeof supabase !== 'undefined' ? supabase : null);
+      if (!sb) { alert('Erro de conexão com o banco de dados.'); return; }
+
+      var { error } = await sb.auth.updateUser({ password: nova });
+      if (error) { alert('Erro ao atualizar: ' + error.message); return; }
+
+      alert('Senha atualizada com sucesso! ✅');
+      document.getElementById('configNewPassword').value  = '';
+      document.getElementById('configConfirmPassword').value = '';
+    } catch (err) {
+      console.error(err);
+      alert('Erro de conexão ao alterar a senha.');
+    }
+  };
+
+  /* ════════════════════════════════════════════════════
+     DESATIVAR CONTA
+  ════════════════════════════════════════════════════ */
+  window.abrirModalDesativarConta = function () {
+    document.getElementById('deactivateAccountModal')?.remove();
+
+    var modal = document.createElement('div');
+    modal.id = 'deactivateAccountModal';
+    modal.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px);';
+
+    modal.innerHTML = `
+      <div style="background:var(--dark-bg-secondary);border:1px solid var(--border);border-radius:24px;width:100%;max-width:420px;padding:36px 32px;position:relative;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,0.5);">
+        <button id="closeDeactivateModal" style="position:absolute;top:16px;right:16px;background:none;border:none;color:var(--text-secondary);font-size:20px;cursor:pointer;padding:4px 8px;border-radius:6px;">✕</button>
+        <div style="font-size:52px;margin-bottom:12px;">😴</div>
+        <h2 style="font-size:22px;font-weight:800;color:var(--text-primary);margin:0 0 12px;">Desativar sua conta?</h2>
+        <p style="color:var(--text-secondary);font-size:14px;line-height:1.7;margin:0 0 10px;">
+          Seu perfil ficará invisível — aparecerá como <strong style="color:var(--text-primary);">Usuário não encontrado</strong>.
+        </p>
+        <p style="color:var(--text-secondary);font-size:14px;line-height:1.7;margin:0 0 28px;">
+          Para reativar, é só <strong style="color:var(--primary);">fazer login novamente</strong>. Seus dados continuam salvos.
+        </p>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <button id="confirmDeactivateBtn" style="width:100%;padding:14px;border-radius:20px;font-size:15px;font-weight:800;cursor:pointer;border:none;background:#e0245e;color:white;box-shadow:0 4px 20px rgba(224,36,94,0.3);transition:opacity 0.2s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+            Sim, desativar minha conta
+          </button>
+          <button id="cancelDeactivateBtn" style="width:100%;padding:12px;border-radius:20px;font-size:14px;font-weight:600;cursor:pointer;background:none;border:1px solid var(--border);color:var(--text-secondary);">
+            Cancelar
+          </button>
+        </div>
+      </div>`;
+
+    document.body.appendChild(modal);
+
+    document.getElementById('closeDeactivateModal').addEventListener('click',  function () { modal.remove(); });
+    document.getElementById('cancelDeactivateBtn').addEventListener('click',   function () { modal.remove(); });
+    modal.addEventListener('click', function (e) { if (e.target === modal) modal.remove(); });
+
+    document.getElementById('confirmDeactivateBtn').addEventListener('click', async function () {
+      var btn = document.getElementById('confirmDeactivateBtn');
+      btn.disabled = true; btn.textContent = 'Desativando...';
+      try {
+        var sb = window._supabase || (typeof supabase !== 'undefined' ? supabase : null);
+        if (sb && window.currentProfile) {
+          await sb.from('profiles').update({ is_deactivated: true }).eq('id', window.currentProfile.id);
+          await sb.auth.signOut();
+        }
+        modal.remove();
+        window.location.assign('../index.html');
+      } catch (err) {
+        console.error('[deactivate]', err);
+        btn.disabled = false; btn.textContent = 'Sim, desativar minha conta';
+        alert('Erro ao desativar conta. Tente novamente.');
+      }
+    });
+  };
+
+  /* ════════════════════════════════════════════════════
+     EXCLUIR CONTA — com confirmação por digitação
+  ════════════════════════════════════════════════════ */
+  window.abrirModalExcluirConta = function () {
+    document.getElementById('deleteAccountModal')?.remove();
+
+    var handle = window.currentProfile?.handle || 'sua conta';
+
+    var modal = document.createElement('div');
+    modal.id = 'deleteAccountModal';
+    modal.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.9);display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(10px);';
+
+    modal.innerHTML = `
+      <div style="background:var(--dark-bg-secondary);border:1px solid rgba(224,36,94,0.3);border-radius:24px;width:100%;max-width:440px;padding:36px 32px;position:relative;text-align:center;box-shadow:0 0 60px rgba(224,36,94,0.15);">
+        <button id="closeDeleteModal" style="position:absolute;top:16px;right:16px;background:none;border:none;color:var(--text-secondary);font-size:20px;cursor:pointer;padding:4px 8px;border-radius:6px;">✕</button>
+
+        <div style="font-size:52px;margin-bottom:12px;">💀</div>
+        <h2 style="font-size:22px;font-weight:800;color:#e0245e;margin:0 0 8px;">Excluir conta permanentemente</h2>
+        <p style="color:var(--text-secondary);font-size:14px;line-height:1.7;margin:0 0 24px;">
+          Esta ação é <strong style="color:#e0245e;">irreversível</strong>. Todos os seus posts, mensagens, seguidores e dados serão apagados para sempre.
+        </p>
+
+        <div style="background:rgba(224,36,94,0.08);border:1px solid rgba(224,36,94,0.2);border-radius:12px;padding:14px 16px;margin-bottom:24px;text-align:left;">
+          <p style="font-size:13px;color:var(--text-secondary);margin:0 0 10px;">Para confirmar, digite <strong style="color:#e0245e;">@${handle}</strong> abaixo:</p>
+          <input id="deleteConfirmInput" type="text" placeholder="@${handle}" style="width:100%;box-sizing:border-box;background:var(--dark-bg);border:1px solid rgba(224,36,94,0.3);border-radius:8px;padding:10px 12px;color:var(--text-primary);font-size:14px;font-family:inherit;outline:none;">
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <button id="confirmDeleteBtn" disabled style="width:100%;padding:14px;border-radius:20px;font-size:15px;font-weight:800;cursor:not-allowed;border:none;background:#555;color:rgba(255,255,255,0.4);transition:all 0.2s;">
+            Entendo, excluir minha conta
+          </button>
+          <button id="cancelDeleteBtn" style="width:100%;padding:12px;border-radius:20px;font-size:14px;font-weight:600;cursor:pointer;background:none;border:1px solid var(--border);color:var(--text-secondary);">
+            Cancelar, quero continuar
+          </button>
+        </div>
+      </div>`;
+
+    document.body.appendChild(modal);
+
+    document.getElementById('closeDeleteModal').addEventListener('click',  function () { modal.remove(); });
+    document.getElementById('cancelDeleteBtn').addEventListener('click',   function () { modal.remove(); });
+    modal.addEventListener('click', function (e) { if (e.target === modal) modal.remove(); });
+
+    // Habilita o botão só quando digitar o handle correto
+    document.getElementById('deleteConfirmInput').addEventListener('input', function () {
+      var typed = this.value.trim().replace(/^@/, '');
+      var btn   = document.getElementById('confirmDeleteBtn');
+      var match = typed === handle;
+      btn.disabled    = !match;
+      btn.style.background    = match ? '#e0245e' : '#555';
+      btn.style.color         = match ? 'white'   : 'rgba(255,255,255,0.4)';
+      btn.style.cursor        = match ? 'pointer'  : 'not-allowed';
+      btn.style.boxShadow     = match ? '0 4px 20px rgba(224,36,94,0.3)' : 'none';
+    });
+
+    document.getElementById('confirmDeleteBtn').addEventListener('click', async function () {
+      var btn = document.getElementById('confirmDeleteBtn');
+      if (btn.disabled) return;
+      btn.disabled = true; btn.textContent = 'Excluindo...';
+
+      try {
+        var sb = window._supabase || (typeof supabase !== 'undefined' ? supabase : null);
+        if (!sb || !window.currentProfile) { alert('Erro de sessão. Faça login novamente.'); return; }
+
+        var uid = window.currentProfile.id;
+
+        // Apaga dados relacionados (posts, likes, follows, replies, mensagens)
+        await Promise.allSettled([
+          sb.from('likes').delete().eq('user_id', uid),
+          sb.from('follows').delete().or('follower_id.eq.' + uid + ',following_id.eq.' + uid),
+          sb.from('follow_requests').delete().or('from_user.eq.' + uid + ',to_user.eq.' + uid),
+          sb.from('replies').delete().eq('author_id', uid),
+          sb.from('notifications').delete().or('to_user_id.eq.' + uid + ',actor_id.eq.' + uid),
+        ]);
+
+        // Apaga posts
+        await sb.from('posts').delete().eq('author_id', uid);
+
+        // Apaga o perfil
+        await sb.from('profiles').delete().eq('id', uid);
+
+        // Logout
+        await sb.auth.signOut();
+
+        modal.remove();
+        window.location.assign('../index.html');
+
+      } catch (err) {
+        console.error('[deleteAccount]', err);
+        btn.disabled = false; btn.textContent = 'Entendo, excluir minha conta';
+        alert('Erro ao excluir conta: ' + (err.message || 'tente novamente.'));
+      }
+    });
+  };
+
+  /* ════════════════════════════════════════════════════
+     PRIVACY TOGGLE — visual
+  ════════════════════════════════════════════════════ */
+  function syncPrivacyToggle() {
+    var toggle = document.getElementById('privacyToggle');
+    var track  = document.getElementById('privacyTrack');
+    var thumb  = document.getElementById('privacyThumb');
+    if (!toggle) return;
+    var isPrivate = window.currentProfile?.is_private ?? false;
+    toggle.checked = isPrivate;
+    updateToggleVisual(isPrivate, track, thumb);
+  }
+
+  function updateToggleVisual(checked, track, thumb) {
+    if (!track || !thumb) return;
+    track.style.background    = checked ? 'var(--primary)' : 'var(--border)';
+    thumb.style.transform     = checked ? 'translateX(20px)' : 'translateX(0)';
+  }
+
+  document.addEventListener('change', function (e) {
+    if (e.target.id !== 'privacyToggle') return;
+    var track = document.getElementById('privacyTrack');
+    var thumb = document.getElementById('privacyThumb');
+    updateToggleVisual(e.target.checked, track, thumb);
+  });
+
+  window.syncPrivacyToggle = syncPrivacyToggle;
+
+  /* ════════════════════════════════════════════════════
+     PENDING PANEL TOGGLE
+  ════════════════════════════════════════════════════ */
+  var pendingPanelOpen = false;
+  window.togglePendingPanel = function () {
+    var panel   = document.getElementById('pendingRequestsPanel');
+    var chevron = document.getElementById('pendingChevron');
+    if (!panel) return;
+    pendingPanelOpen = !pendingPanelOpen;
+    panel.style.display = pendingPanelOpen ? 'block' : 'none';
+    if (chevron) chevron.style.transform = pendingPanelOpen ? 'rotate(90deg)' : 'rotate(0deg)';
+    if (pendingPanelOpen && typeof window.loadPendingRequestsPanel === 'function') {
+      window.loadPendingRequestsPanel();
+    }
+  };
+
+  /* ════════════════════════════════════════════════════
+     TEMA — sidebar
+  ════════════════════════════════════════════════════ */
+  (function () {
+    var navBtn = document.getElementById('themeNavBtn');
+    var panel  = document.getElementById('themeNavPanel');
+    if (!navBtn || !panel) return;
+    var opts = panel.querySelectorAll('.theme-opt');
+
+    navBtn.addEventListener('click', function (e) { e.stopPropagation(); panel.classList.toggle('active'); });
+    document.addEventListener('click', function (e) { if (!navBtn.contains(e.target)) panel.classList.remove('active'); });
+
+    opts.forEach(function (opt) {
+      opt.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var theme = opt.getAttribute('data-theme');
+        if (theme === 'padrao') document.documentElement.removeAttribute('data-theme');
+        else document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('vazaPucTheme', theme);
+        opts.forEach(function (o) { o.classList.remove('ativo'); });
+        opt.classList.add('ativo');
+        setTimeout(function () { panel.classList.remove('active'); }, 600);
+      });
+    });
+
+    var saved = localStorage.getItem('vazaPucTheme') || 'padrao';
+    var activeOpt = panel.querySelector('.theme-opt[data-theme="' + saved + '"]');
+    if (activeOpt) activeOpt.classList.add('ativo');
+  })();
+
+  /* ════════════════════════════════════════════════════
+     BLOCOS — sidebar direita
+  ════════════════════════════════════════════════════ */
+  (function () {
+    var BLOCOS = [
+      { id:'bloco-01', label:'#bloco 01', emoji:'🟥', cor:'#e0245e' },
+      { id:'bloco-02', label:'#bloco 02', emoji:'🟧', cor:'#f4700f' },
+      { id:'bloco-03', label:'#bloco 03', emoji:'🟨', cor:'#f5b700' },
+      { id:'bloco-04', label:'#bloco 04', emoji:'🟩', cor:'#17bf63' },
+      { id:'bloco-05', label:'#bloco 05', emoji:'🟦', cor:'#1d9bf0' },
+      { id:'bloco-06', label:'#bloco 06', emoji:'🟪', cor:'#7856ff' },
+      { id:'bloco-07', label:'#bloco 07', emoji:'🩷', cor:'#ff5eab' },
+      { id:'bloco-08', label:'#bloco 08', emoji:'🤎', cor:'#a0522d' },
+      { id:'bloco-09', label:'#bloco 09', emoji:'🩶', cor:'#8899aa' },
+      { id:'bloco-10', label:'#bloco 10', emoji:'🖤', cor:'#dddddd' },
+    ];
+
+    function getBlocoById(id) { return BLOCOS.find(function (b) { return b.id === id; }) || BLOCOS[0]; }
+
+    function showBlocoNavToast(bloco) {
+      var toast = document.getElementById('blocoNavToast');
+      if (!toast) return;
+      toast.textContent = bloco.emoji + ' Indo para ' + bloco.label + '…';
+      toast.style.borderColor = bloco.cor; toast.style.color = bloco.cor;
+      toast.classList.add('show');
+      setTimeout(function () { toast.classList.remove('show'); }, 1800);
+    }
+
+    function renderBlocosSidebar(contagem) {
+      var lista = document.getElementById('blocoListaSidebar');
+      if (!lista) return;
+      lista.innerHTML = BLOCOS.map(function (b) {
+        var qty = (contagem && contagem[b.id]) || 0;
+        return '<button class="bloco-sidebar-btn" data-bloco-id="' + b.id + '" style="color:' + b.cor + ';border-color:' + b.cor + '18;background:' + b.cor + '0d;" title="' + qty + ' post' + (qty!==1?'s':'') + '">' + b.emoji + ' ' + b.label + '<span class="bloco-sidebar-count" style="background:' + b.cor + '22;color:' + b.cor + ';">' + qty + '</span></button>';
+      }).join('');
+
+      lista.querySelectorAll('.bloco-sidebar-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var blocoId = btn.dataset.blocoId;
+          var bloco = getBlocoById(blocoId);
+          showBlocoNavToast(bloco);
+          if (typeof window.navegarParaBloco === 'function') window.navegarParaBloco(blocoId);
+          lista.querySelectorAll('.bloco-sidebar-btn').forEach(function (b) { b.classList.remove('ativo'); b.style.background = getBlocoById(b.dataset.blocoId).cor + '0d'; });
+          btn.classList.add('ativo'); btn.style.background = bloco.cor + '22';
+        });
+      });
+    }
+
+    window.atualizarBlocosSidebar = function (contagem) { renderBlocosSidebar(contagem); };
+    renderBlocosSidebar({});
+
+    // Autocomplete de blocos
+    function setupBlocoAutocomplete(textareaId, hintId) {
+      var ta = document.getElementById(textareaId);
+      var hint = document.getElementById(hintId);
+      if (!ta || !hint) return;
+      if (!hint.querySelector('.bloco-autocomplete-chip')) {
+        BLOCOS.forEach(function (b) {
+          var chip = document.createElement('button');
+          chip.type = 'button'; chip.className = 'bloco-autocomplete-chip'; chip.dataset.blocoTag = b.label;
+          chip.style.cssText = 'background:' + b.cor + '18;color:' + b.cor + ';border-color:' + b.cor + '44;';
+          chip.innerHTML = b.emoji + ' ' + b.label;
+          chip.addEventListener('click', function () { insertBlocoTag(ta, b.label); hint.style.display = 'none'; });
+          hint.appendChild(chip);
+        });
+      }
+      ta.addEventListener('input', function () {
+        var beforeCursor = ta.value.slice(0, ta.selectionStart);
+        hint.style.display = /#([Bb]loco)?\s*(\d*)$/.test(beforeCursor) ? 'flex' : 'none';
+      });
+      ta.addEventListener('keydown', function (e) { if (e.key === 'Escape') hint.style.display = 'none'; });
+      document.addEventListener('click', function (e) { if (!ta.contains(e.target) && !hint.contains(e.target)) hint.style.display = 'none'; });
+    }
+
+    function insertBlocoTag(textarea, tag) {
+      var start = textarea.selectionStart, end = textarea.selectionEnd, val = textarea.value;
+      var cleaned = val.slice(0, start).replace(/#([Bb]loco)?\s*\d*$/, '');
+      textarea.value = cleaned + tag + ' ' + val.slice(end);
+      var pos = cleaned.length + tag.length + 1;
+      textarea.selectionStart = textarea.selectionEnd = pos;
+      textarea.focus(); textarea.dispatchEvent(new Event('input'));
+    }
+
+    setupBlocoAutocomplete('postInput', 'blocoComposerHint');
+    setupBlocoAutocomplete('modalPostInput', 'blocoModalHint');
+
+    var modalHint = document.getElementById('blocoModalHint');
+    if (modalHint) { modalHint.style.flexWrap = 'wrap'; modalHint.style.gap = '6px'; modalHint.style.alignItems = 'center'; }
+  })();
+
+  /* ════════════════════════════════════════════════════
+     FILTRO DE CAMPUS
+  ════════════════════════════════════════════════════ */
+  (function () {
+    var locBtn    = document.getElementById('searchLocationBtn');
+    var locMenu   = document.getElementById('searchLocationMenu');
+    var searchInp = document.getElementById('searchInput');
+    if (!locBtn || !locMenu) return;
+    locBtn.addEventListener('click', function (e) { e.stopPropagation(); locMenu.classList.toggle('active'); });
+    document.addEventListener('click', function (e) { if (!locBtn.contains(e.target)) locMenu.classList.remove('active'); });
+    locMenu.querySelectorAll('.location-item').forEach(function (item) {
+      item.addEventListener('click', function () {
+        locMenu.querySelectorAll('.location-item').forEach(function (i) { i.classList.remove('active'); });
+        item.classList.add('active');
+        if (searchInp) searchInp.placeholder = 'Procurar em ' + item.getAttribute('data-puc') + '...';
+        locMenu.classList.remove('active');
+      });
+    });
+  })();
+
+  /* ════════════════════════════════════════════════════
+     LOGOUT MINI
+  ════════════════════════════════════════════════════ */
+  (function () {
+    var userMini     = document.querySelector('.user-mini');
+    var logoutModal  = document.getElementById('logoutModal');
+    var cancelBtn    = document.getElementById('cancelLogoutBtn');
+    var confirmBtn   = document.getElementById('confirmLogoutBtn');
+
+    userMini?.addEventListener('click', function (e) {
       e.stopPropagation();
-      // Só abre se estiver logado (currentProfile vem do home.js)
       if (!window.currentProfile) return;
-
-      const logoutUserName = document.getElementById('logoutUserName');
-      if (logoutUserName) {
-        logoutUserName.textContent = window.currentProfile.name || window.currentProfile.handle || '';
-      }
-
-      logoutModal.style.display =
-        logoutModal.style.display === 'none' || logoutModal.style.display === ''
-          ? 'block'
-          : 'none';
+      var nameEl = document.getElementById('logoutUserName');
+      if (nameEl) nameEl.textContent = window.currentProfile.name || window.currentProfile.handle || '';
+      logoutModal.style.display = logoutModal.style.display === 'block' ? 'none' : 'block';
     });
 
-    cancelLogoutBtn?.addEventListener('click', () => {
+    cancelBtn?.addEventListener('click',  function () { logoutModal.style.display = 'none'; });
+    confirmBtn?.addEventListener('click', function () {
       logoutModal.style.display = 'none';
+      if (typeof window.fazerLogout === 'function') window.fazerLogout();
     });
 
-    confirmLogoutBtn?.addEventListener('click', async () => {
-      logoutModal.style.display = 'none';
-      // chama o logout do home.js se existir, senão faz direto
-      if (typeof window.fazerLogout === 'function') {
-        window.fazerLogout();
-      }
-    });
-
-    // Fecha ao clicar fora
-    document.addEventListener('click', (e) => {
-      if (
-        logoutModal &&
-        logoutModal.style.display === 'block' &&
-        !logoutModal.contains(e.target) &&
-        !userMini.contains(e.target)
-      ) {
+    document.addEventListener('click', function (e) {
+      if (logoutModal && logoutModal.style.display === 'block' && !logoutModal.contains(e.target) && !userMini?.contains(e.target)) {
         logoutModal.style.display = 'none';
       }
     });
   })();
-</script>
-</body>
 
+  /* Carrega info da conta ao abrir a aba settings */
+  document.addEventListener('click', function (e) {
+    var navItem = e.target.closest('.nav-item[data-page="settings"]');
+    if (navItem) setTimeout(carregarInfoConta, 300);
+  });
+  </script>
+</body>
 </html>

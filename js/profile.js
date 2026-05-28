@@ -1,59 +1,59 @@
-  // ============================================================
-  // js/profile.js — VERSÃO CORRIGIDA com follow requests funcionais
-  // ============================================================
+// ============================================================
+// js/profile.js — VERSÃO CORRIGIDA com follow requests funcionais
+// + Suporte a desativação de conta
+// ============================================================
 
-  import { supabase, getCurrentUser } from './supabase.js';
-  import { syncFollowCounts } from './seguindo.js';
+import { supabase, getCurrentUser } from './supabase.js';
+import { syncFollowCounts } from './seguindo.js';
 
-  // ============================================================
-  // BUSCAR PERFIS
-  // ============================================================
-  export async function getProfileById(userId) {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-    if (error) throw error;
-    return data;
-  }
+// ============================================================
+// BUSCAR PERFIS
+// ============================================================
+export async function getProfileById(userId) {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single();
+  if (error) throw error;
+  return data;
+}
 
-  export async function getProfileByHandle(handle) {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('handle', handle.replace('@', ''))
-      .single();
-    if (error) throw error;
-    return data;
-  }
+export async function getProfileByHandle(handle) {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('handle', handle.replace('@', ''))
+    .single();
+  if (error) throw error;
+  return data;
+}
 
-  export async function searchProfiles(query) {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .or(`name.ilike.%${query}%,handle.ilike.%${query}%`)
-      .limit(10);
-    if (error) throw error;
-    return data;
-  }
+export async function searchProfiles(query) {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .or(`name.ilike.%${query}%,handle.ilike.%${query}%`)
+    .limit(10);
+  if (error) throw error;
+  return data;
+}
 
-  // ============================================================
-  // EDITAR PERFIL
-  // ============================================================
- // Substitua a sua função updateProfile no js/profile.js por esta:
+// ============================================================
+// EDITAR PERFIL
+// ============================================================
 export async function updateProfile({ name, handle, bio, avatar_url, banner_url }) {
   const user = await getCurrentUser();
   if (!user) throw new Error('Não autenticado.');
 
   const { data, error } = await supabase
     .from('profiles')
-    .update({ 
-      name, 
-      handle, 
-      bio, 
-      avatar_url, 
-      banner_url // Adicionámos o banner aqui
+    .update({
+      name,
+      handle,
+      bio,
+      avatar_url,
+      banner_url
     })
     .eq('id', user.id)
     .select()
@@ -62,258 +62,278 @@ export async function updateProfile({ name, handle, bio, avatar_url, banner_url 
   if (error) throw error;
   return data;
 }
-  // ============================================================
-  // FOLLOWS
-  // ============================================================
-  export async function isFollowing(targetUserId) {
-    const user = await getCurrentUser();
-    if (!user) return false;
 
-    const { data } = await supabase
-      .from('follows')
-      .select('id')
-      .eq('follower_id', user.id)
-      .eq('following_id', targetUserId)
-      .maybeSingle();
+// ============================================================
+// DESATIVAÇÃO DE CONTA
+// Desativar = seta is_deactivated = true no perfil.
+// Reativar  = ao fazer login, seta is_deactivated = false automaticamente.
+// Para quem visita: se is_deactivated = true → aparece como "não encontrado".
+// ============================================================
 
-    return !!data;
-  }
+export async function deactivateAccount() {
+  const user = await getCurrentUser();
+  if (!user) throw new Error('Não autenticado.');
 
-  export async function followUser(targetUserId) {
-    const user = await getCurrentUser();
-    if (!user) throw new Error('Não autenticado.');
+  const { error } = await supabase
+    .from('profiles')
+    .update({ is_deactivated: true })
+    .eq('id', user.id);
 
-    const { error } = await supabase
-      .from('follows')
-      .insert({ follower_id: user.id, following_id: targetUserId });
+  if (error) throw error;
+}
 
-    if (error) throw error;
-    await syncFollowCounts(user.id, targetUserId);
-  }
+export async function reactivateAccount() {
+  const user = await getCurrentUser();
+  if (!user) throw new Error('Não autenticado.');
 
-  export async function unfollowUser(targetUserId) {
-    const user = await getCurrentUser();
-    if (!user) throw new Error('Não autenticado.');
+  const { error } = await supabase
+    .from('profiles')
+    .update({ is_deactivated: false })
+    .eq('id', user.id);
 
-    const { error } = await supabase
-      .from('follows')
-      .delete()
-      .eq('follower_id', user.id)
-      .eq('following_id', targetUserId);
+  if (error) throw error;
+}
 
-    if (error) throw error;
-    await syncFollowCounts(user.id, targetUserId);
-  }
+// ============================================================
+// FOLLOWS
+// ============================================================
+export async function isFollowing(targetUserId) {
+  const user = await getCurrentUser();
+  if (!user) return false;
 
-  export async function getFollowing(userId) {
-    const { data, error } = await supabase
-      .from('follows')
-      .select('following:profiles!follows_following_id_fkey(*)')
-      .eq('follower_id', userId);
-    if (error) throw error;
-    return data.map(f => f.following);
-  }
+  const { data } = await supabase
+    .from('follows')
+    .select('id')
+    .eq('follower_id', user.id)
+    .eq('following_id', targetUserId)
+    .maybeSingle();
 
-  export async function getFollowers(userId) {
-    const { data, error } = await supabase
-      .from('follows')
-      .select('follower:profiles!follows_follower_id_fkey(*)')
-      .eq('following_id', userId);
-    if (error) throw error;
-    return data.map(f => f.follower);
-  }
+  return !!data;
+}
 
-  // ============================================================
-  // PRIVACIDADE
-  // ============================================================
-  export async function isProfilePrivate(profileId) {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('is_private')
-      .eq('id', profileId)
-      .single();
-    if (error) throw error;
-    return data?.is_private ?? false;
-  }
+export async function followUser(targetUserId) {
+  const user = await getCurrentUser();
+  if (!user) throw new Error('Não autenticado.');
 
-  export async function setAccountPrivacy(isPrivate) {
-    const user = await getCurrentUser();
-    if (!user) throw new Error('Não autenticado');
+  const { error } = await supabase
+    .from('follows')
+    .insert({ follower_id: user.id, following_id: targetUserId });
 
-    const { data, error } = await supabase
-      .from('profiles')
-      .update({ is_private: isPrivate })
-      .eq('id', user.id)
-      .select()
-      .single();
+  if (error) throw error;
+  await syncFollowCounts(user.id, targetUserId);
+}
 
-    if (error) throw error;
-    return data;
-  }
+export async function unfollowUser(targetUserId) {
+  const user = await getCurrentUser();
+  if (!user) throw new Error('Não autenticado.');
 
-  export async function canViewProfile(profileId) {
-    const user = await getCurrentUser();
+  const { error } = await supabase
+    .from('follows')
+    .delete()
+    .eq('follower_id', user.id)
+    .eq('following_id', targetUserId);
 
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('is_private')
-      .eq('id', profileId)
-      .single();
+  if (error) throw error;
+  await syncFollowCounts(user.id, targetUserId);
+}
 
-    if (error) return true;
-    if (!profile.is_private) return true;
-    if (!user) return false;
-    if (user.id === profileId) return true;
+export async function getFollowing(userId) {
+  const { data, error } = await supabase
+    .from('follows')
+    .select('following:profiles!follows_following_id_fkey(*)')
+    .eq('follower_id', userId);
+  if (error) throw error;
+  return data.map(f => f.following);
+}
 
-    const { data: follow } = await supabase
-      .from('follows')
-      .select('follower_id')
-      .eq('follower_id', user.id)
-      .eq('following_id', profileId)
-      .maybeSingle();
+export async function getFollowers(userId) {
+  const { data, error } = await supabase
+    .from('follows')
+    .select('follower:profiles!follows_follower_id_fkey(*)')
+    .eq('following_id', userId);
+  if (error) throw error;
+  return data.map(f => f.follower);
+}
 
-    return !!follow;
-  }
+// ============================================================
+// PRIVACIDADE
+// ============================================================
+export async function isProfilePrivate(profileId) {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('is_private')
+    .eq('id', profileId)
+    .single();
+  if (error) throw error;
+  return data?.is_private ?? false;
+}
 
-  // ============================================================
-  // FOLLOW REQUESTS — CORRIGIDO
-  // ============================================================
+export async function setAccountPrivacy(isPrivate) {
+  const user = await getCurrentUser();
+  if (!user) throw new Error('Não autenticado');
 
-  // ── Envia solicitação de seguimento ─────────────────────────
-  export async function requestFollow(toUserId) {
-    const user = await getCurrentUser();
-    if (!user) throw new Error('Não autenticado');
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ is_private: isPrivate })
+    .eq('id', user.id)
+    .select()
+    .single();
 
-    // Primeiro tenta deletar qualquer rejected anterior para limpar
-    await supabase
-      .from('follow_requests')
-      .delete()
-      .eq('from_user', user.id)
-      .eq('to_user', toUserId)
-      .eq('status', 'rejected');
+  if (error) throw error;
+  return data;
+}
 
-    const { data, error } = await supabase
-      .from('follow_requests')
-      .upsert(
-        { from_user: user.id, to_user: toUserId, status: 'pending' },
-        { onConflict: 'from_user,to_user' }
-      )
-      .select()
-      .single();
+export async function canViewProfile(profileId) {
+  const user = await getCurrentUser();
 
-    if (error) throw error;
-    return data;
-  }
+  const { data: profile, error } = await supabase
+    .from('profiles')
+    .select('is_private, is_deactivated')
+    .eq('id', profileId)
+    .single();
 
-  // ── Cancela solicitação pendente ─────────────────────────────
-  export async function cancelFollowRequest(toUserId) {
-    const user = await getCurrentUser();
-    if (!user) throw new Error('Não autenticado');
+  if (error) return true;
 
-    const { error } = await supabase
-      .from('follow_requests')
-      .delete()
-      .eq('from_user', user.id)
-      .eq('to_user', toUserId);
+  // Conta desativada — ninguém vê, nem o próprio dono (já foi deslogado)
+  if (profile.is_deactivated) return false;
 
-    if (error) throw error;
-  }
+  if (!profile.is_private) return true;
+  if (!user) return false;
+  if (user.id === profileId) return true;
 
-  // ── Aceita solicitação ────────────────────────────────────────
-  export async function acceptFollowRequest(fromUserId) {
-    const user = await getCurrentUser();
-    if (!user) throw new Error('Não autenticado');
+  const { data: follow } = await supabase
+    .from('follows')
+    .select('follower_id')
+    .eq('follower_id', user.id)
+    .eq('following_id', profileId)
+    .maybeSingle();
 
-    const { error } = await supabase.rpc('accept_follow_request', {
-      from_user_id: fromUserId
-    });
+  return !!follow;
+}
 
-    if (error) throw error;
+// ============================================================
+// FOLLOW REQUESTS
+// ============================================================
 
-    // Sincroniza contadores
-    await syncFollowCounts(fromUserId, user.id);
-  }
-  // ── Rejeita solicitação ───────────────────────────────────────
-  export async function rejectFollowRequest(fromUserId) {
-    const user = await getCurrentUser();
-    if (!user) throw new Error('Não autenticado');
+export async function requestFollow(toUserId) {
+  const user = await getCurrentUser();
+  if (!user) throw new Error('Não autenticado');
 
-    // Deleta a solicitação ao invés de apenas marcar como rejected
-    // (evita problemas de RLS e upsert futuro)
-    const { error } = await supabase
-      .from('follow_requests')
-      .delete()
-      .eq('from_user', fromUserId)
-      .eq('to_user', user.id);
+  await supabase
+    .from('follow_requests')
+    .delete()
+    .eq('from_user', user.id)
+    .eq('to_user', toUserId)
+    .eq('status', 'rejected');
 
-    if (error) throw error;
-  }
+  const { data, error } = await supabase
+    .from('follow_requests')
+    .upsert(
+      { from_user: user.id, to_user: toUserId, status: 'pending' },
+      { onConflict: 'from_user,to_user' }
+    )
+    .select()
+    .single();
 
-  // ── Solicitações pendentes recebidas ─────────────────────────
-  // CORRIGIDO: busca o perfil do solicitante em query separada
-  // para evitar problema com nome da FK no Supabase
-  export async function getPendingFollowRequests() {
-    const user = await getCurrentUser();
-    if (!user) throw new Error('Não autenticado');
+  if (error) throw error;
+  return data;
+}
 
-    // 1. Busca as solicitações pendentes
-    const { data: requests, error } = await supabase
-      .from('follow_requests')
-      .select('id, from_user, to_user, status, created_at')
-      .eq('to_user', user.id)
-      .eq('status', 'pending')
-      .order('created_at', { ascending: false });
+export async function cancelFollowRequest(toUserId) {
+  const user = await getCurrentUser();
+  if (!user) throw new Error('Não autenticado');
 
-    if (error) throw error;
-    if (!requests || requests.length === 0) return [];
+  const { error } = await supabase
+    .from('follow_requests')
+    .delete()
+    .eq('from_user', user.id)
+    .eq('to_user', toUserId);
 
-    // 2. Busca os perfis dos solicitantes em batch
-    const fromUserIds = [...new Set(requests.map(r => r.from_user))];
+  if (error) throw error;
+}
 
-    const { data: profiles, error: profilesError } = await supabase
-      .from('profiles')
-      .select('id, name, handle, avatar_url')
-      .in('id', fromUserIds);
+export async function acceptFollowRequest(fromUserId) {
+  const user = await getCurrentUser();
+  if (!user) throw new Error('Não autenticado');
 
-    if (profilesError) throw profilesError;
+  const { error } = await supabase.rpc('accept_follow_request', {
+    from_user_id: fromUserId
+  });
 
-    // 3. Mapeia perfil para cada solicitação
-    const profileMap = {};
-    (profiles || []).forEach(p => { profileMap[p.id] = p; });
+  if (error) throw error;
+  await syncFollowCounts(fromUserId, user.id);
+}
 
-    return requests.map(req => ({
-      ...req,
-      requester: profileMap[req.from_user] || null,
-    }));
-  }
+export async function rejectFollowRequest(fromUserId) {
+  const user = await getCurrentUser();
+  if (!user) throw new Error('Não autenticado');
 
-  // ── Contagem de pendentes ─────────────────────────────────────
-  export async function getPendingRequestsCount() {
-    const user = await getCurrentUser();
-    if (!user) return 0;
+  const { error } = await supabase
+    .from('follow_requests')
+    .delete()
+    .eq('from_user', fromUserId)
+    .eq('to_user', user.id);
 
-    const { count, error } = await supabase
-      .from('follow_requests')
-      .select('*', { count: 'exact', head: true })
-      .eq('to_user', user.id)
-      .eq('status', 'pending');
+  if (error) throw error;
+}
 
-    if (error) return 0;
-    return count ?? 0;
-  }
+export async function getPendingFollowRequests() {
+  const user = await getCurrentUser();
+  if (!user) throw new Error('Não autenticado');
 
-  // ── Status da solicitação enviada ─────────────────────────────
-  export async function getFollowRequestStatus(toUserId) {
-    const user = await getCurrentUser();
-    if (!user) return 'none';
+  const { data: requests, error } = await supabase
+    .from('follow_requests')
+    .select('id, from_user, to_user, status, created_at')
+    .eq('to_user', user.id)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false });
 
-    const { data, error } = await supabase
-      .from('follow_requests')
-      .select('status')
-      .eq('from_user', user.id)
-      .eq('to_user', toUserId)
-      .maybeSingle();
+  if (error) throw error;
+  if (!requests || requests.length === 0) return [];
 
-    if (error || !data) return 'none';
-    return data.status;
-  }
+  const fromUserIds = [...new Set(requests.map(r => r.from_user))];
+
+  const { data: profiles, error: profilesError } = await supabase
+    .from('profiles')
+    .select('id, name, handle, avatar_url')
+    .in('id', fromUserIds);
+
+  if (profilesError) throw profilesError;
+
+  const profileMap = {};
+  (profiles || []).forEach(p => { profileMap[p.id] = p; });
+
+  return requests.map(req => ({
+    ...req,
+    requester: profileMap[req.from_user] || null,
+  }));
+}
+
+export async function getPendingRequestsCount() {
+  const user = await getCurrentUser();
+  if (!user) return 0;
+
+  const { count, error } = await supabase
+    .from('follow_requests')
+    .select('*', { count: 'exact', head: true })
+    .eq('to_user', user.id)
+    .eq('status', 'pending');
+
+  if (error) return 0;
+  return count ?? 0;
+}
+
+export async function getFollowRequestStatus(toUserId) {
+  const user = await getCurrentUser();
+  if (!user) return 'none';
+
+  const { data, error } = await supabase
+    .from('follow_requests')
+    .select('status')
+    .eq('from_user', user.id)
+    .eq('to_user', toUserId)
+    .maybeSingle();
+
+  if (error || !data) return 'none';
+  return data.status;
+}

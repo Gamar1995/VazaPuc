@@ -610,8 +610,9 @@ async function loadLightboxComments(postId) {
             onfocus="this.style.borderColor='var(--primary)'"
             onblur="this.style.borderColor='var(--border)'"></textarea>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
-            <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-secondary);cursor:pointer;">
-              <input type="checkbox" id="lbMainPrivate" style="accent-color:var(--primary);"> 🔒 Só o autor vê
+           <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-secondary);cursor:pointer;">
+              <input type="checkbox" class="lb-main-private" style="accent-color:var(--primary);width:14px;height:14px;cursor:pointer;flex-shrink:0;">
+              🔒 Só o autor vê
             </label>
             <button id="lbMainSubmit" style="
               background:var(--primary);color:white;border:none;border-radius:16px;
@@ -886,7 +887,7 @@ async function loadLightboxComments(postId) {
     // ── Enviar comentário principal ──
     const mainSubmit = document.getElementById('lbMainSubmit');
     const mainInput = document.getElementById('lbMainReplyInput');
-    const mainPrivate = document.getElementById('lbMainPrivate');
+   const mainPrivate = listEl.querySelector('.lb-main-private');
 
     mainSubmit?.addEventListener('click', async () => {
       if (!currentProfile) { showLbNotif('Faça login para comentar! 🔐'); return; }
